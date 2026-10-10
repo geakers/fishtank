@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { app, safeStorage } = require('electron');
-const { logIn, refreshSession, logOut } = require('../database/accounts');
+const accounts = require('../database/accounts');
 
 // Refresh this long before the access token actually expires.
 const EXPIRY_MARGIN_SECONDS = 60;
@@ -39,17 +39,17 @@ function restoreSession() {
 }
 
 // Logs in with an email and password and keeps the resulting session.
-async function startSession(credentials) {
-  store(await logIn(credentials));
+async function logIn(credentials) {
+  store(await accounts.logIn(credentials));
   return currentUser();
 }
 
 // Logs the user out. The saved session is always removed, even if Supabase
 // can't be reached to end it on the server.
-async function endSession() {
+async function logOut() {
   try {
     const token = await getAccessToken();
-    if (token) await logOut(token);
+    if (token) await accounts.logOut(token);
   } catch {
     // Nothing to do: the local session is cleared below either way.
   } finally {
@@ -72,7 +72,7 @@ async function getAccessToken() {
   if (session.expires_at - EXPIRY_MARGIN_SECONDS > Date.now() / 1000) return session.access_token;
 
   // Refresh tokens work once, so concurrent callers share a single refresh.
-  refreshing ??= refreshSession(session.refresh_token)
+  refreshing ??= accounts.refreshSession(session.refresh_token)
     .then(store, (err) => {
       // Supabase has ended the session, so there is nothing left to keep.
       // Any other failure (e.g. offline) leaves the user logged in.
@@ -86,4 +86,4 @@ async function getAccessToken() {
   return session.access_token;
 }
 
-module.exports = { restoreSession, startSession, endSession, currentUser, getAccessToken };
+module.exports = { restoreSession, logIn, logOut, currentUser, getAccessToken };
