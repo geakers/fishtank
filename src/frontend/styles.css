@@ -6,6 +6,8 @@ body {
 
 body {
   display: flex;
+  flex-direction: column;
+  gap: 24px;
   align-items: center;
   justify-content: center;
   background: #1565c0;
@@ -27,4 +29,54 @@ body {
 #toggle:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+#profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px;
+  padding: 24px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+#profile-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #333;
+}
+
+#profile-form input {
+  padding: 8px;
+  font-size: 14px;
+}
+
+#profile-form input[readonly] {
+  background: #eee;
+  color: #666;
+}
+
+#profile-form button {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: #1565c0;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#profile-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#profile-status {
+  min-height: 1em;
+  margin: 0;
+  font-size: 14px;
+  color: #333;
 }

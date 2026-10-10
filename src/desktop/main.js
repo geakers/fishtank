@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const { createAccount } = require('../db');
 
 // Puts the given window into kiosk mode (enabled = true) or takes it back out
 // (enabled = false). Returns the window's actual kiosk state afterwards.
@@ -26,6 +27,8 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender);
     return lockDown(win, Boolean(enabled));
   });
+
+  ipcMain.handle('create-account', (event, account) => createAccount(account));
 
   createWindow();
 
