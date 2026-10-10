@@ -9,6 +9,41 @@
   </head>
   <body>
     <button id="toggle" type="button">Start</button>
+
+    <p id="session-status" hidden></p>
+    <button id="logout" type="button" hidden>Log out</button>
+
+    <div id="forms">
+      <form id="profile-form">
+        <label>
+          Username
+          <input name="username" type="text" required />
+        </label>
+        <label>
+          Email
+          <input name="email" type="email" required />
+        </label>
+        <label>
+          Password
+          <input name="password" type="password" minlength="6" required />
+        </label>
+        <button type="submit">Create account</button>
+        <p id="profile-status"></p>
+      </form>
+
+      <form id="login-form">
+        <label>
+          Email
+          <input name="email" type="email" required />
+        </label>
+        <label>
+          Password
+          <input name="password" type="password" required />
+        </label>
+        <button type="submit">Log in</button>
+        <p id="login-status"></p>
+      </form>
+    </div>
     <script src="renderer.js"></script>
   </body>
 </html>

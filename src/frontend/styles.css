@@ -6,6 +6,8 @@ body {
 
 body {
   display: flex;
+  flex-direction: column;
+  gap: 24px;
   align-items: center;
   justify-content: center;
   background: #1565c0;
@@ -27,4 +29,82 @@ body {
 #toggle:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px;
+  padding: 24px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #333;
+}
+
+form input {
+  padding: 8px;
+  font-size: 14px;
+}
+
+form input[readonly] {
+  background: #eee;
+  color: #666;
+}
+
+form button {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: #1565c0;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#profile-status,
+#login-status {
+  min-height: 1em;
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+#forms {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+#session-status {
+  margin: 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+#logout {
+  padding: 8px 16px;
+  border: 1px solid #fff;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* The flex rules above would otherwise override the hidden attribute. */
+[hidden] {
+  display: none !important;
 }
