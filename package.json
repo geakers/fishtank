@@ -1,0 +1,13 @@
+{
+  "name": "fishtank",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fishtank desktop app",
+  "main": "src/desktop/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.7.0"
+  }
+}
