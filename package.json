@@ -5,7 +5,8 @@
   "description": "Fishtank desktop app",
   "main": "src/desktop/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "node --test \"tests/**/*.js\""
   },
   "devDependencies": {
     "electron": "^44.7.0"

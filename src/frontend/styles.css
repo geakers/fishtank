@@ -31,7 +31,7 @@ body {
   cursor: default;
 }
 
-#profile-form {
+form {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -41,7 +41,7 @@ body {
   background: #fff;
 }
 
-#profile-form label {
+form label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -49,17 +49,17 @@ body {
   color: #333;
 }
 
-#profile-form input {
+form input {
   padding: 8px;
   font-size: 14px;
 }
 
-#profile-form input[readonly] {
+form input[readonly] {
   background: #eee;
   color: #666;
 }
 
-#profile-form button {
+form button {
   padding: 10px;
   border: none;
   border-radius: 6px;
@@ -69,14 +69,42 @@ body {
   cursor: pointer;
 }
 
-#profile-form button:disabled {
+form button:disabled {
   opacity: 0.6;
   cursor: default;
 }
 
-#profile-status {
+#profile-status,
+#login-status {
   min-height: 1em;
   margin: 0;
   font-size: 14px;
   color: #333;
+}
+
+#forms {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+#session-status {
+  margin: 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+#logout {
+  padding: 8px 16px;
+  border: 1px solid #fff;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* The flex rules above would otherwise override the hidden attribute. */
+[hidden] {
+  display: none !important;
 }
