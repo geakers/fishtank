@@ -6,6 +6,8 @@ export const NOTE_REWARD = 25;
 export const BONUS_REWARD = 50;
 export const MIN_NOTE_LENGTH = 20;
 export const MAX_NAME_LENGTH = 24;
+// TEMPORARY: what the P key gives (see useFishtank).
+const CHEAT_POINTS = 1000;
 
 export type Screen = 'home' | 'store' | 'lockIn';
 export interface Toast {
@@ -87,14 +89,18 @@ export function useFishtank() {
     return true;
   };
 
-  const resetProgress = () => {
-    setPoints(START_POINTS);
-    setOwnedIds([]);
-    setTankIds([]);
-    setAvatarId(null);
-    setStats(EMPTY_STATS);
-    notify('info', 'Progress reset. Fresh tank!');
-  };
+  // TEMPORARY: press P for free points while testing. Remove before release.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'p' && e.key !== 'P') return;
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Don't fire while typing a name, note or password.
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]')) return;
+      setPoints((p) => p + CHEAT_POINTS);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const grantBonus = () => {
     earn(BONUS_REWARD);
@@ -229,7 +235,7 @@ export function useFishtank() {
   return {
     screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
     account, logIn, createAccount, logOut,
-    buy, setInTank, shareNote, rename, setAvatarId, resetProgress, grantBonus,
+    buy, setInTank, shareNote, rename, setAvatarId, grantBonus,
     session, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
 }

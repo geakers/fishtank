@@ -20,7 +20,6 @@ export interface ProfileMenuProps {
   onLogOut: () => void;
   onRename: (name: string) => boolean;
   onSetAvatar: (fishId: string | null) => void;
-  onResetProgress: () => void;
   // Shown only when provided (dev builds).
   onGrantBonus?: () => void;
 }
@@ -34,14 +33,10 @@ export function ProfileMenu(props: ProfileMenuProps) {
   const onClose = useCallback(() => setOpen(false), []);
   const rootRef = useRef<HTMLDivElement>(null);
   const [panel, setPanel] = useState<Panel>('main');
-  const [confirmingReset, setConfirmingReset] = useState(false);
 
   // Each time the menu opens, start on the main panel.
   useEffect(() => {
-    if (open) {
-      setPanel('main');
-      setConfirmingReset(false);
-    }
+    if (open) setPanel('main');
   }, [open]);
 
   // Close on outside click or Escape.
@@ -80,7 +75,7 @@ export function ProfileMenu(props: ProfileMenuProps) {
       {open ? (
         <GlassPanel variant="raised" className={`profile-menu__dropdown ${panel === 'stats' ? 'is-wide' : ''}`} role="menu">
           {panel === 'main' ? (
-            <MainPanel {...props} confirmingReset={confirmingReset} setConfirmingReset={setConfirmingReset} setPanel={setPanel} />
+            <MainPanel {...props} setPanel={setPanel} />
           ) : null}
           {panel === 'stats' ? <StatsPanel {...props} onDone={() => setPanel('main')} /> : null}
           {panel === 'rename' ? <RenamePanel {...props} onDone={() => setPanel('main')} /> : null}
@@ -106,14 +101,9 @@ function MainPanel({
   avatarFish,
   account,
   onLogOut,
-  onResetProgress,
   onGrantBonus,
-  confirmingReset,
-  setConfirmingReset,
   setPanel,
 }: ProfileMenuProps & {
-  confirmingReset: boolean;
-  setConfirmingReset: (value: boolean) => void;
   setPanel: (panel: Panel) => void;
 }) {
   return (
@@ -140,11 +130,6 @@ function MainPanel({
             <MenuItem label="Create account" onClick={() => setPanel('signup')} />
           </>
         )}
-        <MenuItem
-          label={confirmingReset ? 'Click again to confirm' : 'Reset progress'}
-          danger
-          onClick={() => (confirmingReset ? onResetProgress() : setConfirmingReset(true))}
-        />
       </div>
     </>
   );

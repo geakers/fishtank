@@ -12,7 +12,6 @@ export interface StoreScreenProps {
 }
 
 type Filter = 'all' | 'available' | 'owned' | 'tank';
-type Sort = 'price-asc' | 'price-desc' | 'name';
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All fish' },
@@ -21,17 +20,13 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'tank', label: 'In my tank' },
 ];
 
-const SORTERS: Record<Sort, (a: Fish, b: Fish) => number> = {
-  'price-asc': (a, b) => a.price - b.price || a.name.localeCompare(b.name),
-  'price-desc': (a, b) => b.price - a.price || a.name.localeCompare(b.name),
-  name: (a, b) => a.name.localeCompare(b.name),
-};
+// Cheapest first.
+const byPrice = (a: Fish, b: Fish) => a.price - b.price || a.name.localeCompare(b.name);
 
 // The Fish Shop. Lists every fish in the catalog, so new fish show up here
 // as soon as they're added to FISH.
 export function StoreScreen({ app }: StoreScreenProps) {
   const [filter, setFilter] = useState<Filter>('all');
-  const [sort, setSort] = useState<Sort>('price-asc');
 
   const isOwned = (fish: Fish) => app.owned.includes(fish);
   const isInTank = (fish: Fish) => app.tank.includes(fish);
@@ -41,7 +36,7 @@ export function StoreScreen({ app }: StoreScreenProps) {
     owned: isOwned,
     tank: isInTank,
   };
-  const shown = FISH.filter(matches[filter]).sort(SORTERS[sort]);
+  const shown = FISH.filter(matches[filter]).sort(byPrice);
   const emptyText: Record<Filter, string> = {
     all: '',
     available: 'You have every fish!',
@@ -56,12 +51,7 @@ export function StoreScreen({ app }: StoreScreenProps) {
           <AeroButton variant="glass" onClick={() => app.setScreen('home')}>
             Back
           </AeroButton>
-          <div>
-            <h1 className="screen-title">Fish Shop</h1>
-            <p className="muted">
-              {app.owned.length} of {FISH.length} fish adopted · {app.tank.length} in your tank
-            </p>
-          </div>
+          <h1 className="screen-title">Fish Shop</h1>
         </div>
         <PointsBadge balance={app.points} />
       </header>
@@ -81,14 +71,6 @@ export function StoreScreen({ app }: StoreScreenProps) {
             </button>
           ))}
         </div>
-        <label className="store__sort">
-          <span className="muted">Sort by</span>
-          <select className="aero-select" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-            <option value="price-asc">Price: low to high</option>
-            <option value="price-desc">Price: high to low</option>
-            <option value="name">Name</option>
-          </select>
-        </label>
       </div>
 
       <div className="store__grid">

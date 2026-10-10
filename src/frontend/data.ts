@@ -84,7 +84,7 @@ export interface Fish {
 // Price grows exponentially with rarity: each tier costs TIER_GROWTH times
 // the one below it, and fish within a tier step up gently in catalog order.
 // Prices are rounded to two significant figures so they read cleanly.
-const BASE_PRICE = 20;
+const BASE_PRICE = 200;
 const TIER_GROWTH = 3.5;
 const RANK_GROWTH = 1.1;
 

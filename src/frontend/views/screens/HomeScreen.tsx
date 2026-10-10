@@ -12,7 +12,7 @@ export interface HomeScreenProps {
 
 // Layout, after the Wii menu:
 //   top bar - brand on the left; points and profile menu on the right
-//   main    - the user's tank on the left; a blank panel and the Focus button on
+//   main    - the user's tank on its cabinet on the left; a blank panel and the Focus button on
 //             the right (stats live in the profile menu)
 //   dock    - a clock in the middle and a round "Fish Shop" button on the right
 export function HomeScreen({ app }: HomeScreenProps) {
@@ -35,7 +35,6 @@ export function HomeScreen({ app }: HomeScreenProps) {
             onLogOut={() => void app.logOut()}
             onRename={app.rename}
             onSetAvatar={app.setAvatarId}
-            onResetProgress={app.resetProgress}
             onGrantBonus={import.meta.env.DEV ? app.grantBonus : undefined}
           />
         </div>
@@ -47,14 +46,11 @@ export function HomeScreen({ app }: HomeScreenProps) {
           {app.tank.length === 0 ? (
             <div className="home__tank-empty">
               <p>Your tank is empty.</p>
-              <p className="muted">
-                {app.owned.length === 0
-                  ? 'Adopt your first fish from the Fish Shop.'
-                  : 'Put some of your fish back in from the Fish Shop.'}
-              </p>
               <AeroButton onClick={openShop}>Visit the Fish Shop</AeroButton>
             </div>
           ) : null}
+          {/* The same cabinet as in focus mode; it runs on down behind the dock. */}
+          <div className="tank-stand home__stand" aria-hidden="true" />
         </section>
 
         <aside className="home__side">

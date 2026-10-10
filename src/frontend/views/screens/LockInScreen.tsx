@@ -31,7 +31,7 @@ export function LockInScreen({ app }: LockInScreenProps) {
         {/* Kept in the layout when hidden so the tank doesn't jump. */}
         <div className={`lockin__timer ${running ? '' : 'is-hidden'}`}>{formatClock(elapsed)}</div>
         <div className="lockin__tank-wrap">
-          <Aquarium fish={app.tank} fishSize={130} className="lockin__tank" />
+          <Aquarium fish={app.tank} fishSize={130} className="lockin__tank" breakable={running} />
           {running && app.tank.length === 0 ? (
             <p className="lockin__empty">Your tank is empty. Adopt fish in the Fish Shop!</p>
           ) : null}
