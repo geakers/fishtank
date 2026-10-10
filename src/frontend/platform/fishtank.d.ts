@@ -40,6 +40,20 @@ declare global {
     maxPoints: number;
   }
 
+  // A group study session (a row of the study_groups table), as returned by
+  // createGroup and listGroups.
+  interface FishtankGroup {
+    id: number;
+    name: string;
+    leader_id: string;
+  }
+
+  // Someone in a group study session, as returned by groupRoster.
+  interface FishtankGroupMember {
+    username: string;
+    role: 'leader' | 'member';
+  }
+
   interface FishtankBridge {
     // Turns kiosk lockdown on/off. Resolves with the window's actual kiosk state.
     lockDown(enabled: boolean): Promise<boolean>;
@@ -60,6 +74,18 @@ declare global {
     logOut(): Promise<void>;
     // Resolves with the logged-in user, or null if nobody is logged in.
     getCurrentUser(): Promise<FishtankUser | null>;
+    // Creates a group study session led by the logged-in user.
+    createGroup(name: string): Promise<FishtankGroup>;
+    // Resolves with the groups the logged-in user leads or is a member of,
+    // sorted by name.
+    listGroups(): Promise<FishtankGroup[]>;
+    // Adds the user with this username to the group. Rejects unless the
+    // logged-in user leads the group, the username exists and isn't the leader.
+    addMember(groupId: number, username: string): Promise<void>;
+    // Resolves with everyone in the group; empty if the logged-in user isn't in it.
+    groupRoster(groupId: number): Promise<FishtankGroupMember[]>;
+    // Resolves with up to 10 usernames containing the search text.
+    searchUsernames(query: string): Promise<string[]>;
   }
 
   interface Window {
