@@ -1,5 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const { createAccount } = require('../database/accounts');
+const { getProfile, getPoints } = require('./profiles');
+const { restoreSession, startSession, endSession, currentUser, getAccessToken } = require('./session');
 
 // Puts the given window into kiosk mode (enabled = true) or takes it back out
 // (enabled = false). Returns the window's actual kiosk state afterwards.
@@ -36,6 +39,20 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender);
     return lockDown(win, Boolean(enabled));
   });
+
+  ipcMain.handle('create-account', (event, account) => createAccount(account));
+  ipcMain.handle('get-profile', (event, uid) => getProfile(uid));
+  ipcMain.handle('get-points', (event, uid) => getPoints(uid));
+  ipcMain.handle('log-in', (event, credentials) => startSession(credentials));
+  ipcMain.handle('log-out', () => endSession());
+  ipcMain.handle('get-current-user', async () => {
+    // Renews an expired session. If that fails for a reason other than Supabase
+    // ending the session (e.g. being offline), the user stays logged in.
+    await getAccessToken().catch(() => {});
+    return currentUser();
+  });
+
+  restoreSession();
 
   createWindow();
 

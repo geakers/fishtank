@@ -9,7 +9,8 @@
     "start": "npm run build && electron .",
     "build": "vite build --config src/frontend/vite.config.mts",
     "dev:web": "vite --config src/frontend/vite.config.mts",
-    "typecheck": "tsc -p src/frontend/tsconfig.json"
+    "typecheck": "tsc -p src/frontend/tsconfig.json",
+    "test": "node --test \"tests/**/*.js\""
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
@@ -20,6 +21,8 @@
     "vite": "^8.3.4"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   }
