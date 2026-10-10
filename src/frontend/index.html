@@ -2,79 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fishtank</title>
-    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <button id="toggle" type="button">Start</button>
-
-    <p id="session-status" hidden></p>
-    <button id="logout" type="button" hidden>Log out</button>
-    <button id="groups-button" type="button" hidden>Group study sessions</button>
-
-    <div id="groups" hidden>
-      <form id="group-form">
-        <label>
-          New study session name
-          <input name="groupName" type="text" required />
-        </label>
-        <button type="submit">Create study session</button>
-        <p id="group-status"></p>
-      </form>
-
-      <form id="member-form" hidden>
-        <label>
-          Study session
-          <select name="groupId"></select>
-        </label>
-        <div class="list">
-          People in this session
-          <ul id="roster"></ul>
-        </div>
-        <div id="add-member">
-          <label>
-            Add a member by username
-            <input name="search" type="search" autocomplete="off" placeholder="Search usernames" />
-          </label>
-          <ul id="search-results"></ul>
-        </div>
-        <p id="member-status"></p>
-      </form>
-    </div>
-
-    <div id="forms">
-      <form id="profile-form">
-        <label>
-          Username
-          <input name="username" type="text" required />
-        </label>
-        <label>
-          Email
-          <input name="email" type="email" required />
-        </label>
-        <label>
-          Password
-          <input name="password" type="password" minlength="6" required />
-        </label>
-        <button type="submit">Create account</button>
-        <p id="profile-status"></p>
-      </form>
-
-      <form id="login-form">
-        <label>
-          Email
-          <input name="email" type="email" required />
-        </label>
-        <label>
-          Password
-          <input name="password" type="password" required />
-        </label>
-        <button type="submit">Log in</button>
-        <p id="login-status"></p>
-      </form>
-    </div>
-    <script src="renderer.js"></script>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
   </body>
 </html>

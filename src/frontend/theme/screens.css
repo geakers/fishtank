@@ -1,0 +1,1062 @@
+/* Screen layouts and screen-specific pieces. Built only from tokens.css.
+   Load after aero.css so these rules win over the base component styles. */
+
+.screen {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  animation: fade-in var(--aero-duration-med) var(--aero-ease);
+}
+
+/* ---------- Top bar (shared by home + store) ---------- */
+
+.topbar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--aero-space-4);
+}
+
+.topbar__left,
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-3);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+}
+
+.brand__orb {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--aero-white);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d6f6ff 0%, var(--aero-cyan-500) 55%, var(--aero-cyan-700) 100%);
+  box-shadow: 0 0 0 1px var(--aero-cyan-700), var(--aero-shadow-soft);
+}
+
+.brand__name {
+  font-size: var(--aero-text-lg);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--aero-ink);
+}
+
+/* ---------- Home ---------- */
+
+.home {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.home .topbar {
+  margin: var(--aero-space-6) var(--aero-space-6) 0;
+}
+
+.home__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--aero-space-8);
+  min-height: 0;
+  padding: var(--aero-space-6) var(--aero-space-8) 56px;
+}
+
+.home__tank-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.home__tank {
+  flex: 1;
+  min-height: 0;
+}
+
+/* White shelf under the home tank. */
+.home__tank-panel::after {
+  content: '';
+  height: 14px;
+  margin: 0 -14px;
+  border: 2px solid var(--aero-line);
+  border-radius: 4px 4px 10px 10px;
+  background: var(--aero-gradient-tile);
+  box-shadow: var(--aero-shadow-soft);
+}
+
+.home__tank-empty {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--aero-space-2);
+  max-width: 320px;
+  padding: var(--aero-space-4) var(--aero-space-6);
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--aero-shadow-raised);
+  text-align: center;
+  translate: -50% -50%;
+}
+
+.home__tank-empty .aero-button {
+  margin-top: var(--aero-space-2);
+}
+
+.home__side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--aero-space-8);
+  min-height: 0;
+}
+
+.home__lockin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--aero-space-3);
+}
+
+.home__lockin-hint {
+  color: var(--aero-ink-muted);
+  font-size: var(--aero-text-sm);
+  font-weight: 600;
+}
+
+/* ---------- Dock (Wii menu bottom bar) ---------- */
+
+.dock {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  border-top: 2px solid var(--aero-line);
+  background: linear-gradient(180deg, #f4f7f9 0%, #e3e9ed 100%);
+  box-shadow: 0 -4px 14px rgba(40, 60, 80, 0.08), inset 0 1px 0 var(--aero-white);
+}
+
+.dock__pod {
+  position: absolute;
+  top: -30px;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  padding: 0 var(--aero-space-4);
+  border: 3px solid var(--aero-line);
+  border-radius: 50%;
+  background: var(--aero-gradient-button);
+  box-shadow: var(--aero-shadow-raised), inset 0 2px 0 var(--aero-white);
+  color: var(--aero-ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color var(--aero-duration-fast),
+    box-shadow var(--aero-duration-fast),
+    transform var(--aero-duration-fast) var(--aero-ease);
+}
+
+.dock__pod--left {
+  left: var(--aero-space-8);
+}
+
+.dock__pod--right {
+  right: var(--aero-space-8);
+}
+
+.dock__pod:hover {
+  border-color: var(--aero-cyan-500);
+  box-shadow: var(--aero-shadow-raised), var(--aero-glow);
+  color: var(--aero-cyan-700);
+}
+
+.dock__pod:active {
+  transform: scale(0.96);
+}
+
+.dock__pod:focus-visible {
+  outline: none;
+  box-shadow: var(--aero-glow);
+}
+
+.dock__clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #9ba5ae;
+}
+
+.dock__time {
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dock__date {
+  font-size: var(--aero-text-md);
+  font-weight: 600;
+}
+
+/* ---------- Stats board ---------- */
+
+.stats-board {
+  width: 100%;
+  padding: var(--aero-space-6);
+}
+
+.stats-board__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--aero-space-3);
+  margin-top: var(--aero-space-4);
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--aero-space-3) var(--aero-space-2);
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-md);
+  background: var(--aero-surface);
+}
+
+.stat-tile__value {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--aero-cyan-700);
+}
+
+.stat-tile__label {
+  font-size: var(--aero-text-sm);
+  color: var(--aero-ink-muted);
+}
+
+.collection-meter {
+  margin-top: var(--aero-space-4);
+}
+
+.collection-meter__label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--aero-space-1);
+  font-size: var(--aero-text-sm);
+  font-weight: 600;
+  color: var(--aero-ink-muted);
+}
+
+.collection-meter__track {
+  height: 14px;
+  overflow: hidden;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-surface-sunk);
+}
+
+.collection-meter__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--aero-gradient-button-cyan);
+  transition: width var(--aero-duration-med) var(--aero-ease);
+}
+
+/* ---------- Profile menu ---------- */
+
+.profile-menu {
+  position: relative;
+}
+
+.profile-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  height: 44px;
+  padding: 0 14px 0 3px;
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gradient-button);
+  box-shadow: var(--aero-shadow-soft), var(--aero-shadow-inset-gloss);
+  cursor: pointer;
+  transition: border-color var(--aero-duration-fast);
+}
+
+.profile-menu__trigger:hover,
+.profile-menu__trigger.is-open {
+  border-color: var(--aero-cyan-500);
+}
+
+.profile-menu__name {
+  max-width: 140px;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-menu__caret {
+  font-size: 12px;
+  color: var(--aero-ink-muted);
+}
+
+.profile-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 280px;
+  padding: var(--aero-space-3);
+  animation: pop-in var(--aero-duration-fast) var(--aero-ease);
+}
+
+.profile-menu__header {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-3);
+  padding: var(--aero-space-2);
+}
+
+.profile-menu__header-name {
+  font-size: var(--aero-text-md);
+  font-weight: 600;
+}
+
+.profile-menu__items {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--aero-space-2);
+}
+
+.profile-menu__divider {
+  height: 2px;
+  margin: var(--aero-space-2) 0;
+  background: var(--aero-line-soft);
+}
+
+.profile-menu__form {
+  display: flex;
+  flex-direction: column;
+  padding: var(--aero-space-1);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-3);
+  padding: 9px 12px;
+  border: none;
+  border-radius: var(--aero-radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-item:hover:not(:disabled) {
+  background: var(--aero-cyan-100);
+  color: var(--aero-cyan-700);
+}
+
+.menu-item:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.menu-item__label {
+  flex: 1;
+}
+
+.menu-item__hint {
+  font-size: 11px;
+  color: var(--aero-ink-muted);
+}
+
+.menu-item--danger {
+  color: var(--aero-danger);
+}
+
+.avatar {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid var(--aero-white);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e6f9ff 0%, var(--aero-cyan-300) 50%, var(--aero-cyan-500) 100%);
+  box-shadow: 0 0 0 1px var(--aero-line);
+}
+
+.avatar__initial {
+  color: var(--aero-white);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 80, 120, 0.4);
+  text-transform: uppercase;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--aero-space-2);
+}
+
+.avatar-grid__option {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-surface);
+  cursor: pointer;
+}
+
+.avatar-grid__option:hover {
+  border-color: var(--aero-cyan-300);
+}
+
+.avatar-grid__option.is-selected {
+  border-color: var(--aero-cyan-500);
+  background: var(--aero-cyan-100);
+}
+
+/* ---------- Store (Fish Shop) ---------- */
+
+.store {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-4);
+  padding: var(--aero-space-6) var(--aero-space-8) 0;
+}
+
+.store__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--aero-space-3);
+}
+
+.store__sort {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+}
+
+.store__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  flex: 1;
+  align-content: start;
+  gap: var(--aero-space-4);
+  min-height: 0;
+  margin: 0 calc(var(--aero-space-2) * -1);
+  padding: var(--aero-space-2) var(--aero-space-2) var(--aero-space-8);
+  overflow-y: auto;
+}
+
+.store__empty {
+  grid-column: 1 / -1;
+  padding: var(--aero-space-8);
+  text-align: center;
+}
+
+.store-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--aero-space-2);
+  padding: var(--aero-space-3) var(--aero-space-3) var(--aero-space-4);
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-lg);
+  background: var(--aero-gradient-tile);
+  box-shadow: var(--aero-shadow-soft), var(--aero-shadow-inset-gloss);
+  transition:
+    border-color var(--aero-duration-fast),
+    box-shadow var(--aero-duration-fast),
+    transform var(--aero-duration-med) var(--aero-ease);
+}
+
+.store-card:hover {
+  border-color: var(--aero-cyan-500);
+  box-shadow: var(--aero-shadow-raised), var(--aero-glow);
+  transform: translateY(-2px);
+}
+
+/* A little glass tank window with sand at the bottom. */
+.store-card__tank {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  height: 120px;
+  overflow: hidden;
+  border: 2px solid var(--aero-white);
+  border-radius: var(--aero-radius-md);
+  background:
+    linear-gradient(180deg, transparent 82%, var(--aero-sand-light) 82%, var(--aero-sand-dark) 100%),
+    var(--aero-gradient-water);
+  box-shadow: 0 0 0 1px var(--aero-line), inset 0 10px 14px -8px rgba(255, 255, 255, 0.8);
+}
+
+.store-card__tank::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 0 20%, rgba(255, 255, 255, 0.25) 20% 28%, transparent 28%);
+  pointer-events: none;
+}
+
+.store-card__sprite {
+  animation: card-float 4s ease-in-out infinite;
+}
+
+.store-card.is-owned .store-card__tank {
+  filter: saturate(0.75);
+}
+
+.store-card__name {
+  font-size: var(--aero-text-md);
+  font-weight: 600;
+  text-align: center;
+}
+
+.store-card__price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--aero-cyan-700);
+}
+
+.store-card__price .points-badge__coin {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+.store-card .aero-button {
+  align-self: stretch;
+  margin-top: var(--aero-space-1);
+}
+
+@keyframes card-float {
+  0%,
+  100% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+/* ---------- Aquarium (a glass tank drawn in CSS) ---------- */
+
+.aquarium {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 16px 20px rgba(40, 60, 80, 0.22));
+}
+
+/* Glossy silver hood with a lamp strip on its underside. */
+.aquarium__lid {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  height: 28px;
+  margin: 0 -8px;
+  border-radius: 12px 12px 4px 4px;
+  background: var(--aero-gradient-metal);
+  box-shadow:
+    inset 0 1px 0 var(--aero-white),
+    inset 0 -1px 0 rgba(60, 80, 100, 0.25),
+    0 2px 4px rgba(40, 60, 80, 0.2);
+}
+
+.aquarium__lamp {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -3px;
+  height: 4px;
+  border-radius: 2px;
+  background: #f4fbff;
+  box-shadow: 0 0 14px 5px rgba(220, 245, 255, 0.85);
+}
+
+/* The glass box, with rounded corners where the front pane curves into the
+   sides, glowing blue like an LED lamp. */
+.aquarium__glass {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 18px / 26px;
+  border: 3px solid rgba(220, 245, 255, 0.85);
+  background: linear-gradient(180deg, rgba(240, 250, 255, 0.55) 0%, rgba(225, 245, 255, 0.4) 100%);
+  box-shadow:
+    0 0 28px 4px var(--aero-tank-glow),
+    0 0 70px 10px rgba(40, 170, 255, 0.18);
+}
+
+/* Water starts a little below the lid, leaving an air gap above the surface. */
+.aquarium__water {
+  position: absolute;
+  inset: 7% 0 0 0;
+  overflow: hidden;
+  background: var(--aero-gradient-water);
+  container-type: size;
+}
+
+.aquarium__surface {
+  position: absolute;
+  top: 7%;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.9) 45%, rgba(190, 240, 255, 0.55) 60%, rgba(255, 255, 255, 0) 100%);
+  translate: 0 -50%;
+  animation: surface-ripple 3.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes surface-ripple {
+  from {
+    transform: scaleY(0.8) translateY(-1px);
+  }
+  to {
+    transform: scaleY(1.2) translateY(1px);
+  }
+}
+
+/* Reflections on the glass: bright curved edges where the pane bends round
+   the corners, a glossy band across the top, and diagonal streaks. */
+.aquarium__shine {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse 70% 22% at 50% 0%, rgba(255, 255, 255, 0.5), transparent 70%),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.7) 0,
+      rgba(255, 255, 255, 0.12) 2.5%,
+      transparent 5% 95%,
+      rgba(255, 255, 255, 0.12) 97.5%,
+      rgba(255, 255, 255, 0.7) 100%
+    ),
+    linear-gradient(
+      115deg,
+      transparent 0 16%,
+      rgba(255, 255, 255, 0.22) 16% 22%,
+      transparent 22% 26%,
+      rgba(255, 255, 255, 0.14) 26% 28%,
+      transparent 28%
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.85),
+    inset 0 0 24px rgba(0, 40, 110, 0.35);
+  pointer-events: none;
+}
+
+/* Silver base with a power switch, catching blue light from the tank. */
+.aquarium__base {
+  position: relative;
+  flex-shrink: 0;
+  height: 36px;
+  margin: -4px -8px 0;
+  border-radius: 4px 4px 12px 12px;
+  background:
+    radial-gradient(ellipse 60% 10px at 50% 0%, var(--aero-tank-glow), transparent),
+    var(--aero-gradient-metal);
+  box-shadow:
+    inset 0 1px 0 var(--aero-white),
+    inset 0 -2px 3px rgba(60, 80, 100, 0.25);
+}
+
+.aquarium__switch {
+  position: absolute;
+  top: 50%;
+  right: 7%;
+  width: 20px;
+  height: 12px;
+  translate: 0 -50%;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4a535b 0%, #1f252a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 1px 0 var(--aero-white);
+}
+
+/* Light from the lamp pouring down into the middle of the tank. */
+.aquarium__backlight {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 20%, rgba(200, 245, 255, 0.55), transparent 70%),
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(80, 200, 255, 0.35), transparent 70%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.aquarium__rays {
+  position: absolute;
+  inset: -10% -10% 30% -10%;
+  background: repeating-linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0px,
+    rgba(255, 255, 255, 0.12) 40px,
+    rgba(255, 255, 255, 0) 90px,
+    rgba(255, 255, 255, 0) 160px
+  );
+  mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+  animation: rays-sway 12s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes rays-sway {
+  from {
+    transform: translateX(-3%) skewX(-4deg);
+  }
+  to {
+    transform: translateX(3%) skewX(4deg);
+  }
+}
+
+/* Caustics: the rippling net of light the surface throws onto the reef. Two
+   noise-generated nets drift in different directions and shimmer where they
+   cross. */
+.aquarium__caustics {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%3E%3Cfilter%20id='c'%20x='0'%20y='0'%20width='100%'%20height='100%'%3E%3CfeTurbulence%20type='turbulence'%20baseFrequency='0.018'%20numOctaves='2'%20seed='3'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20values='0%200%200%200%201%200%200%200%200%201%200%200%200%200%201%20-7%200%200%200%201.25'/%3E%3C/filter%3E%3Crect%20width='100%'%20height='100%'%20filter='url(%23c)'/%3E%3C/svg%3E") 0 0 / 320px 320px,
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%3E%3Cfilter%20id='c'%20x='0'%20y='0'%20width='100%'%20height='100%'%3E%3CfeTurbulence%20type='turbulence'%20baseFrequency='0.018'%20numOctaves='2'%20seed='8'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20values='0%200%200%200%201%200%200%200%200%201%200%200%200%200%201%20-7%200%200%200%201.25'/%3E%3C/filter%3E%3Crect%20width='100%'%20height='100%'%20filter='url(%23c)'/%3E%3C/svg%3E") 0 0 / 260px 260px;
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+  /* Faint in open water, strongest where it lands on the rock and sand. */
+  mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.15) 35%, rgba(0, 0, 0, 0.4) 60%, #000 85%);
+  animation: caustics-drift 22s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes caustics-drift {
+  to {
+    background-position:
+      320px 160px,
+      -260px 130px;
+  }
+}
+
+/* Reef layers span the tank's width and sit on its floor. */
+.reefscape {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.reefscape--back {
+  z-index: 1;
+}
+
+.reefscape--front {
+  z-index: 3;
+}
+
+.aquarium__anemone {
+  position: absolute;
+  left: 27%;
+  bottom: 2%;
+  z-index: 3;
+  width: 10%;
+  overflow: visible;
+  transform-origin: bottom center;
+  animation: plant-sway 3.5s ease-in-out infinite alternate;
+}
+
+/* Specks of drifting matter catching the light, which give the water depth. */
+.aquarium__particles {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.7) 0 1px, transparent 1.5px) 0 0 / 97px 83px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.45) 0 0.8px, transparent 1.2px) 31px 17px / 61px 71px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.35) 0 1.4px, transparent 2px) 13px 41px / 151px 127px;
+  animation: particles-drift 40s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes particles-drift {
+  to {
+    background-position:
+      40px -166px,
+      51px -125px,
+      -17px -213px;
+  }
+}
+
+
+.aquarium__plant {
+  position: absolute;
+  bottom: 4%;
+  width: 9%;
+  overflow: visible;
+  transform-origin: bottom center;
+  animation: plant-sway 5s ease-in-out infinite alternate;
+}
+
+
+@keyframes plant-sway {
+  from {
+    transform: skewX(-5deg);
+  }
+  to {
+    transform: skewX(5deg);
+  }
+}
+
+
+
+
+.aquarium__bubbler {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.aquarium__bubbler .aero-bubble {
+  bottom: 11%;
+  --rise-distance: -92cqh;
+}
+
+
+/* Fish swim between the glass walls: right, turn around, back. */
+.swimmer {
+  position: absolute;
+  left: 0;
+  z-index: 2;
+  width: var(--fish-w);
+  animation: swim var(--swim-duration) linear var(--swim-delay) infinite;
+}
+
+.swimmer__bob {
+  animation: bob var(--bob-duration) ease-in-out infinite alternate;
+}
+
+@keyframes swim {
+  0% {
+    left: 0%;
+    transform: scaleX(1);
+  }
+  48% {
+    left: calc(100% - var(--fish-w));
+    transform: scaleX(1);
+  }
+  50% {
+    left: calc(100% - var(--fish-w));
+    transform: scaleX(-1);
+  }
+  98% {
+    left: 0%;
+    transform: scaleX(-1);
+  }
+  100% {
+    left: 0%;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes bob {
+  from {
+    transform: translateY(-8px) rotate(-2deg);
+  }
+  to {
+    transform: translateY(8px) rotate(2deg);
+  }
+}
+
+/* ---------- Lock-in: the tank on a stand in a bright room ---------- */
+
+.lockin {
+  background:
+    linear-gradient(180deg, transparent 80%, #e1e6ea 80%, #d2d9de 100%),
+    var(--aero-gradient-backdrop);
+}
+
+.lockin__stage {
+  position: absolute;
+  inset: var(--aero-space-6) var(--aero-space-8) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lockin__timer {
+  margin-bottom: var(--aero-space-4);
+  padding: 4px 36px;
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gradient-button);
+  box-shadow: var(--aero-shadow-soft), var(--aero-shadow-inset-gloss);
+  color: var(--aero-ink);
+  font-size: 48px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.lockin__timer.is-hidden {
+  visibility: hidden;
+}
+
+.lockin__tank-wrap {
+  position: relative;
+  flex: 1;
+  width: min(1080px, calc(100% - 40px));
+  min-height: 0;
+}
+
+.lockin__empty {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  z-index: 5;
+  max-width: 340px;
+  padding: var(--aero-space-3) var(--aero-space-6);
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  text-align: center;
+  translate: -50% -50%;
+}
+
+/* Glossy white cabinet with two doors. */
+.tank-stand {
+  position: relative;
+  flex-shrink: 0;
+  width: min(1120px, 100%);
+  height: 14vh;
+  min-height: 70px;
+  border: 2px solid var(--aero-line);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f3f6 10%, #e2e8ec 100%);
+  box-shadow: inset 0 2px 0 var(--aero-white), var(--aero-shadow-soft);
+}
+
+.tank-stand::before {
+  content: '';
+  position: absolute;
+  inset: 14px 24px 0;
+  border: 2px solid var(--aero-line-soft);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(
+    90deg,
+    transparent calc(50% - 1px),
+    var(--aero-line-soft) calc(50% - 1px) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+
+.lockin__controls {
+  position: absolute;
+  right: var(--aero-space-6);
+  bottom: var(--aero-space-6);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-3);
+}
+
+.error-text--on-water {
+  padding: 6px 12px;
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-white);
+}
+
+.lockin__dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--aero-space-3);
+  min-width: 320px;
+  padding: var(--aero-space-6) var(--aero-space-8);
+  text-align: center;
+  translate: -50% -50%;
+  animation: pop-in var(--aero-duration-med) var(--aero-ease);
+}
+
+.lockin__summary-kicker {
+  font-size: var(--aero-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--aero-cyan-700);
+}
+
+.lockin__summary-time {
+  font-size: 56px;
+  font-weight: 300;
+  color: var(--aero-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swimmer {
+    animation-duration: calc(var(--swim-duration) * 2);
+  }
+  .aquarium__rays,
+  .aquarium__caustics,
+  .aquarium__surface,
+  .aquarium__plant,
+  .aquarium__anemone,
+  .aquarium__particles,
+  .store-card__sprite,
+  .swimmer__bob {
+    animation: none;
+  }
+}
+
+/* ---------- Narrow windows ---------- */
+
+@media (max-width: 860px) {
+  .home__main {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(260px, 1fr) auto;
+    overflow-y: auto;
+  }
+  .topbar {
+    flex-wrap: wrap;
+  }
+  .dock__pod {
+    width: 88px;
+    height: 88px;
+    font-size: 13px;
+  }
+}

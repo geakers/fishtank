@@ -5,14 +5,25 @@
   "description": "Fishtank desktop app",
   "main": "src/desktop/main.js",
   "scripts": {
-    "start": "electron .",
+    "dev": "node scripts/dev.mjs",
+    "start": "npm run build && electron .",
+    "build": "vite build --config src/frontend/vite.config.mts",
+    "dev:web": "vite --config src/frontend/vite.config.mts",
+    "typecheck": "tsc -p src/frontend/tsconfig.json",
     "test": "node --test \"tests/**/*.js\""
   },
   "devDependencies": {
-    "electron": "^44.7.0"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.7.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.117.3"
+    "@supabase/supabase-js": "^2.117.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }

@@ -1,0 +1,553 @@
+/* Base + reusable component styles. Built only from tokens.css. */
+@import './tokens.css';
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--aero-gradient-backdrop);
+  color: var(--aero-ink);
+  font-family: var(--aero-font);
+  font-size: var(--aero-text-md);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+::selection {
+  background: var(--aero-cyan-300);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--aero-ink-muted);
+  font-size: var(--aero-text-sm);
+}
+
+.ok-text {
+  color: var(--aero-grass-600);
+  font-size: var(--aero-text-sm);
+  font-weight: 600;
+}
+
+.error-text {
+  color: var(--aero-danger);
+  font-size: var(--aero-text-sm);
+  font-weight: 600;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  padding-bottom: var(--aero-space-2);
+  border-bottom: 2px solid var(--aero-line-soft);
+  font-size: var(--aero-text-md);
+  font-weight: 600;
+  color: var(--aero-ink);
+}
+
+.screen-title {
+  font-size: var(--aero-text-lg);
+  font-weight: 600;
+  color: var(--aero-ink);
+}
+
+/* ---------- GlassPanel (a white Wii tile) ---------- */
+
+.aero-glass {
+  position: relative;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-lg);
+  background: var(--aero-gradient-tile);
+  box-shadow: var(--aero-shadow-soft), var(--aero-shadow-inset-gloss);
+  padding: var(--aero-space-4);
+}
+
+.aero-glass--raised {
+  box-shadow: var(--aero-shadow-raised), var(--aero-shadow-inset-gloss);
+}
+
+/* ---------- AeroButton ---------- */
+
+.aero-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 var(--aero-space-6);
+  overflow: hidden;
+  border: 2px solid var(--aero-cyan-700);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gradient-button-cyan);
+  color: var(--aero-white);
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 80, 120, 0.35);
+  box-shadow: var(--aero-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--aero-duration-fast) var(--aero-ease),
+    box-shadow var(--aero-duration-fast) var(--aero-ease),
+    border-color var(--aero-duration-fast);
+}
+
+/* Gloss highlight on the top half. */
+.aero-button::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 8%;
+  right: 8%;
+  height: 45%;
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gloss);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.aero-button__label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+}
+
+.aero-button:hover:not(:disabled) {
+  box-shadow: var(--aero-shadow-soft), var(--aero-glow);
+}
+
+.aero-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.aero-button:focus-visible {
+  outline: none;
+  box-shadow: var(--aero-glow);
+}
+
+.aero-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* White Wii pill; 'secondary' adds cyan text. */
+.aero-button--glass,
+.aero-button--secondary {
+  border-color: var(--aero-line);
+  background: var(--aero-gradient-button);
+  color: var(--aero-ink);
+  text-shadow: none;
+}
+
+.aero-button--secondary {
+  color: var(--aero-cyan-700);
+}
+
+.aero-button--glass:hover:not(:disabled),
+.aero-button--secondary:hover:not(:disabled) {
+  border-color: var(--aero-cyan-500);
+}
+
+/* The big "Start"-style lock-in button. */
+.aero-button--hero {
+  min-width: 260px;
+  min-height: 80px;
+  padding: 0 var(--aero-space-8);
+  border: 3px solid var(--aero-cyan-500);
+  background: var(--aero-gradient-button);
+  color: var(--aero-cyan-700);
+  font-size: var(--aero-text-xl);
+  letter-spacing: 0.04em;
+  text-shadow: none;
+  box-shadow: var(--aero-shadow-raised), 0 0 0 6px rgba(52, 190, 237, 0.15);
+  animation: hero-pulse 2.4s ease-in-out infinite;
+}
+
+.aero-button--hero:hover:not(:disabled) {
+  box-shadow: var(--aero-shadow-raised), 0 0 0 8px rgba(52, 190, 237, 0.3), 0 0 32px rgba(52, 190, 237, 0.5);
+}
+
+@keyframes hero-pulse {
+  0%,
+  100% {
+    box-shadow: var(--aero-shadow-raised), 0 0 0 4px rgba(52, 190, 237, 0.12);
+  }
+  50% {
+    box-shadow: var(--aero-shadow-raised), 0 0 0 10px rgba(52, 190, 237, 0.22);
+  }
+}
+
+/* ---------- Inputs ---------- */
+
+.field-label {
+  display: block;
+  margin: var(--aero-space-3) 0 var(--aero-space-1);
+  font-size: var(--aero-text-sm);
+  font-weight: 600;
+  color: var(--aero-ink-muted);
+}
+
+.aero-input,
+.aero-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-white);
+  box-shadow: inset 0 2px 3px rgba(40, 60, 80, 0.08);
+  outline: none;
+  user-select: text;
+  transition:
+    border-color var(--aero-duration-fast),
+    box-shadow var(--aero-duration-fast);
+}
+
+.aero-input:focus,
+.aero-select:focus {
+  border-color: var(--aero-cyan-500);
+  box-shadow: inset 0 2px 3px rgba(40, 60, 80, 0.08), 0 0 0 3px rgba(52, 190, 237, 0.25);
+}
+
+.aero-input--multiline {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.45;
+}
+
+.aero-select {
+  width: auto;
+  padding: 6px 12px;
+  border-radius: var(--aero-radius-pill);
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--aero-space-2);
+  margin-top: var(--aero-space-4);
+}
+
+/* ---------- Segmented control ---------- */
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-surface-sunk);
+}
+
+.segmented__option {
+  padding: 6px 16px;
+  border: none;
+  border-radius: var(--aero-radius-pill);
+  background: transparent;
+  color: var(--aero-ink-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--aero-duration-fast),
+    color var(--aero-duration-fast);
+}
+
+.segmented__option:hover {
+  color: var(--aero-ink);
+}
+
+.segmented__option.is-active {
+  background: var(--aero-white);
+  color: var(--aero-cyan-700);
+  box-shadow: var(--aero-shadow-soft);
+}
+
+/* ---------- Bubble ---------- */
+
+.bubble-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aero-bubble {
+  position: absolute;
+  bottom: -60px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: var(--aero-bubble);
+  box-shadow: inset -2px -3px 6px rgba(255, 255, 255, 0.5), 0 0 8px rgba(255, 255, 255, 0.3);
+  animation:
+    bubble-rise var(--rise-duration) linear var(--rise-delay) infinite,
+    bubble-wobble var(--wobble-duration) ease-in-out infinite alternate;
+}
+
+@keyframes bubble-rise {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    translate: 0 var(--rise-distance, -115vh);
+    opacity: 0;
+  }
+}
+
+@keyframes bubble-wobble {
+  from {
+    margin-left: -4px;
+  }
+  to {
+    margin-left: 4px;
+  }
+}
+
+/* ---------- FishSprite ---------- */
+
+.fish-sprite {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 4px 5px rgba(10, 60, 100, 0.25));
+}
+
+/* Swimming motion: the tail beats side to side (seen side-on, it narrows and
+   widens), the pectoral fin sculls, and a jellyfish's bell pulses. */
+.fish-sprite__tail,
+.fish-sprite__pectoral {
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+.fish-sprite__tail {
+  animation: fish-tail-beat 0.7s ease-in-out infinite alternate;
+}
+
+.fish-sprite__pectoral {
+  animation: fish-fin-scull 0.9s ease-in-out infinite alternate;
+}
+
+.fish-sprite__bell {
+  transform-box: fill-box;
+  transform-origin: center top;
+  animation: jelly-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes fish-tail-beat {
+  from {
+    transform: scaleX(1) skewY(-4deg);
+  }
+  to {
+    transform: scaleX(0.78) skewY(4deg);
+  }
+}
+
+@keyframes fish-fin-scull {
+  from {
+    transform: rotate(-10deg);
+  }
+  to {
+    transform: rotate(14deg);
+  }
+}
+
+@keyframes jelly-pulse {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  40% {
+    transform: scale(1.06, 0.88);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fish-sprite__tail,
+  .fish-sprite__pectoral,
+  .fish-sprite__bell {
+    animation: none;
+  }
+}
+
+/* ---------- Points badge ---------- */
+
+.points-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px 0 7px;
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gradient-button);
+  box-shadow: var(--aero-shadow-soft), var(--aero-shadow-inset-gloss);
+  font-weight: 700;
+}
+
+/* A cyan point coin with a white ring, drawn in CSS. */
+.points-badge__coin {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--aero-white);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c9f1ff 0%, var(--aero-cyan-500) 55%, var(--aero-cyan-700) 100%);
+  box-shadow: 0 0 0 1px var(--aero-cyan-700), 0 1px 3px rgba(0, 80, 120, 0.3);
+}
+
+.points-badge__value {
+  font-size: var(--aero-text-md);
+  color: var(--aero-ink);
+}
+
+.points-badge__unit {
+  font-size: var(--aero-text-sm);
+  color: var(--aero-ink-muted);
+}
+
+/* ---------- Toast ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 20px;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-white);
+  box-shadow: var(--aero-shadow-raised);
+  font-weight: 600;
+  cursor: pointer;
+  translate: -50% 0;
+  animation: toast-in var(--aero-duration-med) var(--aero-ease);
+}
+
+.toast__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--aero-cyan-500);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.toast--success .toast__dot {
+  background: var(--aero-grass-400);
+}
+.toast--error .toast__dot {
+  background: var(--aero-danger);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* ---------- Modal ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--aero-space-4);
+  background: rgba(230, 236, 240, 0.7);
+  backdrop-filter: blur(6px);
+  animation: fade-in var(--aero-duration-med) var(--aero-ease);
+}
+
+.modal {
+  width: min(520px, 100%);
+  padding: var(--aero-space-6);
+  animation: pop-in var(--aero-duration-med) var(--aero-ease);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal__header .panel-title {
+  flex: 1;
+}
+
+.reward-chip {
+  margin-left: var(--aero-space-3);
+  padding: 2px 12px;
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-cyan-100);
+  color: var(--aero-cyan-700);
+  font-size: var(--aero-text-sm);
+  font-weight: 700;
+}
+
+.note-composer__meta {
+  margin-top: var(--aero-space-1);
+  text-align: right;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+/* Decorative motion off; fish still swim (slowly, see screens.css). */
+@media (prefers-reduced-motion: reduce) {
+  .aero-button--hero,
+  .aero-bubble,
+  .toast,
+  .modal,
+  .modal-backdrop {
+    animation: none;
+  }
+}
