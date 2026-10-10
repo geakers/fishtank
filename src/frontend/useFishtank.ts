@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { EMPTY_STATS, FISH, type Fish } from './data';
 
-export const START_POINTS = 100;
+export const START_POINTS = 100_000;
 export const NOTE_REWARD = 25;
 export const BONUS_REWARD = 50;
 export const MIN_NOTE_LENGTH = 20;
@@ -28,6 +28,8 @@ export function useFishtank() {
   const [screen, setScreen] = useState<Screen>('home');
   const [points, setPoints] = useState(START_POINTS);
   const [ownedIds, setOwnedIds] = useState<string[]>([]);
+  // The owned fish currently swimming in the tank.
+  const [tankIds, setTankIds] = useState<string[]>([]);
   const [name, setName] = useState('Aquarist');
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [stats, setStats] = useState(EMPTY_STATS);
@@ -36,6 +38,7 @@ export function useFishtank() {
   const [lockError, setLockError] = useState<string | null>(null);
 
   const owned = FISH.filter((f) => ownedIds.includes(f.id));
+  const tank = owned.filter((f) => tankIds.includes(f.id));
   const avatar = owned.find((f) => f.id === avatarId) ?? null;
   const notify = (tone: Toast['tone'], text: string) => setToast({ tone, text });
   const dismissToast = useCallback(() => setToast(null), []);
@@ -49,7 +52,14 @@ export function useFishtank() {
     if (points < fish.price || ownedIds.includes(fish.id)) return;
     setPoints(points - fish.price);
     setOwnedIds([...ownedIds, fish.id]);
+    setTankIds([...tankIds, fish.id]);
     notify('success', `${fish.name} joined your tank!`);
+  };
+
+  // Puts an owned fish in the tank or takes it out.
+  const setInTank = (fish: Fish, inTank: boolean) => {
+    if (!ownedIds.includes(fish.id)) return;
+    setTankIds((ids) => (inTank ? [...ids.filter((id) => id !== fish.id), fish.id] : ids.filter((id) => id !== fish.id)));
   };
 
   // Returns an error message, or null when the note was accepted.
@@ -72,6 +82,7 @@ export function useFishtank() {
   const resetProgress = () => {
     setPoints(START_POINTS);
     setOwnedIds([]);
+    setTankIds([]);
     setAvatarId(null);
     setStats(EMPTY_STATS);
     notify('info', 'Progress reset. Fresh tank!');
@@ -130,8 +141,8 @@ export function useFishtank() {
   };
 
   return {
-    screen, setScreen, points, owned, name, avatar, stats, toast, dismissToast,
-    buy, shareNote, rename, setAvatarId, resetProgress, grantBonus,
+    screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
+    buy, setInTank, shareNote, rename, setAvatarId, resetProgress, grantBonus,
     session, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
 }

@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { MAX_NAME_LENGTH } from '../../useFishtank';
-import type { Fish } from '../../data';
+import type { Fish, Stats } from '../../data';
 import { AeroButton } from './AeroButton';
 import { FishSprite } from './FishSprite';
 import { GlassPanel } from './GlassPanel';
+import { StatsBoard } from './StatsBoard';
 
 export interface ProfileMenuProps {
   displayName: string;
   avatarFish: Fish | null;
   // Avatar choices.
   ownedFish: Fish[];
+  stats: Stats;
   onRename: (name: string) => boolean;
   onSetAvatar: (fishId: string | null) => void;
   onResetProgress: () => void;
@@ -17,7 +19,7 @@ export interface ProfileMenuProps {
   onGrantBonus?: () => void;
 }
 
-type Panel = 'main' | 'rename' | 'avatar';
+type Panel = 'main' | 'stats' | 'rename' | 'avatar';
 
 // Avatar button in the top-right corner that opens a glass dropdown.
 export function ProfileMenu(props: ProfileMenuProps) {
@@ -70,10 +72,11 @@ export function ProfileMenu(props: ProfileMenuProps) {
       </button>
 
       {open ? (
-        <GlassPanel variant="raised" className="profile-menu__dropdown" role="menu">
+        <GlassPanel variant="raised" className={`profile-menu__dropdown ${panel === 'stats' ? 'is-wide' : ''}`} role="menu">
           {panel === 'main' ? (
             <MainPanel {...props} confirmingReset={confirmingReset} setConfirmingReset={setConfirmingReset} setPanel={setPanel} />
           ) : null}
+          {panel === 'stats' ? <StatsPanel {...props} onDone={() => setPanel('main')} /> : null}
           {panel === 'rename' ? <RenamePanel {...props} onDone={() => setPanel('main')} /> : null}
           {panel === 'avatar' ? <AvatarPanel {...props} onDone={() => setPanel('main')} /> : null}
         </GlassPanel>
@@ -113,6 +116,7 @@ function MainPanel({
         </div>
       </div>
       <div className="profile-menu__items">
+        <MenuItem label="My stats" onClick={() => setPanel('stats')} />
         <MenuItem label="Edit name" onClick={() => setPanel('rename')} />
         <MenuItem label="Choose avatar fish" onClick={() => setPanel('avatar')} />
         <MenuItem label="Settings" hint="Coming soon" disabled />
@@ -140,6 +144,19 @@ function MenuItem(props: { label: string; hint?: string; danger?: boolean; disab
       <span className="menu-item__label">{props.label}</span>
       {props.hint ? <span className="menu-item__hint">{props.hint}</span> : null}
     </button>
+  );
+}
+
+function StatsPanel({ stats, onDone }: ProfileMenuProps & { onDone: () => void }) {
+  return (
+    <div className="profile-menu__form">
+      <StatsBoard stats={stats} />
+      <div className="form-actions">
+        <AeroButton variant="glass" onClick={onDone}>
+          Back
+        </AeroButton>
+      </div>
+    </div>
   );
 }
 

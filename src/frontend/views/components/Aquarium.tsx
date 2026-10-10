@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from 'react';
 import type { Fish } from '../../data';
 import { hash } from '../format';
 import { Bubble } from './Bubble';
@@ -17,6 +17,8 @@ export interface AquariumProps {
 // back and forth inside the glass.
 export function Aquarium({ fish, fishSize = 120, className = '' }: AquariumProps) {
   const swimmers = useMemo(() => layoutSwimmers(fish, fishSize), [fish, fishSize]);
+  const waterRef = useRef<HTMLDivElement>(null);
+  const { puffs, blowBubbles } = useFishBubbles(waterRef);
 
   return (
     <div className={`aquarium ${className}`}>
@@ -24,23 +26,30 @@ export function Aquarium({ fish, fishSize = 120, className = '' }: AquariumProps
         <span className="aquarium__lamp" />
       </div>
       <div className="aquarium__glass">
-        <div className="aquarium__water">
+        <div className="aquarium__water" ref={waterRef}>
           <div className="aquarium__backlight" aria-hidden="true" />
-          <div className="aquarium__rays" aria-hidden="true" />
           <Seagrass />
           <BackScape />
-          <div className="aquarium__caustics" aria-hidden="true" />
+          <div className="aquarium__haze" aria-hidden="true" />
           <Bubbler />
           {swimmers.map((s) => (
-            <div key={s.key} className="swimmer" style={s.style}>
+            <div key={s.key} className="swimmer" style={s.style} onClick={(e) => blowBubbles(e, s.fish)}>
               <div className="swimmer__bob">
                 <FishSprite fish={s.fish} size={s.size} />
               </div>
             </div>
           ))}
+          {puffs.map((p) => (
+            <span key={p.id} className="fish-puff" style={{ left: p.x, top: p.y, ...p.style }} aria-hidden="true" />
+          ))}
           <FrontScape />
           <Anemone />
           <div className="aquarium__particles" aria-hidden="true" />
+          {/* The water itself, in front of everything inside the tank. */}
+          <div className="aquarium__tint" aria-hidden="true" />
+          <div className="aquarium__scatter" aria-hidden="true" />
+          <div className="aquarium__rays" aria-hidden="true" />
+          <div className="aquarium__ceiling" aria-hidden="true" />
         </div>
         <div className="aquarium__surface" aria-hidden="true" />
         <div className="aquarium__shine" aria-hidden="true" />
@@ -62,7 +71,8 @@ interface Swimmer {
 // Gives each fish a lane and speed from fish.speed. Uses a hash of the id so
 // each fish keeps the same lane between renders.
 function layoutSwimmers(fish: Fish[], fishSize: number): Swimmer[] {
-  return fish.map((f) => {
+  // Fish with nothing to draw don't swim at all, so there's nothing to click.
+  return fish.filter((f) => f.look.body !== 'none').map((f) => {
     const h = hash(f.id);
     const size = Math.round(fishSize * f.size);
     const duration = 30 / f.speed;
@@ -80,6 +90,69 @@ function layoutSwimmers(fish: Fish[], fishSize: number): Swimmer[] {
       } as CSSProperties,
     };
   });
+}
+
+// Where bubbles leave the sprite, as fractions of its box when facing right:
+// the corner of the mouth for fish, the top of the bell for jellyfish.
+const MOUTH = { x: 105 / 120, y: 43 / 80 };
+const BELL_TOP = { x: 0.5, y: 0.1 };
+const FACE = { x: 101 / 120, y: 42 / 80 };
+// Time between bubbles in one burst, and how long each one lives.
+const PUFF_GAP_MS = 110;
+const PUFF_MS = 1500;
+
+interface Puff {
+  id: number;
+  // Position in px inside the water.
+  x: number;
+  y: number;
+  style: CSSProperties;
+}
+
+// Clicking a fish makes it blow a little stream of bubbles from its mouth.
+// Each bubble is released from wherever the mouth is at that moment, then
+// left behind in the water as the fish swims on.
+function useFishBubbles(waterRef: RefObject<HTMLDivElement | null>) {
+  const [puffs, setPuffs] = useState<Puff[]>([]);
+  const nextId = useRef(0);
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  const later = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
+
+  const release = (swimmer: HTMLElement, fish: Fish) => {
+    const water = waterRef.current;
+    const sprite = swimmer.querySelector('svg');
+    if (!water || !sprite || !swimmer.isConnected) return;
+    const box = sprite.getBoundingClientRect();
+    const tank = water.getBoundingClientRect();
+    // The swim animation mirrors the fish with scaleX(-1) on the way back.
+    const facingLeft = new DOMMatrix(getComputedStyle(swimmer).transform).a < 0;
+    const at = fish.look.body === 'jelly' ? BELL_TOP : fish.look.body === 'human' ? FACE : MOUTH;
+    const size = 4 + Math.random() * 7 * fish.size;
+    const id = nextId.current++;
+    const puff: Puff = {
+      id,
+      x: box.left - tank.left + box.width * (facingLeft ? 1 - at.x : at.x),
+      y: box.top - tank.top + box.height * at.y,
+      style: {
+        width: size,
+        height: size,
+        '--puff-dx': `${(facingLeft ? -1 : 1) * (2 + Math.random() * 8)}px`,
+        '--puff-rise': `${-(50 + Math.random() * 60)}px`,
+      } as CSSProperties,
+    };
+    setPuffs((list) => [...list, puff]);
+    later(PUFF_MS, () => setPuffs((list) => list.filter((p) => p.id !== id)));
+  };
+
+  const blowBubbles = (e: MouseEvent<HTMLElement>, fish: Fish) => {
+    const swimmer = e.currentTarget;
+    const count = 5 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) later(i * PUFF_GAP_MS, () => release(swimmer, fish));
+  };
+
+  return { puffs, blowBubbles };
 }
 
 // A stream of small bubbles rising from behind the rocks at the back left.

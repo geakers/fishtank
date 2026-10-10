@@ -11,13 +11,14 @@ export interface StoreScreenProps {
   app: App;
 }
 
-type Filter = 'all' | 'available' | 'owned';
+type Filter = 'all' | 'available' | 'owned' | 'tank';
 type Sort = 'price-asc' | 'price-desc' | 'name';
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All fish' },
   { id: 'available', label: 'Not adopted' },
-  { id: 'owned', label: 'In my tank' },
+  { id: 'owned', label: 'Adopted' },
+  { id: 'tank', label: 'In my tank' },
 ];
 
 const SORTERS: Record<Sort, (a: Fish, b: Fish) => number> = {
@@ -33,9 +34,20 @@ export function StoreScreen({ app }: StoreScreenProps) {
   const [sort, setSort] = useState<Sort>('price-asc');
 
   const isOwned = (fish: Fish) => app.owned.includes(fish);
-  const shown = FISH.filter((fish) => (filter === 'all' ? true : filter === 'owned' ? isOwned(fish) : !isOwned(fish))).sort(
-    SORTERS[sort],
-  );
+  const isInTank = (fish: Fish) => app.tank.includes(fish);
+  const matches: Record<Filter, (fish: Fish) => boolean> = {
+    all: () => true,
+    available: (fish) => !isOwned(fish),
+    owned: isOwned,
+    tank: isInTank,
+  };
+  const shown = FISH.filter(matches[filter]).sort(SORTERS[sort]);
+  const emptyText: Record<Filter, string> = {
+    all: '',
+    available: 'You have every fish!',
+    owned: 'No fish adopted yet.',
+    tank: 'Your tank is empty.',
+  };
 
   return (
     <div className="screen store">
@@ -47,7 +59,7 @@ export function StoreScreen({ app }: StoreScreenProps) {
           <div>
             <h1 className="screen-title">Fish Shop</h1>
             <p className="muted">
-              {app.owned.length} of {FISH.length} fish adopted
+              {app.owned.length} of {FISH.length} fish adopted · {app.tank.length} in your tank
             </p>
           </div>
         </div>
@@ -81,10 +93,18 @@ export function StoreScreen({ app }: StoreScreenProps) {
 
       <div className="store__grid">
         {shown.map((fish) => (
-          <StoreCard key={fish.id} fish={fish} owned={isOwned(fish)} balance={app.points} onBuy={() => app.buy(fish)} />
+          <StoreCard
+            key={fish.id}
+            fish={fish}
+            owned={isOwned(fish)}
+            inTank={isInTank(fish)}
+            balance={app.points}
+            onBuy={() => app.buy(fish)}
+            onSetInTank={(inTank) => app.setInTank(fish, inTank)}
+          />
         ))}
         {shown.length === 0 ? (
-          <p className="store__empty muted">{filter === 'owned' ? 'No fish adopted yet.' : 'You have every fish!'}</p>
+          <p className="store__empty muted">{emptyText[filter]}</p>
         ) : null}
       </div>
 
@@ -96,25 +116,32 @@ export function StoreScreen({ app }: StoreScreenProps) {
 interface StoreCardProps {
   fish: Fish;
   owned: boolean;
+  inTank: boolean;
   balance: number;
   onBuy: () => void;
+  onSetInTank: (inTank: boolean) => void;
 }
 
-function StoreCard({ fish, owned, balance, onBuy }: StoreCardProps) {
+function StoreCard({ fish, owned, inTank, balance, onBuy, onSetInTank }: StoreCardProps) {
   return (
-    <article className={`store-card ${owned ? 'is-owned' : ''}`}>
+    <article className={`store-card ${owned ? 'is-owned' : ''} ${owned && !inTank ? 'is-stored' : ''}`}>
       <div className="store-card__tank">
         <FishSprite fish={fish} size={110} className="store-card__sprite" />
       </div>
       <h3 className="store-card__name">{fish.name}</h3>
+      <span className={`store-card__tier store-card__tier--${fish.tier}`}>{fish.tier}</span>
       <div className="store-card__price">
         <span className="points-badge__coin" aria-hidden="true" />
         {formatPoints(fish.price)}
       </div>
       {owned ? (
-        <AeroButton variant="glass" disabled>
-          In your tank
-        </AeroButton>
+        inTank ? (
+          <AeroButton variant="glass" onClick={() => onSetInTank(false)}>
+            Take out of tank
+          </AeroButton>
+        ) : (
+          <AeroButton onClick={() => onSetInTank(true)}>Put in tank</AeroButton>
+        )
       ) : balance < fish.price ? (
         <AeroButton variant="glass" disabled>
           Need {formatPoints(fish.price - balance)} more
@@ -125,3 +152,4 @@ function StoreCard({ fish, owned, balance, onBuy }: StoreCardProps) {
     </article>
   );
 }
+
