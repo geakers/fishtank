@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const { createAccount } = require('../database/accounts');
 const {
+  TEST_POINT_PER_SECOND,
   POINTS_PER_MINUTE,
   getProfile,
   getPoints,
@@ -27,12 +28,17 @@ function lockDown(win, enabled) {
 // those can't be saved.
 async function endSession(win) {
   const locked = lockDown(win, false);
-  const minutes = sessionStartedAt === null ? 0 : Math.floor((Date.now() - sessionStartedAt) / 60000);
+  const seconds = sessionStartedAt === null ? 0 : Math.floor((Date.now() - sessionStartedAt) / 1000);
   sessionStartedAt = null;
 
-  const result = { locked, minutes, pointsEarned: minutes * POINTS_PER_MINUTE, saved: false, error: null };
+  // In test mode every second earns a point, and a part minute counts as a
+  // whole one so the points never outrun what verifyPoints allows.
+  const minutes = TEST_POINT_PER_SECOND ? Math.ceil(seconds / 60) : Math.floor(seconds / 60);
+  const pointsEarned = TEST_POINT_PER_SECOND ? seconds : minutes * POINTS_PER_MINUTE;
+
+  const result = { locked, minutes, pointsEarned, saved: false, error: null };
   const user = currentUser();
-  if (!user || minutes === 0) return result;
+  if (!user || pointsEarned === 0) return result;
 
   try {
     const profile = await getProfile(user.uid);

@@ -3,7 +3,7 @@ import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
 import { GlassPanel } from '../components/GlassPanel';
-import { formatClock, formatDuration } from '../format';
+import { formatClock, formatDuration, formatPoints } from '../format';
 
 export interface LockInScreenProps {
   app: App;
@@ -74,9 +74,19 @@ export function LockInScreen({ app }: LockInScreenProps) {
           <p className="muted">
             of focused study · {app.stats.streakDays}-day streak · {app.stats.sessions} sessions total
           </p>
+          <SessionReward reward={session.reward} loggedIn={app.account !== null} />
           <AeroButton onClick={app.leaveLockIn}>Back home</AeroButton>
         </GlassPanel>
       ) : null}
     </div>
   );
+}
+
+// What the session earned, or why it earned nothing.
+function SessionReward({ reward, loggedIn }: { reward?: FishtankSessionResult; loggedIn: boolean }) {
+  if (!reward) return null;
+  if (reward.error) return <p className="error-text">Your points weren't saved: {reward.error}</p>;
+  if (reward.saved) return <p className="ok-text">+{formatPoints(reward.pointsEarned)} points added to your account</p>;
+  if (!loggedIn) return <p className="muted">Log in to earn points for your study time.</p>;
+  return <p className="muted">This session was too short to earn points.</p>;
 }

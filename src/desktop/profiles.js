@@ -1,7 +1,11 @@
 const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } = require('../db');
 const { getAccessToken } = require('./session');
 
-const POINTS_PER_MINUTE = 1 / 60;
+// TESTING ONLY: while true, a session earns one point per second so points are
+// quick to try out. Set to false for the real rate of 1/60 point per minute.
+const TEST_POINT_PER_SECOND = true;
+
+const POINTS_PER_MINUTE = TEST_POINT_PER_SECOND ? 60 : 1 / 60;
 
 // Slack allowed in verifyPoints for the rounding applied when points are saved.
 const POINTS_TOLERANCE = 0.01;
@@ -87,4 +91,4 @@ async function verifyPoints(uid) {
   };
 }
 
-module.exports = { POINTS_PER_MINUTE, getProfile, getPoints, setPoints, setMinutesStudied, verifyPoints };
+module.exports = { TEST_POINT_PER_SECOND, POINTS_PER_MINUTE, getProfile, getPoints, setPoints, setMinutesStudied, verifyPoints };
