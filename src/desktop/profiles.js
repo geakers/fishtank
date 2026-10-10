@@ -1,19 +1,30 @@
 const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } = require('../db');
 const { getAccessToken } = require('./session');
 
-// Fetches the profiles row for the given uid, limited to the given columns.
-// Returns null if there is no such profile, throwing Supabase's error message
-// if the request fails.
-async function fetchProfile(uid, columns) {
+// TESTING ONLY: while true, a session earns one point per second so points are
+// quick to try out. Set to false for the real rate of 1/60 point per minute.
+const TEST_POINT_PER_SECOND = true;
+
+const POINTS_PER_MINUTE = TEST_POINT_PER_SECOND ? 60 : 1 / 60;
+
+// Slack allowed in verifyPoints for the rounding applied when points are saved.
+const POINTS_TOLERANCE = 0.01;
+
+// Sends a request for the profiles row with the given uid and returns that
+// row, limited to the given columns. Returns null if no row matched, throwing
+// Supabase's error message if the request fails.
+async function requestProfile(uid, columns, options = {}) {
   if (typeof uid !== 'string' || !uid) throw new Error('A uid is required');
 
-  // Reads as the logged-in user when there is one, otherwise anonymously.
+  // Acts as the logged-in user when there is one, otherwise anonymously.
   const token = (await getAccessToken()) ?? NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  const query = new URLSearchParams({ uid: `eq.${uid}`, select: columns, limit: '1' });
+  const query = new URLSearchParams({ uid: `eq.${uid}`, select: columns });
   const res = await fetch(`${NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?${query}`, {
+    ...options,
     headers: {
       apikey: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${token}`,
+      ...options.headers,
     },
   });
 
@@ -25,16 +36,59 @@ async function fetchProfile(uid, columns) {
 }
 
 // Returns the user's full profile row (uid, username, email, created_at,
-// points), or null if no profile exists for that uid.
+// points, minutes_studied), or null if no profile exists for that uid.
 function getProfile(uid) {
-  return fetchProfile(uid, '*');
+  return requestProfile(uid, '*');
 }
 
 // Returns the user's points as a number, or null if no profile exists for
 // that uid.
 async function getPoints(uid) {
-  const profile = await fetchProfile(uid, 'points');
+  const profile = await requestProfile(uid, 'points');
   return profile ? profile.points : null;
 }
 
-module.exports = { getProfile, getPoints };
+// Sets one numeric column on the user's profile and returns the saved value.
+// Throws if no profile was updated, which is what happens when the logged-in
+// user isn't allowed to change that profile.
+async function setProfileNumber(uid, column, value) {
+  if (!Number.isFinite(value)) throw new Error(`${column} must be a number`);
+
+  const profile = await requestProfile(uid, column, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({ [column]: value }),
+  });
+  if (!profile) throw new Error('No profile was updated');
+  return profile[column];
+}
+
+// Sets the user's points to the given number and returns the saved value.
+function setPoints(uid, points) {
+  return setProfileNumber(uid, 'points', points);
+}
+
+// Sets the user's total minutes studied and returns the saved value.
+function setMinutesStudied(uid, minutes) {
+  return setProfileNumber(uid, 'minutes_studied', minutes);
+}
+
+// Checks the user's points against the time they have studied. Points are only
+// earned at POINTS_PER_MINUTE and can only go down from there by being spent,
+// so a valid balance is never more than minutes_studied * POINTS_PER_MINUTE.
+// Returns { valid, points, minutesStudied, maxPoints }, or null if no profile
+// exists for that uid.
+async function verifyPoints(uid) {
+  const profile = await requestProfile(uid, 'points,minutes_studied');
+  if (!profile) return null;
+
+  const maxPoints = profile.minutes_studied * POINTS_PER_MINUTE;
+  return {
+    valid: profile.points <= maxPoints + POINTS_TOLERANCE,
+    points: profile.points,
+    minutesStudied: profile.minutes_studied,
+    maxPoints,
+  };
+}
+
+module.exports = { TEST_POINT_PER_SECOND, POINTS_PER_MINUTE, getProfile, getPoints, setPoints, setMinutesStudied, verifyPoints };

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { EMPTY_STATS, FISH, type Fish } from './data';
 
 export const START_POINTS = 100_000;
@@ -15,22 +15,30 @@ export interface Toast {
 export interface Session {
   startedAt: number;
   endedAt?: number;
+  // What the finished session earned, as reported by the desktop app. Missing
+  // outside Electron.
+  reward?: FishtankSessionResult;
 }
 
-// Asks Electron to lock or unlock the window. Outside Electron it does nothing.
-async function setLockdown(on: boolean) {
-  const bridge = window.fishtank;
-  if (bridge && (await bridge.lockDown(on)) !== on) throw new Error('lockdown failed');
+const GUEST_NAME = 'Aquarist';
+const NO_BRIDGE = 'Accounts need the desktop app.';
+
+// Electron prefixes IPC errors with "Error invoking remote method ...".
+function errorText(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  return message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 }
 
-// All app state and actions in one place. Everything lives in memory.
+// All app state and actions in one place. The logged-in account's name, points
+// and study time come from the desktop app; everything else lives in memory.
 export function useFishtank() {
   const [screen, setScreen] = useState<Screen>('home');
   const [points, setPoints] = useState(START_POINTS);
   const [ownedIds, setOwnedIds] = useState<string[]>([]);
   // The owned fish currently swimming in the tank.
   const [tankIds, setTankIds] = useState<string[]>([]);
-  const [name, setName] = useState('Aquarist');
+  const [name, setName] = useState(GUEST_NAME);
+  const [account, setAccount] = useState<FishtankUser | null>(null);
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [stats, setStats] = useState(EMPTY_STATS);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -93,12 +101,86 @@ export function useFishtank() {
     notify('success', `+${BONUS_REWARD} bonus points`);
   };
 
+  // --- Account ---
+
+  // Shows the given user's saved name, points and study time, or goes back to
+  // a fresh guest when user is null.
+  const showAccount = async (user: FishtankUser | null) => {
+    setAccount(user);
+    if (!user) {
+      setName(GUEST_NAME);
+      setPoints(START_POINTS);
+      setStats(EMPTY_STATS);
+      return;
+    }
+    setName(user.username || user.email);
+
+    const bridge = window.fishtank;
+    if (!bridge) return;
+    try {
+      const profile = await bridge.getProfile(user.uid);
+      if (!profile) return;
+      setName(profile.username || user.email);
+      setPoints(profile.points);
+      setStats((s) => ({ ...s, totalFocusMs: (profile.minutes_studied ?? 0) * 60_000 }));
+    } catch {
+      notify('error', "Couldn't load your saved progress.");
+      return;
+    }
+
+    // A check that can't run is not a failed check, so errors here stay quiet.
+    const check = await bridge.verifyPoints(user.uid).catch(() => null);
+    if (check && !check.valid) notify('error', "Your points don't match your study time.");
+  };
+
+  // Pick up a login kept from a previous run.
+  useEffect(() => {
+    void window.fishtank?.getCurrentUser().then((user) => user && showAccount(user));
+  }, []);
+
+  // Returns an error message, or null when the user is logged in.
+  const logIn = async (email: string, password: string): Promise<string | null> => {
+    const bridge = window.fishtank;
+    if (!bridge) return NO_BRIDGE;
+    try {
+      const user = await bridge.logIn({ email, password });
+      // Before showAccount, so a warning from loading the account isn't replaced.
+      notify('success', `Welcome back, ${user.username || user.email}!`);
+      await showAccount(user);
+      return null;
+    } catch (err) {
+      return errorText(err);
+    }
+  };
+
+  // Returns an error message, or null when the account was created.
+  const createAccount = async (username: string, email: string, password: string): Promise<string | null> => {
+    const bridge = window.fishtank;
+    if (!bridge) return NO_BRIDGE;
+    if (!username.trim()) return 'Choose a username.';
+    try {
+      const { needsConfirmation } = await bridge.createAccount({ username: username.trim(), email, password });
+      notify('success', needsConfirmation ? 'Account created. Confirm your email, then log in.' : 'Account created. You can log in now.');
+      return null;
+    } catch (err) {
+      return errorText(err);
+    }
+  };
+
+  const logOut = async () => {
+    await window.fishtank?.logOut();
+    await showAccount(null);
+    notify('info', 'Logged out.');
+  };
+
   // --- Lock-in ---
 
   const startLock = async () => {
     setLockError(null);
     try {
-      await setLockdown(true);
+      // Outside Electron there is nothing to lock.
+      const bridge = window.fishtank;
+      if (bridge && !(await bridge.lockDown(true))) throw new Error('lockdown failed');
       setSession({ startedAt: Date.now() });
     } catch {
       setLockError("Couldn't enter focus mode. Please try again.");
@@ -111,8 +193,11 @@ export function useFishtank() {
   };
 
   const endLock = async () => {
+    let reward: FishtankSessionResult | undefined;
     try {
-      await setLockdown(false);
+      // The desktop app unlocks the window and saves the points and minutes.
+      reward = await window.fishtank?.endSession();
+      if (reward?.locked) throw new Error('lockdown failed');
     } catch {
       setLockError("Couldn't leave focus mode. Try again in a moment.");
       return;
@@ -130,8 +215,9 @@ export function useFishtank() {
       streakDays: s.lastFocusDay === today ? s.streakDays : s.lastFocusDay === yesterday ? s.streakDays + 1 : 1,
       lastFocusDay: today,
     }));
+    if (reward?.saved) earn(reward.pointsEarned);
     setLockError(null);
-    setSession({ ...session, endedAt });
+    setSession({ ...session, endedAt, reward });
   };
 
   const leaveLockIn = () => {
@@ -142,6 +228,7 @@ export function useFishtank() {
 
   return {
     screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
+    account, logIn, createAccount, logOut,
     buy, setInTank, shareNote, rename, setAvatarId, resetProgress, grantBonus,
     session, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };

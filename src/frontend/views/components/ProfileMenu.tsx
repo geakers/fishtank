@@ -12,6 +12,12 @@ export interface ProfileMenuProps {
   // Avatar choices.
   ownedFish: Fish[];
   stats: Stats;
+  // The logged-in user, or null for a guest.
+  account: FishtankUser | null;
+  // Both resolve with an error message, or null on success.
+  onLogIn: (email: string, password: string) => Promise<string | null>;
+  onCreateAccount: (username: string, email: string, password: string) => Promise<string | null>;
+  onLogOut: () => void;
   onRename: (name: string) => boolean;
   onSetAvatar: (fishId: string | null) => void;
   onResetProgress: () => void;
@@ -19,7 +25,7 @@ export interface ProfileMenuProps {
   onGrantBonus?: () => void;
 }
 
-type Panel = 'main' | 'stats' | 'rename' | 'avatar';
+type Panel = 'main' | 'stats' | 'rename' | 'avatar' | 'login' | 'signup';
 
 // Avatar button in the top-right corner that opens a glass dropdown.
 export function ProfileMenu(props: ProfileMenuProps) {
@@ -79,6 +85,8 @@ export function ProfileMenu(props: ProfileMenuProps) {
           {panel === 'stats' ? <StatsPanel {...props} onDone={() => setPanel('main')} /> : null}
           {panel === 'rename' ? <RenamePanel {...props} onDone={() => setPanel('main')} /> : null}
           {panel === 'avatar' ? <AvatarPanel {...props} onDone={() => setPanel('main')} /> : null}
+          {panel === 'login' ? <LoginPanel {...props} onDone={() => setPanel('main')} /> : null}
+          {panel === 'signup' ? <SignupPanel {...props} onCreated={() => setPanel('login')} onDone={() => setPanel('main')} /> : null}
         </GlassPanel>
       ) : null}
     </div>
@@ -96,6 +104,8 @@ function Avatar({ fish, name, size }: { fish: Fish | null; name: string; size: n
 function MainPanel({
   displayName,
   avatarFish,
+  account,
+  onLogOut,
   onResetProgress,
   onGrantBonus,
   confirmingReset,
@@ -112,7 +122,7 @@ function MainPanel({
         <Avatar fish={avatarFish} name={displayName} size={52} />
         <div>
           <div className="profile-menu__header-name">{displayName}</div>
-          <div className="muted">Aquarist</div>
+          <div className="muted">{account ? account.email : 'Guest'}</div>
         </div>
       </div>
       <div className="profile-menu__items">
@@ -122,6 +132,14 @@ function MainPanel({
         <MenuItem label="Settings" hint="Coming soon" disabled />
         {onGrantBonus ? <MenuItem label="Add bonus points (dev)" onClick={onGrantBonus} /> : null}
         <div className="profile-menu__divider" />
+        {account ? (
+          <MenuItem label="Log out" onClick={onLogOut} />
+        ) : (
+          <>
+            <MenuItem label="Log in" onClick={() => setPanel('login')} />
+            <MenuItem label="Create account" onClick={() => setPanel('signup')} />
+          </>
+        )}
         <MenuItem
           label={confirmingReset ? 'Click again to confirm' : 'Reset progress'}
           danger
@@ -187,6 +205,87 @@ function RenamePanel({ displayName, onRename, onDone }: ProfileMenuProps & { onD
         </AeroButton>
         <AeroButton type="submit">
           Save
+        </AeroButton>
+      </div>
+    </form>
+  );
+}
+
+function LoginPanel({ onLogIn, onDone }: ProfileMenuProps & { onDone: () => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    const problem = await onLogIn(email, password);
+    setBusy(false);
+    if (problem) setError(problem);
+    else onDone();
+  };
+
+  return (
+    <form className="profile-menu__form" onSubmit={(event) => void submit(event)}>
+      <label className="field-label" htmlFor="login-email">
+        Email
+      </label>
+      <input id="login-email" className="aero-input" type="email" required autoFocus value={email} onChange={(event) => setEmail(event.target.value)} />
+      <label className="field-label" htmlFor="login-password">
+        Password
+      </label>
+      <input id="login-password" className="aero-input" type="password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+      {error ? <p className="error-text">{error}</p> : null}
+      <div className="form-actions">
+        <AeroButton variant="glass" onClick={onDone}>
+          Cancel
+        </AeroButton>
+        <AeroButton type="submit" disabled={busy}>
+          Log in
+        </AeroButton>
+      </div>
+    </form>
+  );
+}
+
+function SignupPanel({ onCreateAccount, onCreated, onDone }: ProfileMenuProps & { onCreated: () => void; onDone: () => void }) {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    const problem = await onCreateAccount(username, email, password);
+    setBusy(false);
+    if (problem) setError(problem);
+    else onCreated();
+  };
+
+  return (
+    <form className="profile-menu__form" onSubmit={(event) => void submit(event)}>
+      <label className="field-label" htmlFor="signup-username">
+        Username
+      </label>
+      <input id="signup-username" className="aero-input" required autoFocus maxLength={MAX_NAME_LENGTH} value={username} onChange={(event) => setUsername(event.target.value)} />
+      <label className="field-label" htmlFor="signup-email">
+        Email
+      </label>
+      <input id="signup-email" className="aero-input" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
+      <label className="field-label" htmlFor="signup-password">
+        Password
+      </label>
+      <input id="signup-password" className="aero-input" type="password" required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} />
+      {error ? <p className="error-text">{error}</p> : null}
+      <div className="form-actions">
+        <AeroButton variant="glass" onClick={onDone}>
+          Cancel
+        </AeroButton>
+        <AeroButton type="submit" disabled={busy}>
+          Create account
         </AeroButton>
       </div>
     </form>

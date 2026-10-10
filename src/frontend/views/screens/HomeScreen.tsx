@@ -29,6 +29,10 @@ export function HomeScreen({ app }: HomeScreenProps) {
             avatarFish={app.avatar}
             ownedFish={app.owned}
             stats={app.stats}
+            account={app.account}
+            onLogIn={app.logIn}
+            onCreateAccount={app.createAccount}
+            onLogOut={() => void app.logOut()}
             onRename={app.rename}
             onSetAvatar={app.setAvatarId}
             onResetProgress={app.resetProgress}
