@@ -2,13 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fishtank</title>
-    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <button id="toggle" type="button">Start</button>
-    <script src="renderer.js"></script>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
   </body>
 </html>

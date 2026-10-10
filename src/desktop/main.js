@@ -8,17 +8,27 @@ function lockDown(win, enabled) {
   return win.isKiosk();
 }
 
+// Set by `npm run dev` (scripts/dev.mjs) to load the Vite dev server with hot
+// reload. Otherwise the built frontend in dist/frontend is loaded.
+const devServerUrl = process.env.FISHTANK_DEV_SERVER_URL;
+
 function createWindow() {
   const win = new BrowserWindow({
-    width: 900,
-    height: 600,
-    backgroundColor: '#1565c0',
+    width: 1200,
+    height: 800,
+    minWidth: 760,
+    minHeight: 560,
+    backgroundColor: '#6fcdf7',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
 
-  win.loadFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+  if (devServerUrl) {
+    win.loadURL(devServerUrl);
+  } else {
+    win.loadFile(path.join(__dirname, '..', '..', 'dist', 'frontend', 'index.html'));
+  }
 }
 
 app.whenReady().then(() => {

@@ -1,0 +1,75 @@
+/* Frutiger Aero design tokens. Components should only use these variables,
+   never raw colors, so the whole look can be tuned from this file. */
+:root {
+  /* Palette: sky and water */
+  --aero-sky-50: #f0fbff;
+  --aero-sky-100: #d6f3ff;
+  --aero-sky-300: #8fdcff;
+  --aero-sky-500: #3fb8f5;
+  --aero-sky-700: #1677c9;
+  --aero-water-300: #7fe3d8;
+  --aero-water-500: #23b5c9;
+  --aero-water-700: #0b6f8f;
+  --aero-water-900: #06364f;
+  --aero-grass-400: #8bdc4a;
+  --aero-grass-600: #4aa52a;
+  --aero-white: #ffffff;
+  --aero-ink: #0d2a3f;
+  --aero-ink-muted: #3d6079;
+  --aero-danger: #e2484d;
+  --aero-gold: #ffc93c;
+
+  /* Rarity accents */
+  --aero-rarity-common: #9fd8ef;
+  --aero-rarity-uncommon: #6fd66f;
+  --aero-rarity-rare: #6c8cff;
+  --aero-rarity-legendary: #ffb627;
+
+  /* Gradients */
+  --aero-gradient-sky: linear-gradient(180deg, #bdeeff 0%, #6fcdf7 45%, #1f9ad6 100%);
+  --aero-gradient-water: linear-gradient(180deg, #43c6db 0%, #0f86b0 55%, #06364f 100%);
+  --aero-gradient-button: linear-gradient(180deg, #a9eaff 0%, #3fb8f5 50%, #1a8fd6 51%, #47c3ff 100%);
+  --aero-gradient-button-green: linear-gradient(180deg, #d4ffa8 0%, #8bdc4a 50%, #5bbf2b 51%, #9ae85a 100%);
+  --aero-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.15) 100%);
+  --aero-bubble: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.25) 35%, rgba(160, 230, 255, 0.15) 70%, rgba(255, 255, 255, 0.6) 100%);
+
+  /* Glass */
+  --aero-glass-bg: rgba(255, 255, 255, 0.28);
+  --aero-glass-bg-strong: rgba(255, 255, 255, 0.45);
+  --aero-glass-border: rgba(255, 255, 255, 0.65);
+  --aero-glass-blur: 14px;
+  --aero-glass-blur-strong: 24px;
+
+  /* Shape */
+  --aero-radius-sm: 8px;
+  --aero-radius-md: 14px;
+  --aero-radius-lg: 22px;
+  --aero-radius-pill: 999px;
+
+  /* Shadows */
+  --aero-shadow-soft: 0 4px 16px rgba(6, 54, 79, 0.18);
+  --aero-shadow-raised: 0 10px 32px rgba(6, 54, 79, 0.28);
+  --aero-shadow-inset-gloss: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --aero-glow: 0 0 18px rgba(127, 227, 255, 0.75);
+
+  /* Spacing */
+  --aero-space-1: 4px;
+  --aero-space-2: 8px;
+  --aero-space-3: 12px;
+  --aero-space-4: 16px;
+  --aero-space-6: 24px;
+  --aero-space-8: 32px;
+
+  /* Type */
+  --aero-font: 'Segoe UI', 'Frutiger', 'Myriad Pro', system-ui, sans-serif;
+  --aero-text-sm: 13px;
+  --aero-text-md: 16px;
+  --aero-text-lg: 22px;
+  --aero-text-xl: 34px;
+  --aero-text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
+
+  /* Motion */
+  --aero-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --aero-duration-fast: 150ms;
+  --aero-duration-med: 300ms;
+}
