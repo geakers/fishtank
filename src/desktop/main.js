@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const { createAccount } = require('../database/accounts');
 const { getProfile, getPoints } = require('./profiles');
+const { createClass, listClasses, addStudent, classRoster, searchUsernames } = require('./classes');
 const { restoreSession, startSession, endSession, currentUser, getAccessToken } = require('./session');
 
 // Puts the given window into kiosk mode (enabled = true) or takes it back out
@@ -41,6 +42,11 @@ app.whenReady().then(() => {
     await getAccessToken().catch(() => {});
     return currentUser();
   });
+  ipcMain.handle('create-class', (event, className) => createClass(className));
+  ipcMain.handle('list-classes', () => listClasses());
+  ipcMain.handle('add-student', (event, classId, username) => addStudent(classId, username));
+  ipcMain.handle('class-roster', (event, classId) => classRoster(classId));
+  ipcMain.handle('search-usernames', (event, query) => searchUsernames(query));
 
   restoreSession();
 

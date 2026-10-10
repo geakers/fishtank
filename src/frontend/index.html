@@ -12,6 +12,37 @@
 
     <p id="session-status" hidden></p>
     <button id="logout" type="button" hidden>Log out</button>
+    <button id="classes-button" type="button" hidden>Classes</button>
+
+    <div id="classes" hidden>
+      <form id="class-form">
+        <label>
+          New class name
+          <input name="className" type="text" required />
+        </label>
+        <button type="submit">Create class</button>
+        <p id="class-status"></p>
+      </form>
+
+      <form id="student-form" hidden>
+        <label>
+          Class
+          <select name="classId"></select>
+        </label>
+        <div class="list">
+          People in this class
+          <ul id="roster"></ul>
+        </div>
+        <div id="add-student">
+          <label>
+            Add a student by username
+            <input name="search" type="search" autocomplete="off" placeholder="Search usernames" />
+          </label>
+          <ul id="search-results"></ul>
+        </div>
+        <p id="student-status"></p>
+      </form>
+    </div>
 
     <div id="forms">
       <form id="profile-form">

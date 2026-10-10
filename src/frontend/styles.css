@@ -9,7 +9,10 @@ body {
   flex-direction: column;
   gap: 24px;
   align-items: center;
-  justify-content: center;
+  /* "safe" keeps the top reachable when the classes panel is taller than the window. */
+  justify-content: safe center;
+  box-sizing: border-box;
+  padding: 24px 0;
   background: #1565c0;
   font-family: system-ui, sans-serif;
 }
@@ -41,7 +44,8 @@ form {
   background: #fff;
 }
 
-form label {
+form label,
+form .list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -49,7 +53,8 @@ form label {
   color: #333;
 }
 
-form input {
+form input,
+form select {
   padding: 8px;
   font-size: 14px;
 }
@@ -75,14 +80,17 @@ form button:disabled {
 }
 
 #profile-status,
-#login-status {
+#login-status,
+#class-status,
+#student-status {
   min-height: 1em;
   margin: 0;
   font-size: 14px;
   color: #333;
 }
 
-#forms {
+#forms,
+#classes {
   display: flex;
   gap: 24px;
   align-items: flex-start;
@@ -94,7 +102,8 @@ form button:disabled {
   color: #fff;
 }
 
-#logout {
+#logout,
+#classes-button {
   padding: 8px 16px;
   border: 1px solid #fff;
   border-radius: 6px;
@@ -102,6 +111,33 @@ form button:disabled {
   color: #fff;
   font-size: 14px;
   cursor: pointer;
+}
+
+#add-student {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#roster,
+#search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+#search-results button {
+  width: 100%;
+  padding: 6px 8px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 14px;
+  text-align: left;
 }
 
 /* The flex rules above would otherwise override the hidden attribute. */
