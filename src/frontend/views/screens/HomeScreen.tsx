@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
-import { BubbleField } from '../components/Bubble';
-import { FishSidebar } from '../components/FishSidebar';
+import { Aquarium } from '../components/Aquarium';
 import { NoteComposer } from '../components/NoteComposer';
 import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
@@ -13,27 +12,20 @@ export interface HomeScreenProps {
   app: App;
 }
 
-// Layout:
-//   top bar  - brand on the left; add note, points, store, profile menu on the right
-//   left     - FishSidebar
-//   center   - StatsBoard with the big lock-in button under it
+// Layout, after the Wii menu:
+//   top bar - brand on the left; points and profile menu on the right
+//   main    - the user's tank on the left; stats and the lock-in button on the right
+//   dock    - round "Share a note" and "Fish Shop" buttons with a clock between them
 export function HomeScreen({ app }: HomeScreenProps) {
   const [composerOpen, setComposerOpen] = useState(false);
+  const openShop = () => app.setScreen('store');
 
   return (
     <div className="screen home">
-      <BubbleField count={16} seed="home" />
-
       <header className="topbar">
         <Brand />
         <div className="topbar__actions">
-          <AeroButton variant="glass" onClick={() => setComposerOpen(true)}>
-            ✎ Share a note
-          </AeroButton>
           <PointsBadge balance={app.points} />
-          <AeroButton variant="secondary" onClick={() => app.setScreen('store')}>
-            🛒 Store
-          </AeroButton>
           <ProfileMenu
             displayName={app.name}
             avatarFish={app.avatar}
@@ -46,19 +38,38 @@ export function HomeScreen({ app }: HomeScreenProps) {
         </div>
       </header>
 
-      <aside className="home__sidebar">
-        <FishSidebar ownedFish={app.owned} onOpenStore={() => app.setScreen('store')} />
-      </aside>
+      <main className="home__main">
+        <section className="home__tank-panel" aria-label="Your aquarium">
+          <Aquarium fish={app.owned} fishSize={96} className="home__tank" />
+          {app.owned.length === 0 ? (
+            <div className="home__tank-empty">
+              <p>Your tank is empty.</p>
+              <p className="muted">Earn points by sharing notes, then adopt your first fish.</p>
+              <AeroButton onClick={openShop}>Visit the Fish Shop</AeroButton>
+            </div>
+          ) : null}
+        </section>
 
-      <main className="home__center">
-        <StatsBoard stats={app.stats} fishOwned={app.owned.length} />
-        <div className="home__lockin">
-          <AeroButton variant="hero" onClick={() => app.enterLockIn()}>
-            Lock In
-          </AeroButton>
-          <p className="home__lockin-hint">Enter focus mode with your aquarium</p>
-        </div>
+        <aside className="home__side">
+          <StatsBoard stats={app.stats} fishOwned={app.owned.length} />
+          <div className="home__lockin">
+            <AeroButton variant="hero" onClick={() => app.enterLockIn()}>
+              Lock In
+            </AeroButton>
+            <p className="home__lockin-hint">Enter focus mode with your aquarium</p>
+          </div>
+        </aside>
       </main>
+
+      <footer className="dock">
+        <button type="button" className="dock__pod dock__pod--left" onClick={() => setComposerOpen(true)}>
+          Share a note
+        </button>
+        <DockClock />
+        <button type="button" className="dock__pod dock__pod--right" onClick={openShop}>
+          Fish Shop
+        </button>
+      </footer>
 
       {composerOpen ? <NoteComposer onSubmit={app.shareNote} onCancel={() => setComposerOpen(false)} /> : null}
 
@@ -72,6 +83,21 @@ function Brand() {
     <div className="brand">
       <span className="brand__orb" aria-hidden="true" />
       <span className="brand__name">Fishtank</span>
+    </div>
+  );
+}
+
+// Big grey time and date in the middle of the dock, like the Wii menu.
+function DockClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 10_000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div className="dock__clock">
+      <span className="dock__time">{now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+      <span className="dock__date">{now.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' })}</span>
     </div>
   );
 }

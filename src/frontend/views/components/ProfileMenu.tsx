@@ -113,13 +113,12 @@ function MainPanel({
         </div>
       </div>
       <div className="profile-menu__items">
-        <MenuItem icon="✎" label="Edit name" onClick={() => setPanel('rename')} />
-        <MenuItem icon="🐠" label="Choose avatar fish" onClick={() => setPanel('avatar')} />
-        <MenuItem icon="⚙" label="Settings" hint="Coming soon" disabled />
-        {onGrantBonus ? <MenuItem icon="★" label="Add bonus points (dev)" onClick={onGrantBonus} /> : null}
+        <MenuItem label="Edit name" onClick={() => setPanel('rename')} />
+        <MenuItem label="Choose avatar fish" onClick={() => setPanel('avatar')} />
+        <MenuItem label="Settings" hint="Coming soon" disabled />
+        {onGrantBonus ? <MenuItem label="Add bonus points (dev)" onClick={onGrantBonus} /> : null}
         <div className="profile-menu__divider" />
         <MenuItem
-          icon="↺"
           label={confirmingReset ? 'Click again to confirm' : 'Reset progress'}
           danger
           onClick={() => (confirmingReset ? onResetProgress() : setConfirmingReset(true))}
@@ -129,7 +128,7 @@ function MainPanel({
   );
 }
 
-function MenuItem(props: { icon: string; label: string; hint?: string; danger?: boolean; disabled?: boolean; onClick?: () => void }) {
+function MenuItem(props: { label: string; hint?: string; danger?: boolean; disabled?: boolean; onClick?: () => void }) {
   return (
     <button
       type="button"
@@ -138,9 +137,6 @@ function MenuItem(props: { icon: string; label: string; hint?: string; danger?: 
       onClick={props.onClick}
       disabled={props.disabled}
     >
-      <span className="menu-item__icon" aria-hidden="true">
-        {props.icon}
-      </span>
       <span className="menu-item__label">{props.label}</span>
       {props.hint ? <span className="menu-item__hint">{props.hint}</span> : null}
     </button>

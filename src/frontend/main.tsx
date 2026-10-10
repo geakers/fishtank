@@ -1,3 +1,4 @@
+import './theme/fonts.css';
 import { createRoot } from 'react-dom/client';
 import './theme/aero.css';
 import './theme/screens.css';

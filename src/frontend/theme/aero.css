@@ -18,7 +18,7 @@ body,
 
 body {
   overflow: hidden;
-  background: var(--aero-gradient-sky);
+  background: var(--aero-gradient-backdrop);
   color: var(--aero-ink);
   font-family: var(--aero-font);
   font-size: var(--aero-text-md);
@@ -26,8 +26,13 @@ body {
   user-select: none;
 }
 
+::selection {
+  background: var(--aero-cyan-300);
+}
+
 button,
 input,
+select,
 textarea {
   font: inherit;
   color: inherit;
@@ -61,61 +66,31 @@ p {
   display: flex;
   align-items: center;
   gap: var(--aero-space-2);
+  padding-bottom: var(--aero-space-2);
+  border-bottom: 2px solid var(--aero-line-soft);
   font-size: var(--aero-text-md);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--aero-water-900);
-  text-shadow: var(--aero-text-shadow);
-}
-
-.panel-title__count {
-  min-width: 24px;
-  padding: 1px 8px;
-  border-radius: var(--aero-radius-pill);
-  background: var(--aero-gradient-button);
-  color: var(--aero-white);
-  font-size: var(--aero-text-sm);
-  text-align: center;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+  color: var(--aero-ink);
 }
 
 .screen-title {
   font-size: var(--aero-text-lg);
-  font-weight: 700;
-  color: var(--aero-water-900);
-  text-shadow: var(--aero-text-shadow);
+  font-weight: 600;
+  color: var(--aero-ink);
 }
 
-/* ---------- GlassPanel ---------- */
+/* ---------- GlassPanel (a white Wii tile) ---------- */
 
 .aero-glass {
   position: relative;
-  overflow: hidden;
-  border: 1px solid var(--aero-glass-border);
+  border: 2px solid var(--aero-line-soft);
   border-radius: var(--aero-radius-lg);
-  background: var(--aero-glass-bg);
-  backdrop-filter: blur(var(--aero-glass-blur)) saturate(1.4);
+  background: var(--aero-gradient-tile);
   box-shadow: var(--aero-shadow-soft), var(--aero-shadow-inset-gloss);
   padding: var(--aero-space-4);
 }
 
-/* Glossy reflection over the top half. */
-.aero-glass::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 55% 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 100%);
-  pointer-events: none;
-}
-
-.aero-glass > * {
-  position: relative;
-}
-
 .aero-glass--raised {
-  background: var(--aero-glass-bg-strong);
-  backdrop-filter: blur(var(--aero-glass-blur-strong)) saturate(1.5);
   box-shadow: var(--aero-shadow-raised), var(--aero-shadow-inset-gloss);
 }
 
@@ -126,35 +101,35 @@ p {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
-  padding: 0 var(--aero-space-4);
+  min-height: 40px;
+  padding: 0 var(--aero-space-6);
   overflow: hidden;
-  border: 1px solid rgba(9, 94, 150, 0.55);
+  border: 2px solid var(--aero-cyan-700);
   border-radius: var(--aero-radius-pill);
-  background: var(--aero-gradient-button);
+  background: var(--aero-gradient-button-cyan);
   color: var(--aero-white);
   font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 50, 90, 0.45);
+  text-shadow: 0 1px 1px rgba(0, 80, 120, 0.35);
   box-shadow: var(--aero-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   cursor: pointer;
   white-space: nowrap;
   transition:
     transform var(--aero-duration-fast) var(--aero-ease),
     box-shadow var(--aero-duration-fast) var(--aero-ease),
-    filter var(--aero-duration-fast);
+    border-color var(--aero-duration-fast);
 }
 
-/* Gel highlight. */
+/* Gloss highlight on the top half. */
 .aero-button::before {
   content: '';
   position: absolute;
-  top: 1px;
-  left: 6%;
-  right: 6%;
-  height: 48%;
-  border-radius: var(--aero-radius-pill) var(--aero-radius-pill) 40% 40%;
+  top: 2px;
+  left: 8%;
+  right: 8%;
+  height: 45%;
+  border-radius: var(--aero-radius-pill);
   background: var(--aero-gloss);
-  opacity: 0.75;
+  opacity: 0.6;
   pointer-events: none;
 }
 
@@ -166,63 +141,67 @@ p {
 }
 
 .aero-button:hover:not(:disabled) {
-  filter: brightness(1.08) saturate(1.1);
-  box-shadow: var(--aero-shadow-raised), var(--aero-glow);
+  box-shadow: var(--aero-shadow-soft), var(--aero-glow);
 }
 
 .aero-button:active:not(:disabled) {
-  transform: translateY(1px) scale(0.98);
+  transform: scale(0.97);
 }
 
 .aero-button:focus-visible {
-  outline: 3px solid var(--aero-sky-300);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--aero-glow);
 }
 
 .aero-button:disabled {
   cursor: default;
-  filter: grayscale(0.4);
-  opacity: 0.7;
+  opacity: 0.6;
+}
+
+/* White Wii pill; 'secondary' adds cyan text. */
+.aero-button--glass,
+.aero-button--secondary {
+  border-color: var(--aero-line);
+  background: var(--aero-gradient-button);
+  color: var(--aero-ink);
+  text-shadow: none;
 }
 
 .aero-button--secondary {
-  border-color: rgba(60, 140, 40, 0.55);
-  background: var(--aero-gradient-button-green);
-  text-shadow: 0 1px 2px rgba(30, 80, 10, 0.45);
+  color: var(--aero-cyan-700);
 }
 
-.aero-button--glass {
-  border-color: var(--aero-glass-border);
-  background: var(--aero-glass-bg-strong);
-  backdrop-filter: blur(var(--aero-glass-blur));
-  color: var(--aero-water-900);
-  text-shadow: var(--aero-text-shadow);
+.aero-button--glass:hover:not(:disabled),
+.aero-button--secondary:hover:not(:disabled) {
+  border-color: var(--aero-cyan-500);
 }
 
+/* The big "Start"-style lock-in button. */
 .aero-button--hero {
-  min-width: 280px;
-  min-height: 84px;
+  min-width: 260px;
+  min-height: 80px;
   padding: 0 var(--aero-space-8);
-  border: 2px solid rgba(60, 140, 40, 0.6);
-  background: var(--aero-gradient-button-green);
+  border: 3px solid var(--aero-cyan-500);
+  background: var(--aero-gradient-button);
+  color: var(--aero-cyan-700);
   font-size: var(--aero-text-xl);
   letter-spacing: 0.04em;
-  text-shadow: 0 2px 3px rgba(30, 80, 10, 0.5);
-  box-shadow: var(--aero-shadow-raised), 0 0 0 6px rgba(255, 255, 255, 0.35), 0 0 36px rgba(139, 220, 74, 0.6);
-  animation: hero-pulse 3s ease-in-out infinite;
+  text-shadow: none;
+  box-shadow: var(--aero-shadow-raised), 0 0 0 6px rgba(52, 190, 237, 0.15);
+  animation: hero-pulse 2.4s ease-in-out infinite;
 }
 
 .aero-button--hero:hover:not(:disabled) {
-  box-shadow: var(--aero-shadow-raised), 0 0 0 8px rgba(255, 255, 255, 0.45), 0 0 52px rgba(139, 220, 74, 0.85);
+  box-shadow: var(--aero-shadow-raised), 0 0 0 8px rgba(52, 190, 237, 0.3), 0 0 32px rgba(52, 190, 237, 0.5);
 }
 
 @keyframes hero-pulse {
   0%,
   100% {
-    transform: scale(1);
+    box-shadow: var(--aero-shadow-raised), 0 0 0 4px rgba(52, 190, 237, 0.12);
   }
   50% {
-    transform: scale(1.03);
+    box-shadow: var(--aero-shadow-raised), 0 0 0 10px rgba(52, 190, 237, 0.22);
   }
 }
 
@@ -233,23 +212,28 @@ p {
   margin: var(--aero-space-3) 0 var(--aero-space-1);
   font-size: var(--aero-text-sm);
   font-weight: 600;
-  color: var(--aero-water-900);
+  color: var(--aero-ink-muted);
 }
 
-.aero-input {
+.aero-input,
+.aero-select {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid var(--aero-glass-border);
-  border-radius: var(--aero-radius-md);
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: inset 0 2px 6px rgba(6, 54, 79, 0.15);
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-white);
+  box-shadow: inset 0 2px 3px rgba(40, 60, 80, 0.08);
   outline: none;
   user-select: text;
-  transition: box-shadow var(--aero-duration-fast);
+  transition:
+    border-color var(--aero-duration-fast),
+    box-shadow var(--aero-duration-fast);
 }
 
-.aero-input:focus {
-  box-shadow: inset 0 2px 6px rgba(6, 54, 79, 0.15), 0 0 0 3px var(--aero-sky-300);
+.aero-input:focus,
+.aero-select:focus {
+  border-color: var(--aero-cyan-500);
+  box-shadow: inset 0 2px 3px rgba(40, 60, 80, 0.08), 0 0 0 3px rgba(52, 190, 237, 0.25);
 }
 
 .aero-input--multiline {
@@ -258,11 +242,51 @@ p {
   line-height: 1.45;
 }
 
+.aero-select {
+  width: auto;
+  padding: 6px 12px;
+  border-radius: var(--aero-radius-pill);
+  cursor: pointer;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--aero-space-2);
   margin-top: var(--aero-space-4);
+}
+
+/* ---------- Segmented control ---------- */
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-surface-sunk);
+}
+
+.segmented__option {
+  padding: 6px 16px;
+  border: none;
+  border-radius: var(--aero-radius-pill);
+  background: transparent;
+  color: var(--aero-ink-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--aero-duration-fast),
+    color var(--aero-duration-fast);
+}
+
+.segmented__option:hover {
+  color: var(--aero-ink);
+}
+
+.segmented__option.is-active {
+  background: var(--aero-white);
+  color: var(--aero-cyan-700);
+  box-shadow: var(--aero-shadow-soft);
 }
 
 /* ---------- Bubble ---------- */
@@ -298,17 +322,17 @@ p {
     opacity: 0.8;
   }
   100% {
-    translate: 0 -115vh;
+    translate: 0 var(--rise-distance, -115vh);
     opacity: 0;
   }
 }
 
 @keyframes bubble-wobble {
   from {
-    margin-left: -6px;
+    margin-left: -4px;
   }
   to {
-    margin-left: 6px;
+    margin-left: 4px;
   }
 }
 
@@ -317,7 +341,65 @@ p {
 .fish-sprite {
   display: block;
   overflow: visible;
-  filter: drop-shadow(0 4px 6px rgba(6, 54, 79, 0.25));
+  filter: drop-shadow(0 4px 5px rgba(10, 60, 100, 0.25));
+}
+
+/* Swimming motion: the tail beats side to side (seen side-on, it narrows and
+   widens), the pectoral fin sculls, and a jellyfish's bell pulses. */
+.fish-sprite__tail,
+.fish-sprite__pectoral {
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+.fish-sprite__tail {
+  animation: fish-tail-beat 0.7s ease-in-out infinite alternate;
+}
+
+.fish-sprite__pectoral {
+  animation: fish-fin-scull 0.9s ease-in-out infinite alternate;
+}
+
+.fish-sprite__bell {
+  transform-box: fill-box;
+  transform-origin: center top;
+  animation: jelly-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes fish-tail-beat {
+  from {
+    transform: scaleX(1) skewY(-4deg);
+  }
+  to {
+    transform: scaleX(0.78) skewY(4deg);
+  }
+}
+
+@keyframes fish-fin-scull {
+  from {
+    transform: rotate(-10deg);
+  }
+  to {
+    transform: rotate(14deg);
+  }
+}
+
+@keyframes jelly-pulse {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  40% {
+    transform: scale(1.06, 0.88);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fish-sprite__tail,
+  .fish-sprite__pectoral,
+  .fish-sprite__bell {
+    animation: none;
+  }
 }
 
 /* ---------- Points badge ---------- */
@@ -326,32 +408,30 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 38px;
-  padding: 0 14px 0 6px;
-  border: 1px solid var(--aero-glass-border);
+  height: 40px;
+  padding: 0 16px 0 7px;
+  border: 2px solid var(--aero-line);
   border-radius: var(--aero-radius-pill);
-  background: var(--aero-glass-bg-strong);
-  backdrop-filter: blur(var(--aero-glass-blur));
+  background: var(--aero-gradient-button);
   box-shadow: var(--aero-shadow-soft), var(--aero-shadow-inset-gloss);
   font-weight: 700;
 }
 
+/* A cyan point coin with a white ring, drawn in CSS. */
 .points-badge__coin {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--aero-white);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff6c8 0%, var(--aero-gold) 55%, #d99a00 100%);
-  color: #fff;
-  font-size: 14px;
-  text-shadow: 0 1px 1px rgba(150, 90, 0, 0.6);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 3px rgba(150, 90, 0, 0.4);
+  background: radial-gradient(circle at 35% 30%, #c9f1ff 0%, var(--aero-cyan-500) 55%, var(--aero-cyan-700) 100%);
+  box-shadow: 0 0 0 1px var(--aero-cyan-700), 0 1px 3px rgba(0, 80, 120, 0.3);
 }
 
 .points-badge__value {
   font-size: var(--aero-text-md);
-  color: var(--aero-water-900);
+  color: var(--aero-ink);
 }
 
 .points-badge__unit {
@@ -359,52 +439,21 @@ p {
   color: var(--aero-ink-muted);
 }
 
-/* ---------- Rarity tag ---------- */
-
-.rarity-tag {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: var(--aero-radius-pill);
-  color: var(--aero-white);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.rarity-tag--common {
-  background: linear-gradient(180deg, #c4ecfa, var(--aero-rarity-common));
-  color: var(--aero-water-900);
-  text-shadow: var(--aero-text-shadow);
-}
-.rarity-tag--uncommon {
-  background: linear-gradient(180deg, #a6ef9f, var(--aero-rarity-uncommon));
-}
-.rarity-tag--rare {
-  background: linear-gradient(180deg, #a9bcff, var(--aero-rarity-rare));
-}
-.rarity-tag--legendary {
-  background: linear-gradient(180deg, #ffe08a, var(--aero-rarity-legendary));
-}
-
 /* ---------- Toast ---------- */
 
 .toast {
   position: fixed;
   left: 50%;
-  bottom: var(--aero-space-6);
+  bottom: 120px;
   z-index: 50;
   display: flex;
   align-items: center;
   gap: var(--aero-space-2);
   max-width: min(520px, calc(100vw - 32px));
-  padding: 10px 18px;
-  border: 1px solid var(--aero-glass-border);
+  padding: 10px 20px;
+  border: 2px solid var(--aero-line-soft);
   border-radius: var(--aero-radius-pill);
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(var(--aero-glass-blur-strong));
+  background: var(--aero-white);
   box-shadow: var(--aero-shadow-raised);
   font-weight: 600;
   cursor: pointer;
@@ -416,7 +465,7 @@ p {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--aero-sky-500);
+  background: var(--aero-cyan-500);
   box-shadow: 0 0 8px currentColor;
 }
 
@@ -443,8 +492,8 @@ p {
   display: grid;
   place-items: center;
   padding: var(--aero-space-4);
-  background: rgba(6, 54, 79, 0.25);
-  backdrop-filter: blur(4px);
+  background: rgba(230, 236, 240, 0.7);
+  backdrop-filter: blur(6px);
   animation: fade-in var(--aero-duration-med) var(--aero-ease);
 }
 
@@ -460,14 +509,18 @@ p {
   justify-content: space-between;
 }
 
+.modal__header .panel-title {
+  flex: 1;
+}
+
 .reward-chip {
-  padding: 2px 10px;
+  margin-left: var(--aero-space-3);
+  padding: 2px 12px;
   border-radius: var(--aero-radius-pill);
-  background: var(--aero-gradient-button-green);
-  color: var(--aero-white);
+  background: var(--aero-cyan-100);
+  color: var(--aero-cyan-700);
   font-size: var(--aero-text-sm);
   font-weight: 700;
-  text-shadow: 0 1px 1px rgba(30, 80, 10, 0.45);
 }
 
 .note-composer__meta {

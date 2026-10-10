@@ -27,10 +27,6 @@ export function formatPoints(points: number): string {
   return points.toLocaleString();
 }
 
-export function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 // Small deterministic hash, so random-looking layouts stay stable between renders.
 export function hash(text: string): number {
   let h = 2166136261;
