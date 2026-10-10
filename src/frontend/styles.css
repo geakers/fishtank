@@ -88,6 +88,7 @@ form button:disabled {
   align-items: flex-start;
 }
 
+#lock-status,
 #session-status {
   margin: 0;
   font-size: 18px;
@@ -107,4 +108,8 @@ form button:disabled {
 /* The flex rules above would otherwise override the hidden attribute. */
 [hidden] {
   display: none !important;
+}
+
+#lock-status:empty {
+  display: none;
 }

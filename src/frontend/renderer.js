@@ -1,12 +1,27 @@
 const toggle = document.getElementById('toggle');
+const lockStatus = document.getElementById('lock-status');
 
 let locked = false;
+
+// Ends the lockdown session and reports the points it earned.
+async function endSession() {
+  const { locked: stillLocked, pointsEarned, saved, error } = await window.fishtank.endSession();
+  locked = stillLocked;
+  if (error) lockStatus.textContent = `Session ended, but points were not saved: ${error}`;
+  else if (saved) lockStatus.textContent = `Session ended: +${pointsEarned.toFixed(2)} points`;
+  else lockStatus.textContent = 'Session ended. No points added.';
+}
 
 toggle.addEventListener('click', async () => {
   toggle.disabled = true;
   try {
     // The main process reports the real kiosk state, so the label can't drift.
-    locked = await window.fishtank.lockDown(!locked);
+    if (locked) {
+      await endSession();
+    } else {
+      locked = await window.fishtank.lockDown(true);
+      lockStatus.textContent = '';
+    }
     toggle.textContent = locked ? 'Stop' : 'Start';
   } finally {
     toggle.disabled = false;
