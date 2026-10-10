@@ -81,8 +81,8 @@ form button:disabled {
 
 #profile-status,
 #login-status,
-#class-status,
-#student-status {
+#group-status,
+#member-status {
   min-height: 1em;
   margin: 0;
   font-size: 14px;
@@ -90,7 +90,7 @@ form button:disabled {
 }
 
 #forms,
-#classes {
+#groups {
   display: flex;
   gap: 24px;
   align-items: flex-start;
@@ -103,7 +103,7 @@ form button:disabled {
 }
 
 #logout,
-#classes-button {
+#groups-button {
   padding: 8px 16px;
   border: 1px solid #fff;
   border-radius: 6px;
@@ -113,7 +113,7 @@ form button:disabled {
   cursor: pointer;
 }
 
-#add-student {
+#add-member {
   display: flex;
   flex-direction: column;
   gap: 8px;

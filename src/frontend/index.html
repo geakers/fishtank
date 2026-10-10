@@ -12,35 +12,35 @@
 
     <p id="session-status" hidden></p>
     <button id="logout" type="button" hidden>Log out</button>
-    <button id="classes-button" type="button" hidden>Classes</button>
+    <button id="groups-button" type="button" hidden>Group study sessions</button>
 
-    <div id="classes" hidden>
-      <form id="class-form">
+    <div id="groups" hidden>
+      <form id="group-form">
         <label>
-          New class name
-          <input name="className" type="text" required />
+          New study session name
+          <input name="groupName" type="text" required />
         </label>
-        <button type="submit">Create class</button>
-        <p id="class-status"></p>
+        <button type="submit">Create study session</button>
+        <p id="group-status"></p>
       </form>
 
-      <form id="student-form" hidden>
+      <form id="member-form" hidden>
         <label>
-          Class
-          <select name="classId"></select>
+          Study session
+          <select name="groupId"></select>
         </label>
         <div class="list">
-          People in this class
+          People in this session
           <ul id="roster"></ul>
         </div>
-        <div id="add-student">
+        <div id="add-member">
           <label>
-            Add a student by username
+            Add a member by username
             <input name="search" type="search" autocomplete="off" placeholder="Search usernames" />
           </label>
           <ul id="search-results"></ul>
         </div>
-        <p id="student-status"></p>
+        <p id="member-status"></p>
       </form>
     </div>
 

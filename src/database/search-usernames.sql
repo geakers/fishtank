@@ -1,4 +1,4 @@
--- Goldfish: search usernames, so a teacher can find students to add to a class.
+-- Goldfish: search usernames, so a group leader can find members to add to a study session.
 -- Run in Supabase > SQL Editor > New query > Run (after the classes SQL).
 --
 -- Returns up to 10 usernames containing the search text (any case), names that

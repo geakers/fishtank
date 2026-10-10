@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const { createAccount } = require('../database/accounts');
 const { getProfile, getPoints } = require('./profiles');
-const { createClass, listClasses, addStudent, classRoster, searchUsernames } = require('./classes');
+const { createGroup, listGroups, addMember, groupRoster, searchUsernames } = require('./groups');
 const { restoreSession, startSession, endSession, currentUser, getAccessToken } = require('./session');
 
 // Puts the given window into kiosk mode (enabled = true) or takes it back out
@@ -42,10 +42,10 @@ app.whenReady().then(() => {
     await getAccessToken().catch(() => {});
     return currentUser();
   });
-  ipcMain.handle('create-class', (event, className) => createClass(className));
-  ipcMain.handle('list-classes', () => listClasses());
-  ipcMain.handle('add-student', (event, classId, username) => addStudent(classId, username));
-  ipcMain.handle('class-roster', (event, classId) => classRoster(classId));
+  ipcMain.handle('create-group', (event, name) => createGroup(name));
+  ipcMain.handle('list-groups', () => listGroups());
+  ipcMain.handle('add-member', (event, groupId, username) => addMember(groupId, username));
+  ipcMain.handle('group-roster', (event, groupId) => groupRoster(groupId));
   ipcMain.handle('search-usernames', (event, query) => searchUsernames(query));
 
   restoreSession();

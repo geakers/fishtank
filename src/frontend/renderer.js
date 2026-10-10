@@ -49,21 +49,21 @@ const loginForm = document.getElementById('login-form');
 const loginStatus = document.getElementById('login-status');
 const loginSubmit = loginForm.querySelector('button[type="submit"]');
 const logout = document.getElementById('logout');
-const classesButton = document.getElementById('classes-button');
-const classesPanel = document.getElementById('classes');
+const groupsButton = document.getElementById('groups-button');
+const groupsPanel = document.getElementById('groups');
 
 // The logged-in user ({ uid, email, username }), or null.
 let currentUser = null;
 
-// Shows the "logged in" line plus the log out and classes buttons for a user,
-// or the forms when user is null.
+// Shows the "logged in" line plus the log out and study session buttons for a
+// user, or the forms when user is null.
 function showSession(user) {
   currentUser = user;
   sessionStatus.textContent = user ? `Logged in as ${user.username || user.email}` : '';
   sessionStatus.hidden = !user;
   logout.hidden = !user;
-  classesButton.hidden = !user;
-  if (!user) classesPanel.hidden = true;
+  groupsButton.hidden = !user;
+  if (!user) groupsPanel.hidden = true;
   forms.hidden = Boolean(user);
 }
 
@@ -98,102 +98,101 @@ logout.addEventListener('click', async () => {
   }
 });
 
-const classForm = document.getElementById('class-form');
-const classStatus = document.getElementById('class-status');
-const classSubmit = classForm.querySelector('button[type="submit"]');
-const studentForm = document.getElementById('student-form');
-const classPicker = studentForm.classId;
+const groupForm = document.getElementById('group-form');
+const groupStatus = document.getElementById('group-status');
+const groupSubmit = groupForm.querySelector('button[type="submit"]');
+const memberForm = document.getElementById('member-form');
+const groupPicker = memberForm.groupId;
 const roster = document.getElementById('roster');
-const addStudentSection = document.getElementById('add-student');
+const addMemberSection = document.getElementById('add-member');
 const searchResults = document.getElementById('search-results');
-const studentStatus = document.getElementById('student-status');
+const memberStatus = document.getElementById('member-status');
 
-// The classes the user teaches or is in, as [{ id, class_name, teacher_id }].
-let myClasses = [];
+// The groups the user leads or is in, as [{ id, name, leader_id }].
+let myGroups = [];
 let searchTimer;
 
-classesButton.addEventListener('click', () => {
-  classesPanel.hidden = !classesPanel.hidden;
-  if (!classesPanel.hidden) loadClasses();
+groupsButton.addEventListener('click', () => {
+  groupsPanel.hidden = !groupsPanel.hidden;
+  if (!groupsPanel.hidden) loadGroups();
 });
 
-// Fills the class picker with the user's classes, choosing selectId if given
-// (otherwise keeping the current choice), and shows the chosen class.
-async function loadClasses(selectId = classPicker.value) {
+// Fills the group picker with the user's groups, choosing selectId if given
+// (otherwise keeping the current choice), and shows the chosen group.
+async function loadGroups(selectId = groupPicker.value) {
   try {
-    myClasses = await window.fishtank.listClasses();
+    myGroups = await window.fishtank.listGroups();
   } catch (err) {
-    classStatus.textContent = errorMessage(err);
+    groupStatus.textContent = errorMessage(err);
     return;
   }
-  classPicker.replaceChildren(...myClasses.map((c) => new Option(c.class_name, c.id)));
-  classPicker.value = String(selectId);
-  if (!classPicker.value && myClasses.length) classPicker.selectedIndex = 0;
-  showClass();
+  groupPicker.replaceChildren(...myGroups.map((g) => new Option(g.name, g.id)));
+  groupPicker.value = String(selectId);
+  if (!groupPicker.value && myGroups.length) groupPicker.selectedIndex = 0;
+  showGroup();
 }
 
-// Shows the chosen class's roster, plus the student search if the user is its
-// teacher. Hides the class card when the user has no classes.
-function showClass() {
-  const chosen = myClasses.find((c) => String(c.id) === classPicker.value);
-  studentForm.hidden = !chosen;
+// Shows the chosen group's roster, plus the member search if the user is its
+// leader. Hides the group card when the user has no groups.
+function showGroup() {
+  const chosen = myGroups.find((g) => String(g.id) === groupPicker.value);
+  memberForm.hidden = !chosen;
   if (!chosen) return;
 
-  addStudentSection.hidden = chosen.teacher_id !== currentUser?.uid;
-  studentForm.search.value = '';
+  addMemberSection.hidden = chosen.leader_id !== currentUser?.uid;
+  memberForm.search.value = '';
   searchResults.replaceChildren();
-  studentStatus.textContent = '';
+  memberStatus.textContent = '';
   loadRoster();
 }
 
-// Lists everyone in the chosen class, marking the teacher.
+// Lists everyone in the chosen group, marking the leader.
 async function loadRoster() {
-  const classId = classPicker.value;
+  const groupId = groupPicker.value;
   try {
-    const people = await window.fishtank.classRoster(Number(classId));
-    // Another class was picked while this one loaded.
-    if (classPicker.value !== classId) return;
+    const people = await window.fishtank.groupRoster(Number(groupId));
+    // Another group was picked while this one loaded.
+    if (groupPicker.value !== groupId) return;
     roster.replaceChildren(...people.map(({ username, role }) => {
       const item = document.createElement('li');
-      item.textContent = role === 'teacher' ? `${username} (teacher)` : username;
+      item.textContent = role === 'leader' ? `${username} (group leader)` : username;
       return item;
     }));
   } catch (err) {
-    studentStatus.textContent = errorMessage(err);
+    memberStatus.textContent = errorMessage(err);
   }
 }
 
-classPicker.addEventListener('change', showClass);
+groupPicker.addEventListener('change', showGroup);
 
-classForm.addEventListener('submit', async (event) => {
+groupForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  classSubmit.disabled = true;
-  classStatus.textContent = 'Creating class...';
+  groupSubmit.disabled = true;
+  groupStatus.textContent = 'Creating study session...';
   try {
-    // classForm.className would be the form's CSS class, so go through elements.
-    const created = await window.fishtank.createClass(classForm.elements.className.value);
-    classForm.reset();
-    classStatus.textContent = `Created ${created.class_name}`;
-    await loadClasses(created.id);
+    const created = await window.fishtank.createGroup(groupForm.groupName.value);
+    groupForm.reset();
+    groupStatus.textContent = `Created ${created.name}`;
+    await loadGroups(created.id);
   } catch (err) {
-    classStatus.textContent = errorMessage(err);
+    groupStatus.textContent = errorMessage(err);
   } finally {
-    classSubmit.disabled = false;
+    groupSubmit.disabled = false;
   }
 });
 
 // Searches once typing pauses, so every keystroke doesn't hit Supabase.
-studentForm.search.addEventListener('input', () => {
+memberForm.search.addEventListener('input', () => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(searchStudents, 250);
+  searchTimer = setTimeout(searchMembers, 250);
 });
 
 // Lists usernames matching the search box, each as a button that adds that
-// user to the chosen class. Leaves out the teacher (the user), who can't be a
-// student in their own class.
-async function searchStudents() {
-  const query = studentForm.search.value.trim();
-  studentStatus.textContent = '';
+// user to the chosen group. Leaves out the leader (the user), who can't be a
+// member of their own group.
+async function searchMembers() {
+  const query = memberForm.search.value.trim();
+  memberStatus.textContent = '';
   if (!query) {
     searchResults.replaceChildren();
     return;
@@ -202,39 +201,39 @@ async function searchStudents() {
     const usernames = (await window.fishtank.searchUsernames(query))
       .filter((username) => username !== currentUser?.username);
     // The search box changed while this search ran; a newer one is coming.
-    if (studentForm.search.value.trim() !== query) return;
+    if (memberForm.search.value.trim() !== query) return;
     searchResults.replaceChildren(...usernames.map((username) => {
       const item = document.createElement('li');
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = username;
-      button.addEventListener('click', () => addToClass(username));
+      button.addEventListener('click', () => addToGroup(username));
       item.append(button);
       return item;
     }));
-    if (!usernames.length) studentStatus.textContent = 'No matching usernames';
+    if (!usernames.length) memberStatus.textContent = 'No matching usernames';
   } catch (err) {
-    studentStatus.textContent = errorMessage(err);
+    memberStatus.textContent = errorMessage(err);
   }
 }
 
 // Pressing Enter in the search box adds that exact username.
-studentForm.addEventListener('submit', (event) => {
+memberForm.addEventListener('submit', (event) => {
   event.preventDefault();
-  const username = studentForm.search.value.trim();
-  if (username) addToClass(username);
+  const username = memberForm.search.value.trim();
+  if (username) addToGroup(username);
 });
 
-async function addToClass(username) {
+async function addToGroup(username) {
   clearTimeout(searchTimer);
-  studentStatus.textContent = `Adding ${username}...`;
+  memberStatus.textContent = `Adding ${username}...`;
   try {
-    await window.fishtank.addStudent(Number(classPicker.value), username);
-    studentForm.search.value = '';
+    await window.fishtank.addMember(Number(groupPicker.value), username);
+    memberForm.search.value = '';
     searchResults.replaceChildren();
-    studentStatus.textContent = `Added ${username}`;
+    memberStatus.textContent = `Added ${username}`;
     await loadRoster();
   } catch (err) {
-    studentStatus.textContent = errorMessage(err);
+    memberStatus.textContent = errorMessage(err);
   }
 }
