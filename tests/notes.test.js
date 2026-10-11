@@ -118,6 +118,10 @@ test("submitNote checks the note before uploading anything", async (t) => {
   assert.equal(requests.length, 0);
 });
 
+// What the storage folder listing returns for these file names.
+const folder = (...names) => names.map((name) => ({ id: `id-${name}`, name }));
+const pathOf = (name) => `${USER.uid}/${NOTE_ID}/${name}`;
+
 test('submitNote removes what it saved when an upload fails', async (t) => {
   reset(t);
   let uploads = 0;
@@ -126,35 +130,81 @@ test('submitNote removes what it saved when an upload fails', async (t) => {
     'POST /storage/v1/object/notes/': () =>
       ++uploads === 1 ? Response.json({ Key: 'x' }) : Response.json({ message: 'mime type text/plain is not supported' }, { status: 400 }),
     'POST /rest/v1/note_files': ok(null),
-    'DELETE /storage/v1/object/notes': ok([]),
-    'DELETE /rest/v1/notes': ok(null),
+    'POST /storage/v1/object/list/notes': ok(folder('1-My_notes.pdf')),
+    'DELETE /storage/v1/object/notes': ok([{ name: pathOf('1-My_notes.pdf') }]),
+    'DELETE /rest/v1/notes': ok([{ id: NOTE_ID }]),
   });
 
   await assert.rejects(submitNote({ title: 'Two files', files: [pdf(), png()] }), { message: 'mime type text/plain is not supported' });
 
   const cleanup = requests.filter((r) => r.key.startsWith('DELETE'));
   assert.deepEqual(cleanup.map((r) => r.key), ['DELETE /storage/v1/object/notes', 'DELETE /rest/v1/notes']);
-  assert.deepEqual(cleanup[0].body, { prefixes: [`${USER.uid}/${NOTE_ID}/1-My_notes.pdf`] });
-  assert.equal(cleanup[1].search, `?id=eq.${NOTE_ID}`);
+  assert.deepEqual(cleanup[0].body, { prefixes: [pathOf('1-My_notes.pdf')] });
+  assert.equal(cleanup[1].search, `?id=eq.${NOTE_ID}&select=id`);
 });
 
-test('deleteNote deletes your own note, files first', async (t) => {
+test('deleteNote deletes every file in the note\'s folder, then the note', async (t) => {
   reset(t);
-  const path = `${USER.uid}/${NOTE_ID}/1-My_notes.pdf`;
   const requests = mockSupabase({
-    'GET /rest/v1/notes': ok([{ owner_id: USER.uid, note_files: [{ storage_path: path }] }]),
-    'DELETE /storage/v1/object/notes': ok([]),
-    'DELETE /rest/v1/notes': ok(null),
+    'GET /rest/v1/notes': ok([{ owner_id: USER.uid }]),
+    'POST /storage/v1/object/list/notes': ok(folder('1-My_notes.pdf', '2-screenshot.png')),
+    'DELETE /storage/v1/object/notes': ok([{ name: pathOf('1-My_notes.pdf') }, { name: pathOf('2-screenshot.png') }]),
+    'DELETE /rest/v1/notes': ok([{ id: NOTE_ID }]),
   });
 
   await deleteNote(NOTE_ID);
-  assert.deepEqual(requests.map((r) => r.key), ['GET /rest/v1/notes', 'DELETE /storage/v1/object/notes', 'DELETE /rest/v1/notes']);
-  assert.deepEqual(requests[1].body, { prefixes: [path] });
+  assert.deepEqual(requests.map((r) => r.key), [
+    'GET /rest/v1/notes',
+    'POST /storage/v1/object/list/notes',
+    'DELETE /storage/v1/object/notes',
+    'DELETE /rest/v1/notes',
+  ]);
+  assert.deepEqual(requests[1].body, { prefix: `${USER.uid}/${NOTE_ID}`, limit: 100, offset: 0 });
+  assert.deepEqual(requests[2].body, { prefixes: [pathOf('1-My_notes.pdf'), pathOf('2-screenshot.png')] });
+  assert.equal(requests[3].headers.Prefer, 'return=representation');
+});
+
+test('deleteNote keeps the note when Supabase skips a file', async (t) => {
+  reset(t);
+  const requests = mockSupabase({
+    'GET /rest/v1/notes': ok([{ owner_id: USER.uid }]),
+    'POST /storage/v1/object/list/notes': ok(folder('1-My_notes.pdf', '2-screenshot.png')),
+    // Only one of the two came back as deleted.
+    'DELETE /storage/v1/object/notes': ok([{ name: pathOf('1-My_notes.pdf') }]),
+    'DELETE /rest/v1/notes': ok([{ id: NOTE_ID }]),
+  });
+
+  await assert.rejects(deleteNote(NOTE_ID), /Couldn't delete 1 of this note's files, so the note was kept/);
+  assert.equal(requests.filter((r) => r.key === 'DELETE /rest/v1/notes').length, 0);
+});
+
+test("deleteNote fails when the note row isn't actually deleted", async (t) => {
+  reset(t);
+  mockSupabase({
+    'GET /rest/v1/notes': ok([{ owner_id: USER.uid }]),
+    'POST /storage/v1/object/list/notes': ok([]),
+    'DELETE /rest/v1/notes': ok([]),
+  });
+
+  await assert.rejects(deleteNote(NOTE_ID), /That note couldn't be deleted/);
+});
+
+test('deleteNote works when a file row has no file left in storage', async (t) => {
+  reset(t);
+  // The folder is already empty (e.g. the file was removed in the dashboard).
+  const requests = mockSupabase({
+    'GET /rest/v1/notes': ok([{ owner_id: USER.uid }]),
+    'POST /storage/v1/object/list/notes': ok([]),
+    'DELETE /rest/v1/notes': ok([{ id: NOTE_ID }]),
+  });
+
+  await deleteNote(NOTE_ID);
+  assert.deepEqual(requests.map((r) => r.key), ['GET /rest/v1/notes', 'POST /storage/v1/object/list/notes', 'DELETE /rest/v1/notes']);
 });
 
 test("deleteNote refuses someone else's note and bad ids", async (t) => {
   reset(t);
-  const requests = mockSupabase({ 'GET /rest/v1/notes': ok([{ owner_id: 'someone-else', note_files: [] }]) });
+  const requests = mockSupabase({ 'GET /rest/v1/notes': ok([{ owner_id: 'someone-else' }]) });
 
   await assert.rejects(deleteNote(NOTE_ID), /only delete your own notes/);
   await assert.rejects(deleteNote('1&owner_id=neq.x'), /A note id is required/);

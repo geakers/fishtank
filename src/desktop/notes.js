@@ -68,7 +68,6 @@ async function submitNote(note) {
     body: { title, body, group_id: groupId },
   });
 
-  const uploaded = [];
   try {
     for (const [index, file] of files.entries()) {
       // Numbered so two files with the same name don't collide.
@@ -78,7 +77,6 @@ async function submitNote(note) {
         headers: { 'Content-Type': file.type },
         body: file.bytes,
       });
-      uploaded.push(storagePath);
       await request('/rest/v1/note_files', {
         method: 'POST',
         body: { note_id: created.id, storage_path: storagePath, mime_type: file.type, size_bytes: file.bytes.length },
@@ -86,19 +84,41 @@ async function submitNote(note) {
     }
     await rpc('submit_note', { nid: created.id });
   } catch (err) {
-    await removeNote(created.id, uploaded).catch(() => {});
+    await removeNote(created.id, user.uid).catch(() => {});
     throw err;
   }
   return created.id;
 }
 
-// Deletes the files, then the note. Deleting the note row doesn't remove its
-// files from storage, so they have to go first.
-async function removeNote(noteId, storagePaths) {
-  if (storagePaths.length > 0) {
-    await request('/storage/v1/object/notes', { method: 'DELETE', body: { prefixes: storagePaths } });
+// Returns the full storage paths of the files in a note's folder. This is what
+// actually exists in storage, including any file whose note_files row is
+// missing; a row whose file is already gone isn't listed.
+async function listNoteFolder(ownerUid, noteId) {
+  const prefix = `${ownerUid}/${noteId}`;
+  const items = await request('/storage/v1/object/list/notes', { method: 'POST', body: { prefix, limit: 100, offset: 0 } });
+  // Sub-folders come back without an id; a note's folder should only hold files.
+  return items.filter((item) => item.id !== null).map((item) => `${prefix}/${item.name}`);
+}
+
+// Deletes every file in the note's folder, then the note; its note_files rows
+// go with it. Deleting the note row doesn't remove files from storage, so they
+// have to go first. Supabase reports success even when it skips files, so the
+// reply is checked: if any file survives, the note is kept and this throws,
+// rather than the note being reported as deleted while parts of it remain.
+async function removeNote(noteId, ownerUid) {
+  const paths = await listNoteFolder(ownerUid, noteId);
+  if (paths.length > 0) {
+    const deleted = await request('/storage/v1/object/notes', { method: 'DELETE', body: { prefixes: paths } });
+    const gone = new Set((deleted ?? []).map((object) => object.name));
+    const left = paths.filter((path) => !gone.has(path));
+    if (left.length > 0) throw new Error(`Couldn't delete ${left.length} of this note's files, so the note was kept. Try again.`);
   }
-  await request(`/rest/v1/notes?id=eq.${noteId}`, { method: 'DELETE' });
+
+  const removed = await request(`/rest/v1/notes?id=eq.${noteId}&select=id`, {
+    method: 'DELETE',
+    headers: { Prefer: 'return=representation' },
+  });
+  if (!Array.isArray(removed) || removed.length !== 1) throw new Error("That note couldn't be deleted.");
 }
 
 // Deletes one of the logged-in user's own notes, with its files.
@@ -107,9 +127,9 @@ async function deleteNote(noteId) {
   const user = currentUser();
   if (!user) throw new Error('Log in first');
 
-  const [note] = await request(`/rest/v1/notes?id=eq.${noteId}&select=owner_id,note_files(storage_path)`);
+  const [note] = await request(`/rest/v1/notes?id=eq.${noteId}&select=owner_id`);
   if (!note || note.owner_id !== user.uid) throw new Error('You can only delete your own notes.');
-  await removeNote(noteId, note.note_files.map((file) => file.storage_path));
+  await removeNote(noteId, user.uid);
 }
 
 // Returns a link to one of a note's files that works for 5 minutes. Supabase

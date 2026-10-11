@@ -121,14 +121,18 @@ create policy "remove files from my drafts" on public.note_files for delete to a
   using (public.is_my_draft_note(note_id));
 
 -- 5. Security rules for the files in the bucket.
--- Upload only into <your uid>/<your draft note>/; read files of notes you can
--- see; delete your own files (e.g. before deleting a note). No overwriting.
+-- Upload only into <your uid>/<your draft note>/; read files in your own
+-- folder and files of notes you can see; delete your own files (e.g. before
+-- deleting a note). No overwriting. Reading your own folder doesn't need the
+-- note to exist, so files that outlive their note can still be cleaned up.
 create policy "notes bucket: upload to my draft notes" on storage.objects for insert to authenticated
   with check (bucket_id = 'notes'
               and split_part(name, '/', 1) = (select auth.uid())::text
               and public.is_my_draft_note(public.note_id_from_path(name)));
-create policy "notes bucket: read files of notes I can see" on storage.objects for select to authenticated
-  using (bucket_id = 'notes' and public.can_see_note(public.note_id_from_path(name)));
+create policy "notes bucket: read my files and my groups' files" on storage.objects for select to authenticated
+  using (bucket_id = 'notes'
+         and (split_part(name, '/', 1) = (select auth.uid())::text
+              or public.can_see_note(public.note_id_from_path(name))));
 create policy "notes bucket: delete my own files" on storage.objects for delete to authenticated
   using (bucket_id = 'notes' and split_part(name, '/', 1) = (select auth.uid())::text);
 
