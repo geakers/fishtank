@@ -23,13 +23,15 @@ async function request(path, { method = 'GET', body, headers } = {}) {
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.message || `Supabase request failed (${res.status})`);
+    const error = new Error(data?.message || `Supabase request failed (${res.status})`);
+    error.code = data?.code;
+    throw error;
   }
   return data;
 }
 
 // Calls one of the Postgres functions from the SQL in src/database.
-function rpc(name, args) {
+function rpc(name, args = {}) {
   return request(`/rest/v1/rpc/${name}`, { method: 'POST', body: args });
 }
 

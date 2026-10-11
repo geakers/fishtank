@@ -7,7 +7,10 @@ let token = 'dud-access-token';
 
 // groups.js picks up getAccessToken when it loads, so swap it out first.
 mock.method(session, 'getAccessToken', async () => token);
-const { createGroup, listGroups, addMember, groupRoster, searchUsernames } = require('../src/desktop/groups');
+const {
+  createGroup, listGroups, addMember, groupRoster, searchUsernames,
+  inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
+} = require('../src/desktop/groups');
 
 const GROUP = { id: 1, name: 'Biology revision', leader_id: '00000000-0000-4000-8000-000000000001' };
 
@@ -111,6 +114,59 @@ test('searchUsernames returns just the usernames', async (t) => {
 
   assert.deepEqual(await searchUsernames('dud'), ['dud-member', 'dud-member-2']);
   assert.deepEqual(requests[0].body, { query: 'dud' });
+});
+
+test('inviteMember calls invite_member with the group and username', async (t) => {
+  reset(t);
+  const requests = mockSupabase({ '/rest/v1/rpc/invite_member': () => new Response(null, { status: 204 }) });
+
+  await inviteMember(1, 'dud-member');
+
+  assert.equal(requests[0].method, 'POST');
+  assert.deepEqual(requests[0].body, { gid: 1, member_username: 'dud-member' });
+});
+
+test('listInvites returns the invites waiting for the logged-in user', async (t) => {
+  reset(t);
+  const invites = [{ group_id: 1, group_name: 'Biology revision', leader: 'dud-leader' }];
+  const requests = mockSupabase({ '/rest/v1/rpc/my_invites': () => Response.json(invites) });
+
+  assert.deepEqual(await listInvites(), invites);
+  assert.deepEqual(requests[0].body, {});
+});
+
+test('acceptInvite and declineInvite answer the invite to that group', async (t) => {
+  reset(t);
+  const requests = mockSupabase({
+    '/rest/v1/rpc/accept_invite': () => new Response(null, { status: 204 }),
+    '/rest/v1/rpc/decline_invite': () => new Response(null, { status: 204 }),
+  });
+
+  await acceptInvite(1);
+  await declineInvite(2);
+
+  assert.deepEqual(requests.map((r) => [r.pathname, r.body]), [
+    ['/rest/v1/rpc/accept_invite', { gid: 1 }],
+    ['/rest/v1/rpc/decline_invite', { gid: 2 }],
+  ]);
+});
+
+test('groupInvites returns just the usernames', async (t) => {
+  reset(t);
+  const requests = mockSupabase({ '/rest/v1/rpc/group_invites': () => Response.json([{ username: 'dud-invitee' }]) });
+
+  assert.deepEqual(await groupInvites(1), ['dud-invitee']);
+  assert.deepEqual(requests[0].body, { gid: 1 });
+});
+
+test("invite calls say so when the invites SQL hasn't been run", async (t) => {
+  reset(t);
+  mockSupabase({
+    '/rest/v1/rpc/my_invites': () =>
+      Response.json({ code: 'PGRST202', message: 'Could not find the function public.my_invites' }, { status: 404 }),
+  });
+
+  await assert.rejects(listInvites(), /Invites aren't set up in the database yet/);
 });
 
 test('every group call needs someone logged in', async (t) => {

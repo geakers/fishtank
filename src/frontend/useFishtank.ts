@@ -30,7 +30,7 @@ const GUEST_NAME = 'Aquarist';
 const NO_BRIDGE = 'Accounts need the desktop app.';
 
 // Electron prefixes IPC errors with "Error invoking remote method ...".
-function errorText(err: unknown): string {
+export function errorText(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
   return message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 }

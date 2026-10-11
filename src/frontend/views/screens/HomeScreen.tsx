@@ -5,6 +5,7 @@ import { Aquarium } from '../components/Aquarium';
 import { NotesPanel } from '../components/NotesPanel';
 import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
+import { StudyGroups } from '../components/StudyGroups';
 import { Toast } from '../components/Toast';
 
 export interface HomeScreenProps {
@@ -13,11 +14,26 @@ export interface HomeScreenProps {
 
 // Layout, after the Wii menu:
 //   top bar - brand on the left; points and profile menu on the right
-//   main    - the user's tank on its cabinet on the left; the study notes panel and the Focus
-//             button on the right (stats live in the profile menu)
+//   main    - the user's tank on its cabinet on the left; on the right, Groups | Notes tabs
+//             switching between the study groups and study notes panels, then the Focus
+//             button (stats live in the profile menu)
 //   dock    - a clock in the middle and a round "Fish Shop" button on the right
+type SideTab = 'groups' | 'notes';
+
+const SIDE_TABS: { id: SideTab; label: string }[] = [
+  { id: 'groups', label: 'Groups' },
+  { id: 'notes', label: 'Notes' },
+];
+
 export function HomeScreen({ app }: HomeScreenProps) {
   const openShop = () => app.setScreen('store');
+  const [sideTab, setSideTab] = useState<SideTab>('groups');
+
+  const openSideTab = (tab: SideTab) => {
+    setSideTab(tab);
+    // Picks up groups just made or joined in the Groups tab for "Share with".
+    if (tab === 'notes') void app.refreshNotes();
+  };
 
   return (
     <div className="screen home">
@@ -55,7 +71,25 @@ export function HomeScreen({ app }: HomeScreenProps) {
         </section>
 
         <aside className="home__side">
-          <NotesPanel app={app} />
+          <div className="home__side-panel">
+            <div className="segmented home__tabs" role="tablist" aria-label="Study groups and notes">
+              {SIDE_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={sideTab === tab.id}
+                  className={`segmented__option ${sideTab === tab.id ? 'is-active' : ''}`}
+                  onClick={() => openSideTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            {/* Both stay mounted so switching tabs keeps an open group or a half-typed search. */}
+            <StudyGroups account={app.account} className={`home__panel ${sideTab === 'groups' ? '' : 'is-hidden'}`} />
+            <NotesPanel app={app} className={`home__panel ${sideTab === 'notes' ? '' : 'is-hidden'}`} />
+          </div>
           <div className="home__focus">
             <AeroButton variant="hero" onClick={() => app.enterLockIn()}>
               Focus

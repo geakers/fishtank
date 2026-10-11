@@ -10,7 +10,10 @@ const {
   setMinutesStudied,
   verifyPoints,
 } = require('./profiles');
-const { createGroup, listGroups, addMember, groupRoster, searchUsernames } = require('./groups');
+const {
+  createGroup, listGroups, addMember, groupRoster, searchUsernames,
+  inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
+} = require('./groups');
 const { listNotes, submitNote, deleteNote, noteFileUrl } = require('./notes');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
 
@@ -109,6 +112,11 @@ app.whenReady().then(() => {
   ipcMain.handle('add-member', (event, groupId, username) => addMember(groupId, username));
   ipcMain.handle('group-roster', (event, groupId) => groupRoster(groupId));
   ipcMain.handle('search-usernames', (event, query) => searchUsernames(query));
+  ipcMain.handle('invite-member', (event, groupId, username) => inviteMember(groupId, username));
+  ipcMain.handle('list-invites', () => listInvites());
+  ipcMain.handle('accept-invite', (event, groupId) => acceptInvite(groupId));
+  ipcMain.handle('decline-invite', (event, groupId) => declineInvite(groupId));
+  ipcMain.handle('group-invites', (event, groupId) => groupInvites(groupId));
 
   ipcMain.handle('list-notes', () => listNotes());
   ipcMain.handle('submit-note', (event, note) => submitNote(note));

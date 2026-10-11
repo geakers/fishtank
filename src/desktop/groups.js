@@ -3,6 +3,17 @@ const { request, rpc } = require('./supabase');
 // Group study sessions. The code calls them groups, since "session" already
 // means the login session.
 
+// Calls one of the functions from the invites SQL. Supabase answers PGRST202
+// for a function it doesn't have, which means that SQL hasn't been run yet.
+async function inviteRpc(name, args) {
+  try {
+    return await rpc(name, args);
+  } catch (err) {
+    if (err.code === 'PGRST202') throw new Error("Invites aren't set up in the database yet");
+    throw err;
+  }
+}
+
 // Creates a group led by the logged-in user and returns
 // { id, name, leader_id }.
 async function createGroup(name) {
@@ -39,4 +50,36 @@ async function searchUsernames(query) {
   return rows.map((row) => row.username);
 }
 
-module.exports = { createGroup, listGroups, addMember, groupRoster, searchUsernames };
+// Invites the user with this username to the group. They join once they
+// accept. Only the group's leader can.
+async function inviteMember(groupId, username) {
+  await inviteRpc('invite_member', { gid: groupId, member_username: username });
+}
+
+// Returns [{ group_id, group_name, leader }] for the invites waiting for the
+// logged-in user, oldest first. leader is the leader's username.
+function listInvites() {
+  return inviteRpc('my_invites');
+}
+
+// Accepts the logged-in user's invite to the group, making them a member.
+async function acceptInvite(groupId) {
+  await inviteRpc('accept_invite', { gid: groupId });
+}
+
+// Turns down the logged-in user's invite to the group.
+async function declineInvite(groupId) {
+  await inviteRpc('decline_invite', { gid: groupId });
+}
+
+// Returns the usernames of the people invited to the group who haven't
+// answered yet. Empty unless the logged-in user leads the group.
+async function groupInvites(groupId) {
+  const rows = await inviteRpc('group_invites', { gid: groupId });
+  return rows.map((row) => row.username);
+}
+
+module.exports = {
+  createGroup, listGroups, addMember, groupRoster, searchUsernames,
+  inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
+};

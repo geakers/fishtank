@@ -6,6 +6,7 @@ import { NoteComposer } from './NoteComposer';
 
 export interface NotesPanelProps {
   app: App;
+  className?: string;
 }
 
 const STATUS_LABELS: Record<FishtankNote['status'], string> = {
@@ -18,7 +19,7 @@ const STATUS_LABELS: Record<FishtankNote['status'], string> = {
 
 // The home screen's notes panel: upload study notes, and see your own notes and
 // your study groups' notes with their files.
-export function NotesPanel({ app }: NotesPanelProps) {
+export function NotesPanel({ app, className = '' }: NotesPanelProps) {
   const [composerOpen, setComposerOpen] = useState(false);
   // The note whose Delete was clicked once and is waiting for a second click.
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export function NotesPanel({ app }: NotesPanelProps) {
 
   return (
     <>
-      <GlassPanel variant="raised" className="home__panel notes-panel" aria-label="Study notes">
+      <GlassPanel variant="raised" className={`notes-panel ${className}`} aria-label="Study notes">
         <div className="notes-panel__header">
           <h2 className="panel-title">Study notes</h2>
           {app.account ? (
