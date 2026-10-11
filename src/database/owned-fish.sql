@@ -75,6 +75,16 @@ $$;
 revoke execute on function public.buy_fish(text, integer) from public, anon;
 grant  execute on function public.buy_fish(text, integer) to authenticated;
 
+-- 5. Permissions, which hold whatever the row rules above say:
+--    - nobody adds fish directly; buy_fish() is the only way to get one,
+--    - the only thing you can change on your fish is whether it's in the tank
+--      (not fish_id, which would turn a cheap fish into an expensive one),
+--    - you can save your avatar on your profile.
+revoke insert on public.owned_fish from anon, authenticated;
+revoke update on public.owned_fish from anon, authenticated;
+grant  update (in_tank) on public.owned_fish to authenticated;
+grant  update (avatar_fish_id) on public.profiles to authenticated;
+
 commit;
 
 -- Let the API see the new table and column right away.
