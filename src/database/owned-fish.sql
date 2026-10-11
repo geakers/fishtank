@@ -3,7 +3,8 @@
 --
 -- One row per fish a player owns. fish_id is the fish's id in the app's
 -- catalog (src/frontend/data.ts, e.g. 'goldfish'), so adding new kinds of fish
--- needs no database change. Nobody can own the same fish twice.
+-- needs no database change. Nobody can own the same fish twice, and buying
+-- one saves the points spent (buy_fish), so they stay spent after a restart.
 -- (This replaces the unused "Fish Tank" table, which can be deleted by hand.)
 --
 -- Everything runs in one transaction: if any step fails, nothing changes.

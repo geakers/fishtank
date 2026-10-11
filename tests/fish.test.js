@@ -10,7 +10,7 @@ let user = USER;
 // fish.js picks these up when it loads, so swap them out first.
 mock.method(session, 'getAccessToken', async () => (user ? 'dud-access-token' : null));
 mock.method(session, 'currentUser', () => user);
-const { listFish, adoptFish, setFishInTank, setAvatarFish } = require('../src/desktop/fish');
+const { listFish, buyFish, setFishInTank, setAvatarFish } = require('../src/desktop/fish');
 
 // Stands in for Supabase so the test never touches the real database. Each
 // "METHOD /path" maps to the response it returns; the requests made are
@@ -44,14 +44,21 @@ test('listFish asks for the user\'s fish, oldest first', async (t) => {
   assert.equal(requests[0].headers.Authorization, 'Bearer dud-access-token');
 });
 
-test('adoptFish saves the fish and ignores one already owned', async (t) => {
+test('buyFish pays with the saved points in one step and returns the new balance', async (t) => {
   reset(t);
-  const requests = mockSupabase({ 'POST /rest/v1/owned_fish': () => new Response(null, { status: 201 }) });
+  const requests = mockSupabase({ 'POST /rest/v1/rpc/buy_fish': () => Response.json(150) });
 
-  await adoptFish('neon-tetra');
-  assert.deepEqual(requests[0].body, { fish_id: 'neon-tetra' });
-  assert.equal(requests[0].search, '?on_conflict=owner_id,fish_id');
-  assert.equal(requests[0].headers.Prefer, 'resolution=ignore-duplicates,return=minimal');
+  assert.equal(await buyFish('neon-tetra', 50), 150);
+  assert.deepEqual(requests[0].body, { fish: 'neon-tetra', price: 50 });
+});
+
+test("buyFish passes on Supabase's reason for refusing", async (t) => {
+  reset(t);
+  mockSupabase({
+    'POST /rest/v1/rpc/buy_fish': () => Response.json({ code: 'P0001', message: 'not enough points' }, { status: 400 }),
+  });
+
+  await assert.rejects(buyFish('koi', 260), { message: 'not enough points' });
 });
 
 test('setFishInTank updates that fish, and fails when it isn\'t yours', async (t) => {
@@ -81,8 +88,10 @@ test('fish ids are checked before asking Supabase', async (t) => {
   reset(t);
   const requests = mockSupabase({});
 
-  await assert.rejects(adoptFish('Gold Fish'), /A fish id is required/);
-  await assert.rejects(adoptFish('goldfish&owner_id=neq.x'), /A fish id is required/);
+  await assert.rejects(buyFish('Gold Fish', 50), /A fish id is required/);
+  await assert.rejects(buyFish('goldfish&owner_id=neq.x', 50), /A fish id is required/);
+  await assert.rejects(buyFish('goldfish', -5), /A price is required/);
+  await assert.rejects(buyFish('goldfish', 2.5), /A price is required/);
   await assert.rejects(setFishInTank('goldfish', 'yes'), /inTank must be true or false/);
   await assert.rejects(setAvatarFish(''), /A fish id is required/);
   assert.equal(requests.length, 0);
@@ -94,7 +103,7 @@ test('fish need someone logged in', async (t) => {
   const requests = mockSupabase({});
 
   await assert.rejects(listFish(), /Log in first/);
-  await assert.rejects(adoptFish('goldfish'), /Log in first/);
+  await assert.rejects(buyFish('goldfish', 50), /Log in first/);
   await assert.rejects(setAvatarFish(null), /Log in first/);
   assert.equal(requests.length, 0);
 });

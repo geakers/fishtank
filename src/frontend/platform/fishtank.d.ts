@@ -183,8 +183,10 @@ declare global {
     openNoteFile(storagePath: string): Promise<void>;
     // Resolves with the logged-in user's fish, oldest first.
     listFish(): Promise<FishtankOwnedFish[]>;
-    // Saves a bought fish, in the tank. Owning it already is fine.
-    adoptFish(fishId: string): Promise<void>;
+    // Buys a fish: takes the price off the user's saved points and adds the
+    // fish to their tank in one step. Resolves with the new balance; rejects
+    // (changing nothing) with e.g. "not enough points".
+    buyFish(fishId: string, price: number): Promise<number>;
     // Puts one of the user's fish in the tank or takes it out.
     setFishInTank(fishId: string, inTank: boolean): Promise<void>;
     // Sets the avatar to one of the user's fish, or clears it with null.

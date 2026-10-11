@@ -75,9 +75,10 @@ export function useFishtank() {
   };
 
   // --- Fish ---
-  // A logged-in user's fish, which ones are in the tank and their avatar are
-  // saved to their account (the owned_fish table), so they survive closing the
-  // app. A guest's fish only last until then.
+  // A logged-in user's fish, which ones are in the tank, their avatar and the
+  // points they spent on fish are saved to their account (the owned_fish table
+  // and their profile), so they survive closing the app. A guest's fish only
+  // last until then.
 
   // Fish being bought right now, so a double-click doesn't buy twice.
   const buying = useRef(new Set<string>());
@@ -86,17 +87,19 @@ export function useFishtank() {
     if (points < fish.price || ownedIds.includes(fish.id) || buying.current.has(fish.id)) return;
     const bridge = window.fishtank;
     if (account && bridge) {
+      // The account's saved points pay for it, and stay spent after a restart.
       buying.current.add(fish.id);
       try {
-        await bridge.adoptFish(fish.id);
+        setPoints(await bridge.buyFish(fish.id, fish.price));
       } catch (err) {
-        notify('error', `Couldn't save ${fish.name}: ${errorText(err)}`);
+        notify('error', `Couldn't buy ${fish.name}: ${errorText(err)}`);
         return;
       } finally {
         buying.current.delete(fish.id);
       }
+    } else {
+      setPoints((p) => p - fish.price);
     }
-    setPoints((p) => p - fish.price);
     setOwnedIds((ids) => [...ids, fish.id]);
     setTankIds((ids) => [...ids, fish.id]);
     notify('success', `${fish.name} joined your tank!`);

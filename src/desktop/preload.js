@@ -35,7 +35,7 @@ contextBridge.exposeInMainWorld('fishtank', {
   deleteNote: (noteId) => ipcRenderer.invoke('delete-note', noteId),
   openNoteFile: (storagePath) => ipcRenderer.invoke('open-note-file', storagePath),
   listFish: () => ipcRenderer.invoke('list-fish'),
-  adoptFish: (fishId) => ipcRenderer.invoke('adopt-fish', fishId),
+  buyFish: (fishId, price) => ipcRenderer.invoke('buy-fish', fishId, price),
   setFishInTank: (fishId, inTank) => ipcRenderer.invoke('set-fish-in-tank', fishId, inTank),
   setAvatarFish: (fishId) => ipcRenderer.invoke('set-avatar-fish', fishId),
 });

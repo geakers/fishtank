@@ -15,7 +15,7 @@ const {
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 } = require('./groups');
 const { listNotes, submitNote, deleteNote, noteFileUrl } = require('./notes');
-const { listFish, adoptFish, setFishInTank, setAvatarFish } = require('./fish');
+const { listFish, buyFish, setFishInTank, setAvatarFish } = require('./fish');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
 const { listRunningApps, getAllowedApps, setAllowedApps, startStudy, stopStudy } = require('./study-mode');
 
@@ -143,7 +143,7 @@ app.whenReady().then(() => {
   ipcMain.handle('open-note-file', async (event, storagePath) => shell.openExternal(await noteFileUrl(storagePath)));
 
   ipcMain.handle('list-fish', () => listFish());
-  ipcMain.handle('adopt-fish', (event, fishId) => adoptFish(fishId));
+  ipcMain.handle('buy-fish', (event, fishId, price) => buyFish(fishId, price));
   ipcMain.handle('set-fish-in-tank', (event, fishId, inTank) => setFishInTank(fishId, inTank));
   ipcMain.handle('set-avatar-fish', (event, fishId) => setAvatarFish(fishId));
 

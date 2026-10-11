@@ -1,4 +1,4 @@
-const { request } = require('./supabase');
+const { request, rpc } = require('./supabase');
 const { currentUser } = require('./session');
 
 // The fish each player owns, kept in the owned_fish table so the tank survives
@@ -25,16 +25,15 @@ async function listFish() {
   return request('/rest/v1/owned_fish?select=fish_id,in_tank,adopted_at&order=adopted_at');
 }
 
-// Saves a newly bought fish, swimming in the tank. Owning it already is fine:
-// nothing changes and it still resolves.
-async function adoptFish(fishId) {
+// Buys a fish for the logged-in user: takes the price off their saved points
+// and adds the fish to their tank in one step (buy_fish in the database).
+// Resolves with their new balance. Rejects with Supabase's reason, e.g. "not
+// enough points" or "you already have this fish", and then nothing changes.
+async function buyFish(fishId, price) {
   checkFishId(fishId);
+  if (!Number.isInteger(price) || price < 0) throw new Error('A price is required');
   requireUser();
-  await request('/rest/v1/owned_fish?on_conflict=owner_id,fish_id', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: { fish_id: fishId },
-  });
+  return rpc('buy_fish', { fish: fishId, price });
 }
 
 // Puts one of the logged-in user's fish in the tank or takes it out.
@@ -63,4 +62,4 @@ async function setAvatarFish(fishId) {
   if (!Array.isArray(updated) || updated.length !== 1) throw new Error("Couldn't save your avatar.");
 }
 
-module.exports = { listFish, adoptFish, setFishInTank, setAvatarFish };
+module.exports = { listFish, buyFish, setFishInTank, setAvatarFish };
