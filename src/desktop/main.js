@@ -16,8 +16,10 @@ const {
 } = require('./groups');
 const { listNotes, submitNote, deleteNote, noteFileUrl } = require('./notes');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
+const { listRunningApps, getAllowedApps, setAllowedApps, startStudy, stopStudy } = require('./study-mode');
 
-// When the running lockdown session started (ms since epoch), or null.
+// When the running session (strict lockdown or study mode) started (ms since
+// epoch), or null.
 let sessionStartedAt = null;
 
 // Puts the given window into kiosk mode (enabled = true) or takes it back out
@@ -27,12 +29,13 @@ function lockDown(win, enabled) {
   return win.isKiosk();
 }
 
-// Ends the lockdown session: takes the window out of kiosk mode, then adds the
-// whole minutes the session ran to the logged-in user's minutes studied and
-// 1/60 of a point per minute to their points. Kiosk mode is turned off even if
-// those can't be saved.
+// Ends the running session, whichever kind it is: takes the window out of
+// kiosk mode and stops study mode, then adds the whole minutes the session ran
+// to the logged-in user's minutes studied and 1/60 of a point per minute to
+// their points. Both are turned off even if those can't be saved.
 async function endSession(win) {
   const locked = lockDown(win, false);
+  await stopStudy();
   const seconds = sessionStartedAt === null ? 0 : Math.floor((Date.now() - sessionStartedAt) / 1000);
   sessionStartedAt = null;
 
@@ -77,6 +80,9 @@ function createWindow() {
     },
   });
 
+  // Closing the window ends study mode, so notifications don't stay silenced.
+  win.on('closed', () => void stopStudy());
+
   if (devServerUrl) {
     win.loadURL(devServerUrl);
   } else {
@@ -92,6 +98,16 @@ app.whenReady().then(() => {
     else sessionStartedAt ??= Date.now();
     return locked;
   });
+  ipcMain.handle('start-study', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    sessionStartedAt ??= Date.now();
+    return startStudy(win, (appName) => {
+      if (!win.isDestroyed()) win.webContents.send('study-app-blocked', appName);
+    });
+  });
+  ipcMain.handle('list-running-apps', () => listRunningApps());
+  ipcMain.handle('get-allowed-apps', () => getAllowedApps());
+  ipcMain.handle('set-allowed-apps', (event, apps) => setAllowedApps(apps));
   ipcMain.handle('end-session', (event) => endSession(BrowserWindow.fromWebContents(event.sender)));
 
   ipcMain.handle('create-account', (event, account) => createAccount(account));
@@ -132,6 +148,8 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+app.on('before-quit', () => void stopStudy());
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

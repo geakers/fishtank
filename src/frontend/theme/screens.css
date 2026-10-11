@@ -345,7 +345,80 @@
 
 .home__focus {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--aero-space-4);
+}
+
+/* The smaller buttons under Focus. */
+.home__focus-more {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: var(--aero-space-2);
+}
+
+/* ---------- Study apps dialog ---------- */
+
+.study-apps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-3);
+  /* Never taller than the window, less the backdrop's padding; the list of
+     apps scrolls instead. */
+  max-height: calc(100vh - 2 * var(--aero-space-4));
+}
+
+.study-apps > * {
+  flex-shrink: 0;
+}
+
+.study-apps .form-actions {
+  margin-top: 0;
+}
+
+.study-apps__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-1);
+  flex: 0 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.study-apps__app {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-3);
+  padding: var(--aero-space-2) var(--aero-space-3);
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-white);
+  cursor: pointer;
+}
+
+.study-apps__app:has(input:checked) {
+  border-color: var(--aero-cyan-300);
+  background: var(--aero-cyan-100);
+}
+
+.study-apps__app input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--aero-cyan-500);
+}
+
+.study-apps__name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.study-apps__section {
+  padding-top: var(--aero-space-3);
+  border-top: 2px solid var(--aero-line-soft);
 }
 
 /* ---------- Study notes panel ---------- */
@@ -1766,6 +1839,12 @@
   display: flex;
   align-items: center;
   gap: var(--aero-space-3);
+}
+
+.lockin__note {
+  padding: 6px 12px;
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-white);
 }
 
 .error-text--on-water {

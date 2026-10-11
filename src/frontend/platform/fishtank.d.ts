@@ -21,6 +21,12 @@ declare global {
     minutes_studied: number;
   }
 
+  // An app the user can allow in study mode. id is its bundle ID.
+  interface FishtankStudyApp {
+    id: string;
+    name: string;
+  }
+
   // What endSession reports. saved is false when nobody is logged in or the
   // session ran under a minute; error is set when saving failed.
   interface FishtankSessionResult {
@@ -93,10 +99,25 @@ declare global {
   }
 
   interface FishtankBridge {
-    // Turns kiosk lockdown on/off. Resolves with the window's actual kiosk state.
+    // Turns kiosk lockdown (strict mode) on/off. Resolves with the window's
+    // actual kiosk state.
     lockDown(enabled: boolean): Promise<boolean>;
-    // Ends the lockdown session: turns kiosk mode off and adds the minutes and
-    // points it earned to the logged-in user's profile.
+    // Starts study mode: grows the window to fill the screen, silences
+    // notifications and keeps apps that aren't on the user's list from staying
+    // in front. notificationsSilenced is false when the user hasn't made the
+    // Focus shortcuts.
+    startStudy(): Promise<{ notificationsSilenced: boolean }>;
+    // Resolves with the apps that are open right now, other than Fishtank.
+    listRunningApps(): Promise<FishtankStudyApp[]>;
+    // The apps the user may use in study mode. setAllowedApps resolves with
+    // what was saved, and rejects during a study session.
+    getAllowedApps(): Promise<FishtankStudyApp[]>;
+    setAllowedApps(apps: FishtankStudyApp[]): Promise<FishtankStudyApp[]>;
+    // Calls back with the name of each app study mode sends to the back.
+    // Returns a function that stops the calls.
+    onStudyAppBlocked(callback: (appName: string) => void): () => void;
+    // Ends the session, whichever mode it is: turns kiosk and study mode off
+    // and adds the minutes and points it earned to the logged-in user's profile.
     endSession(): Promise<FishtankSessionResult>;
     // Creates an account. needsConfirmation is true when the user must confirm
     // their email before they can log in.
