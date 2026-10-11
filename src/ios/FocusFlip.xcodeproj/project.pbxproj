@@ -30,7 +30,36 @@
 		A10100000000000000000031 /* selawk.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A20100000000000000000031 /* selawk.ttf */; };
 		A10100000000000000000032 /* selawksb.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A20100000000000000000032 /* selawksb.ttf */; };
 		A10100000000000000000033 /* selawkb.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A20100000000000000000033 /* selawkb.ttf */; };
+		A10100000000000000000040 /* ScreenTimeLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20100000000000000000040 /* ScreenTimeLock.swift */; };
+		A10100000000000000000041 /* FocusShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20100000000000000000041 /* FocusShield.swift */; };
+		B10100000000000000000001 /* FocusShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20100000000000000000041 /* FocusShield.swift */; };
+		B10100000000000000000002 /* FocusFlipMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20100000000000000000001 /* FocusFlipMonitor.swift */; };
+		B10100000000000000000003 /* FocusFlipMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B40100000000000000000001 /* FocusFlipMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B70100000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A50100000000000000000003 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B40100000000000000000002;
+			remoteInfo = FocusFlipMonitor;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B50100000000000000000004 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B10100000000000000000003 /* FocusFlipMonitor.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A20100000000000000000001 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
@@ -59,10 +88,24 @@
 		A20100000000000000000032 /* selawksb.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = selawksb.ttf; sourceTree = "<group>"; };
 		A20100000000000000000033 /* selawkb.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = selawkb.ttf; sourceTree = "<group>"; };
 		A20100000000000000000034 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		A20100000000000000000040 /* ScreenTimeLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeLock.swift; sourceTree = "<group>"; };
+		A20100000000000000000041 /* FocusShield.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusShield.swift; sourceTree = "<group>"; };
+		A20100000000000000000042 /* FocusFlip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFlip.entitlements; sourceTree = "<group>"; };
+		B20100000000000000000001 /* FocusFlipMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFlipMonitor.swift; sourceTree = "<group>"; };
+		B20100000000000000000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B20100000000000000000003 /* FocusFlipMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFlipMonitor.entitlements; sourceTree = "<group>"; };
+		B40100000000000000000001 /* FocusFlipMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FocusFlipMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A30100000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B30100000000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -76,6 +119,7 @@
 			isa = PBXGroup;
 			children = (
 				A31100000000000000000002 /* FocusFlip */,
+				B31100000000000000000001 /* FocusFlipMonitor */,
 				A31100000000000000000008 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,6 +129,7 @@
 			children = (
 				A20100000000000000000001 /* Config.swift */,
 				A20100000000000000000012 /* Info.plist */,
+				A20100000000000000000042 /* FocusFlip.entitlements */,
 				A20100000000000000000011 /* Assets.xcassets */,
 				A31100000000000000000009 /* Fonts */,
 				A31100000000000000000003 /* App */,
@@ -143,6 +188,8 @@
 			children = (
 				A20100000000000000000008 /* SessionManager.swift */,
 				A20100000000000000000009 /* TonePlayer.swift */,
+				A20100000000000000000040 /* ScreenTimeLock.swift */,
+				A20100000000000000000041 /* FocusShield.swift */,
 			);
 			path = Focus;
 			sourceTree = "<group>";
@@ -164,8 +211,19 @@
 			isa = PBXGroup;
 			children = (
 				A40100000000000000000001 /* FocusFlip.app */,
+				B40100000000000000000001 /* FocusFlipMonitor.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B31100000000000000000001 /* FocusFlipMonitor */ = {
+			isa = PBXGroup;
+			children = (
+				B20100000000000000000001 /* FocusFlipMonitor.swift */,
+				B20100000000000000000002 /* Info.plist */,
+				B20100000000000000000003 /* FocusFlipMonitor.entitlements */,
+			);
+			path = FocusFlipMonitor;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -178,15 +236,33 @@
 				A50100000000000000000001 /* Sources */,
 				A30100000000000000000001 /* Frameworks */,
 				A50100000000000000000002 /* Resources */,
+				B50100000000000000000004 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B80100000000000000000001 /* PBXTargetDependency */,
 			);
 			name = FocusFlip;
 			productName = FocusFlip;
 			productReference = A40100000000000000000001 /* FocusFlip.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B40100000000000000000002 /* FocusFlipMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B60100000000000000000001 /* Build configuration list for PBXNativeTarget "FocusFlipMonitor" */;
+			buildPhases = (
+				B50100000000000000000001 /* Sources */,
+				B30100000000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FocusFlipMonitor;
+			productName = FocusFlipMonitor;
+			productReference = B40100000000000000000001 /* FocusFlipMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -200,6 +276,9 @@
 				TargetAttributes = {
 					A40100000000000000000002 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					B40100000000000000000002 = {
+						CreatedOnToolsVersion = 27.0;
 					};
 				};
 			};
@@ -217,6 +296,7 @@
 			projectRoot = "";
 			targets = (
 				A40100000000000000000002 /* FocusFlip */,
+				B40100000000000000000002 /* FocusFlipMonitor */,
 			);
 		};
 /* End PBXProject section */
@@ -259,10 +339,29 @@
 				A1010000000000000000000F /* WhitelistScreen.swift in Sources */,
 				A10100000000000000000021 /* StudyGroupsScreen.swift in Sources */,
 				A10100000000000000000010 /* FlipPhoneScreen.swift in Sources */,
+				A10100000000000000000040 /* ScreenTimeLock.swift in Sources */,
+				A10100000000000000000041 /* FocusShield.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B50100000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10100000000000000000001 /* FocusShield.swift in Sources */,
+				B10100000000000000000002 /* FocusFlipMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B80100000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B40100000000000000000002 /* FocusFlipMonitor */;
+			targetProxy = B70100000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A60100000000000000000004 /* Debug */ = {
@@ -422,6 +521,56 @@
 			};
 			name = Release;
 		};
+		B60100000000000000000002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FocusFlipMonitor/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.focusflip.app.monitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B60100000000000000000003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FocusFlipMonitor/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.focusflip.app.monitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -439,6 +588,15 @@
 			buildConfigurations = (
 				A60100000000000000000006 /* Debug */,
 				A60100000000000000000007 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B60100000000000000000001 /* Build configuration list for PBXNativeTarget "FocusFlipMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B60100000000000000000002 /* Debug */,
+				B60100000000000000000003 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

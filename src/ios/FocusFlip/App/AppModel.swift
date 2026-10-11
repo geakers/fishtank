@@ -9,6 +9,7 @@ final class AppModel: ObservableObject {
     let sync: SyncRepository
     let groups: GroupsRepository
     let whitelist: WhitelistStore
+    let screenTime: ScreenTimeLock
     let sessions: SessionManager
     let tones = TonePlayer()
 
@@ -22,11 +23,13 @@ final class AppModel: ObservableObject {
         sync = SyncRepository(http: http, auth: auth)
         groups = GroupsRepository(http: http, auth: auth)
         whitelist = WhitelistStore()
-        sessions = SessionManager(sync: sync)
+        screenTime = ScreenTimeLock()
+        sessions = SessionManager(sync: sync, screenTime: screenTime)
 
         sessionStore.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         sync.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         whitelist.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
+        screenTime.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         sessions.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
     }
 

@@ -5,7 +5,8 @@ import UIKit
 
 /// A focus session runs for the minutes the user committed to, then ends by itself. Only a
 /// session that lasts its full commitment earns points; ending it early with END still saves
-/// the time focused, but earns nothing.
+/// the time focused, but earns nothing. While a session runs, Focus Guard
+/// (ScreenTimeLock) blocks every app the user didn't allow.
 @MainActor
 final class SessionManager: ObservableObject {
     @Published private(set) var state = SessionState()
@@ -14,13 +15,18 @@ final class SessionManager: ObservableObject {
     @Published var finished: FinishedSession?
 
     private let sync: SyncRepository
+    private let screenTime: ScreenTimeLock
     private let defaults = UserDefaults.standard
 
-    init(sync: SyncRepository) {
+    init(sync: SyncRepository, screenTime: ScreenTimeLock) {
         self.sync = sync
+        self.screenTime = screenTime
         state = read()
         if state.phase != .idle {
             UIApplication.shared.isIdleTimerDisabled = true
+        } else {
+            // Never leave apps blocked with no session running.
+            screenTime.unlock()
         }
         // The commitment may have run out while the app was closed.
         tick()
@@ -39,6 +45,7 @@ final class SessionManager: ObservableObject {
         defaults.set(minutes, forKey: "commit_minutes")
         finished = nil
         update(SessionState(phase: .focus, startedAt: Date().timeIntervalSince1970, commitMinutes: minutes))
+        screenTime.lock(until: Date(timeIntervalSince1970: state.endsAt))
         UIApplication.shared.isIdleTimerDisabled = true
     }
 
@@ -77,6 +84,7 @@ final class SessionManager: ObservableObject {
             seconds: Int(max(0, endedAt - s.startedAt))
         )
         update(SessionState())
+        screenTime.unlock()
         UIApplication.shared.isIdleTimerDisabled = false
         showBounceBack = false
     }
@@ -87,7 +95,8 @@ final class SessionManager: ObservableObject {
         }
         if phase == .active {
             tick()
-            if isLocked && defaults.bool(forKey: "left_during_lock") {
+            // With Focus Guard on, leaving for an allowed app is fine: Screen Time blocks the rest.
+            if isLocked && !screenTime.authorized && defaults.bool(forKey: "left_during_lock") {
                 showBounceBack = true
             }
             defaults.set(false, forKey: "left_during_lock")

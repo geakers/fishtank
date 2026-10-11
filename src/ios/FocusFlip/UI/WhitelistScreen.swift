@@ -1,13 +1,20 @@
+import FamilyControls
 import SwiftUI
 import UIKit
 
-/// Study apps: the apps that can be opened from the lock screen. Styled after the desktop's
+/// Study apps: the apps Focus Guard leaves open during a session, chosen in Screen Time's
+/// picker, and the keypad shortcuts the lock screen can open. Styled after the desktop's
 /// Study apps panel (src/frontend/views/components/StudyApps.tsx) on its home screen
-/// backdrop. Ticking an app saves straight away.
+/// backdrop. Every change saves straight away.
 struct WhitelistScreen: View {
     @EnvironmentObject private var model: AppModel
     let onBack: () -> Void
     @State private var query = ""
+    @State private var picking = false
+
+    private var selection: Binding<FamilyActivitySelection> {
+        Binding(get: { model.screenTime.selection }, set: { model.screenTime.selection = $0 })
+    }
 
     private var visible: [CatalogApp] {
         AppCatalog.all.filter {
@@ -32,7 +39,7 @@ struct WhitelistScreen: View {
                     }
                     .buttonStyle(PressScale())
                     Spacer()
-                    Text("\(model.whitelist.schemes.count) chosen")
+                    Text("\(model.screenTime.allowedCount) allowed")
                         .font(.selawik(13, .semibold))
                         .foregroundStyle(Wii.cyan700)
                         .padding(.horizontal, 12)
@@ -49,7 +56,26 @@ struct WhitelistScreen: View {
                         .padding(.bottom, 8)
                         .overlay(alignment: .bottom) { Wii.lineSoft.frame(height: 2) }
 
-                    Text("Tick the apps you study with. During a Focus session they open from the flip phone's keypad; everything else stays locked.")
+                    Text("During a Focus session, Focus Guard blocks every app except the ones you allow here.")
+                        .font(.selawik(13))
+                        .foregroundStyle(Wii.inkMuted)
+
+                    AllowedAppsRow(
+                        authorized: model.screenTime.authorized,
+                        count: model.screenTime.allowedCount
+                    ) {
+                        if model.screenTime.authorized {
+                            picking = true
+                        } else {
+                            Task { if await model.screenTime.requestAuthorization() { picking = true } }
+                        }
+                    }
+
+                    Text("Keypad shortcuts")
+                        .font(.selawik(15, .semibold))
+                        .foregroundStyle(Wii.ink)
+                        .padding(.top, 4)
+                    Text("Tick apps to open them from the flip phone's keypad. They only open if they're allowed above.")
                         .font(.selawik(13))
                         .foregroundStyle(Wii.inkMuted)
 
@@ -73,7 +99,7 @@ struct WhitelistScreen: View {
                     }
                     .scrollDismissesKeyboard(.immediately)
 
-                    Text("iPhone apps can't be listed, so these are the apps FocusFlip knows how to open. To keep you in FocusFlip, turn on Guided Access under Settings > Accessibility.")
+                    Text("iPhone apps can't be listed, so these are the apps FocusFlip knows how to open.")
                         .font(.selawik(12))
                         .foregroundStyle(Wii.inkMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -114,6 +140,45 @@ struct WhitelistScreen: View {
             .padding(.top, 8)
             .padding(.bottom, 12)
         }
+        .familyActivityPicker(isPresented: $picking, selection: selection)
+    }
+}
+
+/// How many apps Focus Guard leaves open, and the button to choose them, or to turn Focus
+/// Guard on first.
+private struct AllowedAppsRow: View {
+    let authorized: Bool
+    let count: Int
+    let onChoose: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Allowed during Focus")
+                    .font(.selawik(15, .semibold))
+                    .foregroundStyle(Wii.ink)
+                Text(authorized ? "\(count) apps and websites chosen" : "Turn on Focus Guard to choose")
+                    .font(.selawik(12))
+                    .foregroundStyle(Wii.inkMuted)
+            }
+            Spacer()
+            Button(action: onChoose) {
+                Text(authorized ? "Choose" : "Turn on")
+                    .font(.selawik(14, .semibold))
+                    .foregroundStyle(Wii.cyan700)
+                    .padding(.horizontal, 16)
+                    .frame(height: 34)
+                    .background(Wii.cyan100)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Wii.cyan300, lineWidth: 2))
+            }
+            .buttonStyle(PressScale())
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Wii.lineSoft, lineWidth: 2))
     }
 }
 

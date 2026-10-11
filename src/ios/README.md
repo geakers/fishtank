@@ -31,25 +31,32 @@ sessions as the desktop, and the same Supabase account (`profiles.minutes_studie
 
 ## How the lock works on iOS
 
-iOS does not allow an app to list every installed package or to pin itself on top
-the way Android Accessibility + lock-task can. FocusFlip uses the closest equivalents:
+**Focus Guard** uses Apple's Screen Time API (FamilyControls, ManagedSettings and DeviceActivity):
 
-1. **Full-screen FlipPhone** while a session is running. The home indicator and status bar are hidden. The screen stays on.
-2. **Guided Access** (Settings → Accessibility → Guided Access) is the iOS “Focus Guard”. Triple-click the side button after starting a session to freeze the phone on FocusFlip. Without it the timer still runs, but the user can leave the app.
-3. **Bounce-back overlay**: if you leave FocusFlip during a focus block (Home / app switcher) and come back, the same aqua “PHONE LOCKED / TAP TO RETURN” panel as Android is shown.
-4. **Whitelist**: iOS cannot enumerate installed apps. The list is a catalog of public URL schemes (Phone, Messages, Safari, Clock, YouTube, …). Ticked apps open via that scheme from the D-pad.
+1. The first time, FocusFlip asks for Screen Time permission (Focus Guard on the home screen, or when you start a session).
+2. Under **Study apps → Allowed during Focus**, Apple's picker chooses the apps and websites that stay open. Pick apps one by one; a whole category can't be allowed.
+3. When a session starts, every other app and website shows Screen Time's block screen until the session ends.
+4. When the session ends, in the app or because time ran out, the block comes off. The **FocusFlipMonitor** extension (`FocusFlipMonitor/`) also takes it off at the end time even if FocusFlip isn't running. Schedules have a 15-minute minimum, so shorter sessions end on the schedule's warning instead.
+5. **Keypad shortcuts**: iOS cannot list installed apps, so the flip phone opens apps from a catalog of public URL schemes (Phone, Messages, Safari, Clock, YouTube, ...). A shortcut only opens during a session if that app is also allowed.
+
+Without Screen Time permission the timer still runs, and leaving FocusFlip shows the "PHONE LOCKED / TAP TO RETURN" panel when you come back, but nothing is blocked.
 
 Use the **same email/password** as the Android and desktop apps so study time and points stay on one account.
+
+### Turning Focus Guard on
+
+Focus Guard is **off in the build** for now, because the Screen Time capability (Family Controls) needs a paid Apple Developer account and free accounts can't sign it. The app still runs: Focus Guard shows "Off" and nothing is blocked.
+
+With a paid account, in Xcode's **Signing & Capabilities** pick the paid team for both targets, then set **Code Signing Entitlements** (`CODE_SIGN_ENTITLEMENTS`) to `FocusFlip/FocusFlip.entitlements` on the FocusFlip target and `FocusFlipMonitor/FocusFlipMonitor.entitlements` on the FocusFlipMonitor target. TestFlight and App Store builds also need Apple to approve the Family Controls (Distribution) entitlement.
 
 ## Build and install (Mac)
 
 1. Install **Xcode** from the Mac App Store and open it once to accept the license.
 2. Connect an iPhone (iOS 16+) and trust the computer, **or** pick an iOS Simulator.
 3. Open `src/ios/FocusFlip.xcodeproj`.
-4. In the target **Signing & Capabilities**, choose your Team (a free Apple ID works for personal devices).
+4. In **Signing & Capabilities**, choose your Team for both the **FocusFlip** and **FocusFlipMonitor** targets. A free Apple ID works.
 5. Select the device / simulator and press Run (⌘R).
 6. On a physical iPhone the first install is untrusted: **Settings → General → VPN & Device Management → Developer App → Trust**.
-7. Enable **Guided Access**: Settings → Accessibility → Guided Access → On. Set a passcode. After starting a session, triple-click the side button.
 
 ## Project structure
 
@@ -64,8 +71,9 @@ src/ios/
     ├── App/                      SwiftUI entry + AppModel (ServiceLocator)
     ├── Theme/                    Aero palette, LCD, buttons
     ├── Data/                     Auth, session, sync, study groups, whitelist catalog
-    ├── Focus/                    Committed session, DTMF tones
+    ├── Focus/                    Committed session, Focus Guard (Screen Time), DTMF tones
     └── UI/                       Auth, Home, Whitelist, Study groups, FlipPhone
+└── FocusFlipMonitor/             Extension that unblocks apps when a session's time is up
 ```
 
 The cloud project is the same as Android: `https://aakaelrvybduqijgermo.supabase.co`.

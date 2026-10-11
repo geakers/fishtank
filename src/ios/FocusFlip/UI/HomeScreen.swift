@@ -6,7 +6,7 @@ import UIKit
 ///   top bar - brand on the left; points and profile on the right
 ///   hero    - the flip phone on its stand; tap it or Focus to start a session, which first
 ///             asks how long to commit to
-///   actions - Focus, then Study apps (the whitelist) and Focus Guard (Guided Access)
+///   actions - Focus, then Study apps (the whitelist) and Focus Guard (Screen Time)
 ///   panel   - study groups
 ///   dock    - a big grey clock and the date
 struct HomeScreen: View {
@@ -14,17 +14,18 @@ struct HomeScreen: View {
     let onOpenWhitelist: () -> Void
     let onOpenGroups: () -> Void
 
-    @Environment(\.scenePhase) private var scenePhase
     @State private var now = Date()
     @State private var showGuardDialog = false
     @State private var showProfile = false
     @State private var showCommit = false
     /// The minutes chosen in the commitment sheet, waiting on the Focus Guard question.
     @State private var pendingMinutes = Config.defaultCommitMinutes
-    @State private var guardOn = UIAccessibility.isGuidedAccessEnabled
     /// nil until the first load finishes.
     @State private var groups: [StudyGroup]?
     @State private var invites: [GroupInvite] = []
+
+    /// Whether Focus Guard can block apps: FocusFlip has Screen Time permission.
+    private var guardOn: Bool { model.screenTime.authorized }
 
     private var displayName: String {
         guard let session = model.sessionStore.session else { return "" }
@@ -52,9 +53,9 @@ struct HomeScreen: View {
                         HeroButton(text: "Focus", action: startPressed)
 
                         HStack(spacing: 10) {
-                            WiiButton(text: "Study apps", detail: "\(model.whitelist.schemes.count)", action: onOpenWhitelist)
+                            WiiButton(text: "Study apps", detail: "\(model.screenTime.allowedCount)", action: onOpenWhitelist)
                             WiiButton(text: "Focus Guard", detail: guardOn ? "On" : "Off", warn: !guardOn) {
-                                openGuidedAccessSettings()
+                                if guardOn { onOpenWhitelist() } else { Task { await model.screenTime.requestAuthorization() } }
                             }
                         }
 
@@ -71,9 +72,6 @@ struct HomeScreen: View {
         }
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now = $0 }
         .task { await reload() }
-        .onChange(of: scenePhase) { _ in
-            guardOn = UIAccessibility.isGuidedAccessEnabled
-        }
         .sheet(isPresented: $showProfile) {
             ProfileSheet(name: displayName)
         }
@@ -89,10 +87,15 @@ struct HomeScreen: View {
             Text(finishedMessage)
         }
         .alert("Turn on Focus Guard?", isPresented: $showGuardDialog) {
-            Button("Open settings") { openGuidedAccessSettings() }
+            Button("Turn on") {
+                Task {
+                    await model.screenTime.requestAuthorization()
+                    model.sessions.startFocus(minutes: pendingMinutes)
+                }
+            }
             Button("Start anyway") { model.sessions.startFocus(minutes: pendingMinutes) }
         } message: {
-            Text("To keep you inside FocusFlip during a session, turn on Guided Access under Settings > Accessibility, then triple-click the side button after you start.\n\nWithout it the timer still runs, but other apps are not blocked.")
+            Text("Focus Guard uses Screen Time to block every app except your study apps until the session ends.\n\nWithout it the timer still runs, but other apps are not blocked.")
         }
     }
 
@@ -123,21 +126,9 @@ struct HomeScreen: View {
     }
 
     private func reload() async {
-        guardOn = UIAccessibility.isGuidedAccessEnabled
         await model.sync.syncNow()
         if let next = try? await model.groups.listGroups() { groups = next } else if groups == nil { groups = [] }
         invites = (try? await model.groups.myInvites()) ?? []
-    }
-
-    private func openGuidedAccessSettings() {
-        let fallback = URL(string: UIApplication.openSettingsURLString)
-        if let url = URL(string: "App-Prefs:root=ACCESSIBILITY") {
-            UIApplication.shared.open(url, options: [:]) { ok in
-                if !ok, let fallback { UIApplication.shared.open(fallback) }
-            }
-            return
-        }
-        if let fallback { UIApplication.shared.open(fallback) }
     }
 }
 
