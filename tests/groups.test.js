@@ -8,7 +8,7 @@ let token = 'dud-access-token';
 // groups.js picks up getAccessToken when it loads, so swap it out first.
 mock.method(session, 'getAccessToken', async () => token);
 const {
-  createGroup, listGroups, addMember, groupRoster, searchUsernames,
+  createGroup, listGroups, deleteGroup, addMember, groupRoster, searchUsernames,
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 } = require('../src/desktop/groups');
 
@@ -71,6 +71,33 @@ test('listGroups lists the groups sorted by name', async (t) => {
   assert.deepEqual(await listGroups(), [GROUP]);
   assert.equal(requests[0].method, 'GET');
   assert.equal(requests[0].search, '?select=id,name,leader_id&order=name');
+});
+
+test('deleteGroup deletes the group by id', async (t) => {
+  reset(t);
+  const requests = mockSupabase({ '/rest/v1/study_groups': () => Response.json([{ id: 1 }]) });
+
+  await deleteGroup(1);
+
+  assert.equal(requests[0].method, 'DELETE');
+  assert.equal(requests[0].search, '?id=eq.1&select=id');
+  assert.equal(requests[0].headers.Prefer, 'return=representation');
+});
+
+test('deleteGroup says so when the group was not deleted', async (t) => {
+  reset(t);
+  // What Supabase returns when row level security hides the group.
+  mockSupabase({ '/rest/v1/study_groups': () => Response.json([]) });
+
+  await assert.rejects(deleteGroup(1), /Only the group leader can delete a study group/);
+});
+
+test('deleteGroup refuses anything but a group id without asking Supabase', async (t) => {
+  reset(t);
+  const requests = mockSupabase({});
+
+  await assert.rejects(deleteGroup('1 or true'), /A study group is required/);
+  assert.equal(requests.length, 0);
 });
 
 test('addMember calls add_member with the group and username', async (t) => {

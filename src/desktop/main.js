@@ -11,7 +11,7 @@ const {
   verifyPoints,
 } = require('./profiles');
 const {
-  createGroup, listGroups, addMember, groupRoster, searchUsernames,
+  createGroup, listGroups, deleteGroup, addMember, groupRoster, searchUsernames,
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 } = require('./groups');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
@@ -124,6 +124,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('create-group', (event, name) => createGroup(name));
   ipcMain.handle('list-groups', () => listGroups());
+  ipcMain.handle('delete-group', (event, groupId) => deleteGroup(groupId));
   ipcMain.handle('add-member', (event, groupId, username) => addMember(groupId, username));
   ipcMain.handle('group-roster', (event, groupId) => groupRoster(groupId));
   ipcMain.handle('search-usernames', (event, query) => searchUsernames(query));

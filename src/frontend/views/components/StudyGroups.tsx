@@ -78,6 +78,8 @@ function GroupsPanel({ bridge, account, className }: GroupsPanelProps) {
   const [openGroupId, setOpenGroupId] = useState<number | null>(null);
   const [openPerson, setOpenPerson] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  // The group the leader has asked to delete, until they confirm or cancel.
+  const [deleting, setDeleting] = useState<FishtankGroup | null>(null);
   // Goes up after each invite, so the open group reloads its people.
   const [rosterVersion, setRosterVersion] = useState(0);
 
@@ -130,6 +132,17 @@ function GroupsPanel({ bridge, account, className }: GroupsPanelProps) {
     } catch (err) {
       fail(err);
     }
+  };
+
+  const deleteGroup = async (group: FishtankGroup) => {
+    try {
+      await bridge.deleteGroup(group.id);
+      setNotice({ tone: 'ok', text: `Deleted ${group.name}.` });
+    } catch (err) {
+      fail(err);
+    }
+    setDeleting(null);
+    await refresh();
   };
 
   const answerInvite = async (inviteToAnswer: FishtankGroupInvite, accept: boolean) => {
@@ -224,7 +237,7 @@ function GroupsPanel({ bridge, account, className }: GroupsPanelProps) {
                     </span>
                   </button>
                   {open ? (
-                    <GroupPeople bridge={bridge} group={g} isLeader={isLeader} version={rosterVersion} onInvite={(username) => invite(g, username)} />
+                    <GroupPeople bridge={bridge} group={g} isLeader={isLeader} version={rosterVersion} onInvite={(username) => invite(g, username)} onDelete={() => setDeleting(g)} />
                   ) : null}
                 </li>
               );
@@ -273,6 +286,8 @@ function GroupsPanel({ bridge, account, className }: GroupsPanelProps) {
         ) : null}
       </div>
 
+      {deleting ? <DeleteGroupDialog group={deleting} onConfirm={() => deleteGroup(deleting)} onCancel={() => setDeleting(null)} /> : null}
+
       {notice ? (
         <p className={`groups__notice ${notice.tone === 'ok' ? 'ok-text' : 'error-text'}`} role="status">
           {notice.text}
@@ -317,6 +332,49 @@ function NewGroupForm({ onCreate, onCancel }: { onCreate: (name: string) => Prom
   );
 }
 
+interface DeleteGroupDialogProps {
+  group: FishtankGroup;
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+}
+
+// Pop-up asking the leader to confirm before their group is deleted.
+function DeleteGroupDialog({ group, onConfirm, onCancel }: DeleteGroupDialogProps) {
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
+
+  const confirm = () => {
+    setBusy(true);
+    void onConfirm();
+  };
+
+  return (
+    <div className="modal-backdrop" onPointerDown={(event) => event.target === event.currentTarget && onCancel()}>
+      <GlassPanel variant="raised" className="modal groups__confirm" role="alertdialog" aria-labelledby="delete-group-title">
+        <h2 id="delete-group-title" className="panel-title">
+          Delete {group.name}?
+        </h2>
+        <p>Everyone in this study group will be removed from it and any invites to it will be cancelled. This can't be undone.</p>
+        <div className="form-actions">
+          <AeroButton variant="glass" onClick={onCancel} autoFocus>
+            Cancel
+          </AeroButton>
+          <AeroButton className="groups__delete-confirm" disabled={busy} onClick={confirm}>
+            Delete group
+          </AeroButton>
+        </div>
+      </GlassPanel>
+    </div>
+  );
+}
+
 interface GroupPeopleProps {
   bridge: FishtankBridge;
   group: FishtankGroup;
@@ -324,11 +382,14 @@ interface GroupPeopleProps {
   // Reloads the people each time it changes.
   version: number;
   onInvite: (username: string) => Promise<void>;
+  // Asks the leader to confirm deleting the group.
+  onDelete: () => void;
 }
 
 // The drop-down under a group: everyone in it, anyone invited who hasn't
-// answered yet and, for the leader, an Add button to invite more people.
-function GroupPeople({ bridge, group, isLeader, version, onInvite }: GroupPeopleProps) {
+// answered yet and, for the leader, an Add button to invite more people and a
+// button to delete the group.
+function GroupPeople({ bridge, group, isLeader, version, onInvite, onDelete }: GroupPeopleProps) {
   const [roster, setRoster] = useState<FishtankGroupMember[] | null>(null);
   const [invited, setInvited] = useState<string[]>([]);
   const [failed, setFailed] = useState(false);
@@ -374,12 +435,6 @@ function GroupPeople({ bridge, group, isLeader, version, onInvite }: GroupPeople
         ))}
       </ul>
 
-      {isLeader && !adding ? (
-        <AeroButton variant="glass" className="groups__add-person" onClick={() => setAdding(true)}>
-          + Add
-        </AeroButton>
-      ) : null}
-
       {isLeader && adding ? (
         <div className="groups__invite-search">
           <input
@@ -402,6 +457,19 @@ function GroupPeople({ bridge, group, isLeader, version, onInvite }: GroupPeople
               </li>
             ))}
           </ul>
+        </div>
+      ) : null}
+
+      {isLeader ? (
+        <div className="groups__leader-actions">
+          {adding ? null : (
+            <AeroButton variant="glass" className="groups__add-person" onClick={() => setAdding(true)}>
+              + Add
+            </AeroButton>
+          )}
+          <AeroButton variant="glass" className="groups__delete" onClick={onDelete}>
+            Delete group
+          </AeroButton>
         </div>
       ) : null}
     </div>

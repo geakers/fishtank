@@ -108,6 +108,9 @@ declare global {
     // Resolves with the groups the logged-in user leads or is a member of,
     // sorted by name.
     listGroups(): Promise<FishtankGroup[]>;
+    // Deletes the group, its members and its invites. Rejects unless the
+    // logged-in user leads the group.
+    deleteGroup(groupId: number): Promise<void>;
     // Adds the user with this username to the group. Rejects unless the
     // logged-in user leads the group, the username exists and isn't the leader.
     addMember(groupId: number, username: string): Promise<void>;
