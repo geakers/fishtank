@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { EMPTY_STATS, FISH, type Fish } from './data';
 
 export const START_POINTS = 100_000;
@@ -74,18 +74,77 @@ export function useFishtank() {
     setStats((s) => ({ ...s, pointsEarned: s.pointsEarned + amount }));
   };
 
-  const buy = (fish: Fish) => {
-    if (points < fish.price || ownedIds.includes(fish.id)) return;
-    setPoints(points - fish.price);
-    setOwnedIds([...ownedIds, fish.id]);
-    setTankIds([...tankIds, fish.id]);
+  // --- Fish ---
+  // A logged-in user's fish, which ones are in the tank, their avatar and the
+  // points they spent on fish are saved to their account (the owned_fish table
+  // and their profile), so they survive closing the app. A guest's fish only
+  // last until then.
+
+  // Fish being bought right now, so a double-click doesn't buy twice.
+  const buying = useRef(new Set<string>());
+
+  const buy = async (fish: Fish) => {
+    if (points < fish.price || ownedIds.includes(fish.id) || buying.current.has(fish.id)) return;
+    const bridge = window.fishtank;
+    if (account && bridge) {
+      // The account's saved points pay for it, and stay spent after a restart.
+      buying.current.add(fish.id);
+      try {
+        setPoints(await bridge.buyFish(fish.id, fish.price));
+      } catch (err) {
+        notify('error', `Couldn't buy ${fish.name}: ${errorText(err)}`);
+        return;
+      } finally {
+        buying.current.delete(fish.id);
+      }
+    } else {
+      setPoints((p) => p - fish.price);
+    }
+    setOwnedIds((ids) => [...ids, fish.id]);
+    setTankIds((ids) => [...ids, fish.id]);
     notify('success', `${fish.name} joined your tank!`);
   };
 
   // Puts an owned fish in the tank or takes it out.
-  const setInTank = (fish: Fish, inTank: boolean) => {
+  const setInTank = async (fish: Fish, inTank: boolean) => {
     if (!ownedIds.includes(fish.id)) return;
+    const bridge = window.fishtank;
+    if (account && bridge) {
+      try {
+        await bridge.setFishInTank(fish.id, inTank);
+      } catch (err) {
+        notify('error', `Couldn't move ${fish.name}: ${errorText(err)}`);
+        return;
+      }
+    }
     setTankIds((ids) => (inTank ? [...ids.filter((id) => id !== fish.id), fish.id] : ids.filter((id) => id !== fish.id)));
+  };
+
+  // Chooses one of the user's fish as their avatar, or none (null).
+  const chooseAvatar = async (fishId: string | null) => {
+    const bridge = window.fishtank;
+    if (account && bridge) {
+      try {
+        await bridge.setAvatarFish(fishId);
+      } catch (err) {
+        notify('error', `Couldn't save your avatar: ${errorText(err)}`);
+        return;
+      }
+    }
+    setAvatarId(fishId);
+  };
+
+  // Shows the logged-in user's saved fish and which are in the tank.
+  const loadFish = async () => {
+    const bridge = window.fishtank;
+    if (!bridge) return;
+    try {
+      const saved = await bridge.listFish();
+      setOwnedIds(saved.map((f) => f.fish_id));
+      setTankIds(saved.filter((f) => f.in_tank).map((f) => f.fish_id));
+    } catch (err) {
+      notify('error', `Couldn't load your fish: ${errorText(err)}`);
+    }
   };
 
   // --- Notes ---
@@ -190,6 +249,10 @@ export function useFishtank() {
       setStats(EMPTY_STATS);
       setNotes([]);
       setGroups([]);
+      // The next person starts with an empty tank.
+      setOwnedIds([]);
+      setTankIds([]);
+      setAvatarId(null);
       return;
     }
     setName(user.username || user.email);
@@ -197,11 +260,13 @@ export function useFishtank() {
     const bridge = window.fishtank;
     if (!bridge) return;
     void refreshNotes();
+    void loadFish();
     try {
       const profile = await bridge.getProfile(user.uid);
       if (!profile) return;
       setName(profile.username || user.email);
       setPoints(profile.points);
+      setAvatarId(profile.avatar_fish_id ?? null);
       setStats((s) => ({ ...s, totalFocusMs: (profile.minutes_studied ?? 0) * 60_000 }));
     } catch {
       notify('error', "Couldn't load your saved progress.");
@@ -318,7 +383,7 @@ export function useFishtank() {
   return {
     screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
     account, logIn, createAccount, logOut,
-    buy, setInTank, rename, setAvatarId, grantBonus,
+    buy, setInTank, rename, setAvatarId: chooseAvatar, grantBonus,
     notes, groups, refreshNotes, uploadNote, openNoteFile, deleteNote,
     session, lockMode, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
