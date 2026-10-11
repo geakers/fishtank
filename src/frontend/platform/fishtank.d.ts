@@ -19,6 +19,17 @@ declare global {
     points: number;
     // Total whole minutes spent in lockdown sessions.
     minutes_studied: number;
+    // The catalog id of the user's avatar fish (one they own), or null.
+    avatar_fish_id: string | null;
+  }
+
+  // A fish the logged-in user owns (a row of the owned_fish table), as
+  // returned by listFish. fish_id is the catalog id from data.ts.
+  interface FishtankOwnedFish {
+    fish_id: string;
+    // Whether it's swimming in the tank right now.
+    in_tank: boolean;
+    adopted_at: string;
   }
 
   // An app the user can allow in study mode. id is its bundle ID.
@@ -170,6 +181,14 @@ declare global {
     deleteNote(noteId: string): Promise<void>;
     // Opens a note's file in the default browser or viewer.
     openNoteFile(storagePath: string): Promise<void>;
+    // Resolves with the logged-in user's fish, oldest first.
+    listFish(): Promise<FishtankOwnedFish[]>;
+    // Saves a bought fish, in the tank. Owning it already is fine.
+    adoptFish(fishId: string): Promise<void>;
+    // Puts one of the user's fish in the tank or takes it out.
+    setFishInTank(fishId: string, inTank: boolean): Promise<void>;
+    // Sets the avatar to one of the user's fish, or clears it with null.
+    setAvatarFish(fishId: string | null): Promise<void>;
   }
 
   interface Window {
