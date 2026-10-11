@@ -132,6 +132,15 @@ async function deleteNote(noteId) {
   await removeNote(noteId, user.uid);
 }
 
+// Deletes every note in a study group, with its files, so deleting the group
+// takes its notes with it. For the group's leader, who may delete any note in
+// it. Stops with an error at the first note that can't be fully deleted.
+async function deleteGroupNotes(groupId) {
+  if (!Number.isInteger(groupId)) throw new Error('A study group is required');
+  const notes = await request(`/rest/v1/notes?group_id=eq.${groupId}&select=id,owner_id`);
+  for (const note of notes) await removeNote(note.id, note.owner_id);
+}
+
 // Returns a link to one of a note's files that works for 5 minutes. Supabase
 // only gives one to people who can see the note.
 async function noteFileUrl(storagePath) {
@@ -143,4 +152,4 @@ async function noteFileUrl(storagePath) {
   return `${NEXT_PUBLIC_SUPABASE_URL}/storage/v1${signedURL}`;
 }
 
-module.exports = { FILE_TYPES, MAX_FILE_BYTES, MAX_FILES, listNotes, submitNote, deleteNote, noteFileUrl };
+module.exports = { FILE_TYPES, MAX_FILE_BYTES, MAX_FILES, listNotes, submitNote, deleteNote, deleteGroupNotes, noteFileUrl };
