@@ -16,6 +16,8 @@ export interface LockInScreenProps {
 export function LockInScreen({ app }: LockInScreenProps) {
   const { session, lockError } = app;
   const [now, setNow] = useState(Date.now());
+  // Shown when the user taps the fish too fast.
+  const [tapWarning, setTapWarning] = useState(false);
 
   // Re-render once a second while the session is running.
   const running = session !== null && session.endedAt === undefined;
@@ -34,7 +36,12 @@ export function LockInScreen({ app }: LockInScreenProps) {
         {/* Kept in the layout when hidden so the tank doesn't jump. */}
         <div className={`lockin__timer ${running ? '' : 'is-hidden'}`}>{formatClock(elapsed)}</div>
         <div className="lockin__tank-wrap">
-          <Aquarium fish={app.tank} fishSize={130} className="lockin__tank" breakable={running} />
+          <Aquarium
+            fish={app.tank}
+            fishSize={130}
+            className="lockin__tank"
+            onTapTooFast={running ? () => setTapWarning(true) : undefined}
+          />
           {running && app.tank.length === 0 ? (
             <p className="lockin__empty">Your tank is empty. Adopt fish in the Fish Shop!</p>
           ) : null}
@@ -52,6 +59,14 @@ export function LockInScreen({ app }: LockInScreenProps) {
             End session
           </AeroButton>
         </div>
+      ) : null}
+
+      {running && tapWarning ? (
+        <GlassPanel className="lockin__dialog" variant="raised" role="alertdialog" aria-label="Stop tapping the glass">
+          <h2 className="panel-title">Stop tapping the glass!</h2>
+          <p>You're scaring your fish. Get back to studying.</p>
+          <AeroButton onClick={() => setTapWarning(false)}>Sorry!</AeroButton>
+        </GlassPanel>
       ) : null}
 
       {!session && !failedToStart ? (

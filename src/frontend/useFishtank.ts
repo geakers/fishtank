@@ -53,6 +53,8 @@ export function useFishtank() {
   const [name, setName] = useState(GUEST_NAME);
   const [account, setAccount] = useState<FishtankUser | null>(null);
   const [avatarId, setAvatarId] = useState<string | null>(null);
+  // What the user drew on the Canvas Fish, as an image URL, or null.
+  const [customArt, setCustomArt] = useState<string | null>(null);
   const [stats, setStats] = useState(EMPTY_STATS);
   const [toast, setToast] = useState<Toast | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -383,7 +385,7 @@ export function useFishtank() {
   return {
     screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
     account, logIn, createAccount, logOut,
-    buy, setInTank, rename, setAvatarId: chooseAvatar, grantBonus,
+    buy, setInTank, rename, setAvatarId: chooseAvatar, grantBonus, customArt, setCustomArt,
     notes, groups, refreshNotes, uploadNote, openNoteFile, deleteNote,
     session, lockMode, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };

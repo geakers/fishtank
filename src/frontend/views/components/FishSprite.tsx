@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { createContext, useContext, useId } from 'react';
 import type { Fish, FishBody, FishFins, FishLook, FishMarking, FishTail } from '../../data';
 
 export interface FishSpriteProps {
@@ -7,6 +7,10 @@ export interface FishSpriteProps {
   size?: number;
   className?: string;
 }
+
+// The user's drawing for fish with the 'canvas' extra, as an image URL in the
+// sprite's 120×80 viewBox, or null for none yet. Provided at the app root.
+export const CustomArtContext = createContext<string | null>(null);
 
 // A side-on vector fish facing right, built from its anatomy in fish.look:
 // body outline, tail, fins with rays, scales, gill cover, eye and markings.
@@ -28,6 +32,7 @@ export function FishSprite({ fish, size = 96, className = '' }: FishSpriteProps)
         <Jelly look={look} id={id} />
       ) : look.body === 'human' ? (
         <Dude look={look} />
+
       ) : (
         <SideFish look={look} id={id} />
       )}
@@ -58,6 +63,7 @@ const BODIES: Record<Exclude<FishBody, 'jelly' | 'human' | 'none'>, BodySpec> = 
   deep: { h: 25, ped: 6, peak: 0.5, blunt: 0.6 },
   puffer: { h: 24, ped: 7, peak: 0.45, blunt: 0.85 },
   shark: { h: 13, ped: 3.5, peak: 0.42, blunt: 0.2 },
+  dolphin: { h: 13, ped: 3, peak: 0.5, blunt: 0.35 },
 };
 
 type Pt = [number, number];
@@ -82,6 +88,25 @@ function bodyPath(b: BodySpec) {
     `C${px + LEN * 0.2} ${CY - h}, ${SNOUT_X - LEN * 0.05} ${CY - h * b.blunt}, ${SNOUT_X} ${CY + 1}`,
     `C${SNOUT_X - LEN * 0.04} ${CY + h * (b.blunt + 0.05)}, ${px + LEN * 0.2} ${CY + h}, ${px} ${CY + h}`,
     `C${px - LEN * 0.22} ${CY + h}, ${TAIL_X + LEN * 0.15} ${CY + ped + 1}, ${TAIL_X} ${CY + ped}`,
+    'Z',
+  ].join(' ');
+}
+
+// A dolphin: a slim tail stock, a rounded melon on the forehead dropping to a
+// short beak, and the mouth line running back under it.
+function dolphinPath(b: BodySpec) {
+  const px = bx(b.peak);
+  const { h, ped } = b;
+  return [
+    `M${TAIL_X} ${CY - ped}`,
+    `C${TAIL_X + LEN * 0.2} ${CY - ped - 1}, ${px - LEN * 0.25} ${CY - h}, ${px} ${CY - h}`,
+    `C${px + LEN * 0.2} ${CY - h}, ${bx(0.82)} ${CY - h * 0.9}, ${bx(0.86)} ${CY - h * 0.5}`,
+    `Q${bx(0.88)} ${CY - h * 0.15}, ${bx(0.9)} ${CY - 1.8}`,
+    `L${SNOUT_X - 1} ${CY + 0.2}`,
+    `Q${SNOUT_X + 0.8} ${CY + 1.6}, ${SNOUT_X - 1.5} ${CY + 2.8}`,
+    `L${bx(0.89)} ${CY + 3.6}`,
+    `C${bx(0.84)} ${CY + h * 0.75}, ${px + LEN * 0.2} ${CY + h * 0.95}, ${px} ${CY + h * 0.95}`,
+    `C${px - LEN * 0.25} ${CY + h * 0.95}, ${TAIL_X + LEN * 0.2} ${CY + ped + 1}, ${TAIL_X} ${CY + ped}`,
     'Z',
   ].join(' ');
 }
@@ -120,6 +145,11 @@ function tailShape(kind: FishTail, ped: number): { d: string; tips: Pt[] } {
         d: `M${L + 2} ${CY - ped} C${L - 6} ${CY - ped - 6}, ${L - 16} ${CY - 19}, ${L - 25} ${CY - 27} C${L - 19} ${CY - 13}, ${L - 14} ${CY - 4}, ${L - 10} ${CY + 1} C${L - 12} ${CY + 5}, ${L - 15} ${CY + 10}, ${L - 17} ${CY + 14} C${L - 9} ${CY + 10}, ${L - 4} ${CY + ped + 3}, ${L + 2} ${CY + ped} Z`,
         tips: [[L - 23, CY - 25], [L - 16, CY - 15], [L - 11, CY - 5], [L - 14, CY + 8], [L - 16, CY + 12]],
       };
+    case 'flukes':
+      return {
+        d: `M${L + 2} ${CY - ped} C${L - 4} ${CY - ped - 2}, ${L - 11} ${CY - 9}, ${L - 17} ${CY - 15} C${L - 14} ${CY - 6}, ${L - 12} ${CY - 2}, ${L - 11} ${CY} C${L - 12} ${CY + 2}, ${L - 14} ${CY + 6}, ${L - 17} ${CY + 15} C${L - 11} ${CY + 9}, ${L - 4} ${CY + ped + 2}, ${L + 2} ${CY + ped} Z`,
+        tips: [],
+      };
     case 'veil':
       return {
         d: `M${L + 2} ${CY - ped} C${L - 10} ${CY - ped - 14}, ${L - 26} ${CY - 20}, ${L - 29} ${CY - 4} C${L - 31} ${CY + 14}, ${L - 22} ${CY + 30}, ${L - 12} ${CY + 33} C${L - 8} ${CY + 22}, ${L - 4} ${CY + ped + 6}, ${L + 2} ${CY + ped} Z`,
@@ -142,6 +172,8 @@ const DORSAL: Record<FishFins, FinSpec> = {
   flowing: { front: 0.62, rear: 0.1, edge: [[0.56, 10], [0.36, 16], [0.12, 21], [-0.06, 15]] },
   sail: { front: 0.64, rear: 0.3, edge: [[0.58, 9], [0.44, 19], [0.28, 27], [0.12, 29]] },
   shark: { front: 0.66, rear: 0.44, edge: [[0.6, 9], [0.5, 17], [0.45, 16], [0.44, 4]] },
+  // Swept back into a hook.
+  dolphin: { front: 0.64, rear: 0.42, edge: [[0.58, 8], [0.49, 13], [0.41, 14], [0.43, 3]] },
 };
 
 const ANAL: Record<FishFins, FinSpec> = {
@@ -150,6 +182,8 @@ const ANAL: Record<FishFins, FinSpec> = {
   flowing: { front: 0.7, rear: 0.08, edge: [[0.62, 14], [0.36, 20], [0.12, 25], [-0.05, 18]] },
   sail: { front: 0.6, rear: 0.28, edge: [[0.54, 9], [0.42, 19], [0.26, 26], [0.12, 27]] },
   shark: { front: 0.24, rear: 0.14, edge: [[0.2, 5], [0.15, 5], [0.14, 2]] },
+  // Dolphins have none; SideFish doesn't draw it.
+  dolphin: { front: 0.24, rear: 0.14, edge: [] },
 };
 
 const PUFFER_FIN: FinSpec = { front: 0.3, rear: 0.13, edge: [[0.27, 6], [0.18, 9], [0.12, 4]] };
@@ -188,18 +222,21 @@ function SideFish({ look, id }: PartProps) {
   const b = BODIES[look.body as Exclude<FishBody, 'jelly' | 'human' | 'none'>];
   const isPuffer = look.body === 'puffer';
   const isShark = look.body === 'shark';
+  const isDolphin = look.body === 'dolphin';
   const skin = look.skin ?? 'scales';
   const extras = new Set(look.extras ?? []);
   const tail = tailShape(look.tail, b.ped);
   const dorsal = finGeometry(b, isPuffer ? PUFFER_FIN : DORSAL[look.fins], -1);
   const anal = finGeometry(b, isPuffer ? PUFFER_FIN : ANAL[look.fins], 1);
-  const body = bodyPath(b);
+  const body = isDolphin ? dolphinPath(b) : bodyPath(b);
   const tailColor = look.tailColor ?? look.fin;
-  const eyeX = bx(isPuffer ? 0.86 : isShark ? 0.84 : 0.88);
-  const eyeY = CY - b.h * (isPuffer ? 0.25 : isShark ? 0.2 : 0.18);
-  const eyeR = isShark ? 2.2 : Math.min(Math.max(b.h * (isPuffer ? 0.22 : 0.17), 2.6), 5.2);
+  const eyeX = bx(isPuffer ? 0.86 : isShark ? 0.84 : isDolphin ? 0.8 : 0.88);
+  const eyeY = CY - b.h * (isPuffer ? 0.25 : isShark ? 0.2 : isDolphin ? 0.08 : 0.18);
+  const eyeR = isShark || isDolphin ? 2.2 : Math.min(Math.max(b.h * (isPuffer ? 0.22 : 0.17), 2.6), 5.2);
   const pec: Pt = [bx(0.7), CY + b.h * 0.25];
   const ref = (name: string) => `url(#${id}-${name})`;
+  const customArt = useContext(CustomArtContext);
+  const art = extras.has('canvas') ? customArt : null;
 
   return (
     <g>
@@ -241,13 +278,21 @@ function SideFish({ look, id }: PartProps) {
         <clipPath id={`${id}-clip`}>
           <path d={body} />
         </clipPath>
+        {/* The whole fish, for the user's drawing. */}
+        <clipPath id={`${id}-art`}>
+          <path d={body} />
+          <path d={tail.d} />
+          <path d={dorsal.d} />
+          {isDolphin ? null : <path d={anal.d} />}
+        </clipPath>
       </defs>
 
       {/* Fins behind the body. */}
-      <Fin d={anal.d} rays={anal.rays} fill={ref('fin')} look={look} />
-      <Fin d={dorsal.d} rays={dorsal.rays} fill={ref('fin')} look={look} />
+      {isDolphin ? null : <Fin d={anal.d} rays={anal.rays} fill={ref('fin')} look={look} />}
+      {/* Dolphin fins are smooth, without rays. */}
+      <Fin d={dorsal.d} rays={isDolphin ? [] : dorsal.rays} fill={isDolphin ? look.fin : ref('fin')} look={look} />
       <g className="fish-sprite__tail">
-        <Fin d={tail.d} rays={tail.tips.map((t) => ({ from: [TAIL_X + 1, CY] as Pt, to: t }))} fill={ref('tail')} look={look} />
+        <Fin d={tail.d} rays={tail.tips.map((t) => ({ from: [TAIL_X + 1, CY] as Pt, to: t }))} fill={isDolphin ? ref('body') : ref('tail')} look={look} />
       </g>
       {isShark ? (
         // Big swept-back pectoral fin and a small pelvic fin.
@@ -261,7 +306,7 @@ function SideFish({ look, id }: PartProps) {
             strokeOpacity={0.6}
           />
         </g>
-      ) : look.fins === 'sail' ? (
+      ) : isDolphin ? null : look.fins === 'sail' ? (
         // Angelfish's long trailing pelvic filaments.
         <path d={`M${bx(0.66)} ${CY + b.h - 3} Q${bx(0.6)} ${CY + b.h + 12}, ${bx(0.48)} ${CY + b.h + 22}`} stroke={look.fin} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.85} />
       ) : (
@@ -281,24 +326,50 @@ function SideFish({ look, id }: PartProps) {
         {extras.has('lucky') ? <FuCharm b={b} /> : null}
         {extras.has('flag') ? <Flag b={b} /> : null}
         {extras.has('spark') ? <Spark b={b} /> : null}
+        {extras.has('knot') ? <Knot b={b} /> : null}
+        {extras.has('argyle') ? <Argyle b={b} /> : null}
+        {extras.has('sushi') ? <Sushi b={b} /> : null}
+        {extras.has('truck') ? <TruckBody b={b} /> : null}
         <rect x={0} y={0} width={120} height={80} fill={ref('shade-v')} />
         <rect x={0} y={0} width={120} height={80} fill={ref('shade-h')} />
         {/* Lateral line. */}
-        <path d={`M${bx(0.74)} ${CY - b.h * 0.35} Q${bx(0.45)} ${CY - b.h * 0.3}, ${TAIL_X} ${CY}`} stroke="#fff" strokeOpacity={0.25} strokeWidth={0.6} strokeDasharray="1 1.2" fill="none" />
+        {isDolphin ? null : (
+          <path d={`M${bx(0.74)} ${CY - b.h * 0.35} Q${bx(0.45)} ${CY - b.h * 0.3}, ${TAIL_X} ${CY}`} stroke="#fff" strokeOpacity={0.25} strokeWidth={0.6} strokeDasharray="1 1.2" fill="none" />
+        )}
         {isShark ? (
           // Five gill slits.
           [0, 1, 2, 3, 4].map((k) => (
             <path key={k} d={`M${bx(0.76 - k * 0.028)} ${CY - b.h * 0.3} q-1.4 ${b.h * 0.35} 0 ${b.h * 0.7}`} stroke="#000" strokeOpacity={0.3} strokeWidth={0.8} fill="none" />
           ))
-        ) : skin === 'metal' ? null : (
+        ) : skin === 'metal' || isDolphin ? null : (
           // Gill cover.
           <path d={`M${bx(0.78)} ${CY - b.h * 0.8} Q${bx(0.71)} ${CY + b.h * 0.1}, ${bx(0.78)} ${CY + b.h * 0.85}`} stroke="#000" strokeOpacity={0.22} strokeWidth={1.1} fill="none" />
         )}
         <ellipse cx={bx(0.58)} cy={CY - b.h * 0.55} rx={LEN * 0.26} ry={b.h * 0.28} fill={ref('sheen')} />
       </g>
+      {art ? (
+        <g>
+          <image href={art} x={0} y={0} width={120} height={80} preserveAspectRatio="none" clipPath={ref('art')} />
+          {/* Keeps the drawing looking rounded like the rest of the body. */}
+          <g clipPath={ref('clip')}>
+            <rect x={0} y={0} width={120} height={80} fill={ref('shade-v')} />
+            <ellipse cx={bx(0.58)} cy={CY - b.h * 0.55} rx={LEN * 0.26} ry={b.h * 0.28} fill={ref('sheen')} />
+          </g>
+        </g>
+      ) : null}
+      {extras.has('truck') ? <TruckWheels b={b} /> : null}
+
+      {isDolphin ? (
+        // A flipper on the near side, behind the head.
+        <path
+          d={`M${bx(0.76)} ${CY + b.h * 0.3} Q${bx(0.7)} ${CY + b.h + 2}, ${bx(0.6)} ${CY + b.h + 6} Q${bx(0.65)} ${CY + b.h * 0.7}, ${bx(0.67)} ${CY + b.h * 0.35} Z`}
+          fill={look.fin}
+        />
+      ) : null}
 
       {/* Pectoral fin on the near side. */}
-      <g className="fish-sprite__pectoral">
+      {/* Dolphins have a flipper instead, and on the truck it would cover the badge. */}
+      <g className="fish-sprite__pectoral" display={isDolphin || extras.has('truck') ? 'none' : undefined}>
         <path
           d={`M${pec[0]} ${pec[1]} Q${pec[0] - 6} ${pec[1] - 6}, ${pec[0] - 13} ${pec[1] - 1} Q${pec[0] - 8} ${pec[1] + 6}, ${pec[0]} ${pec[1] + 2} Z`}
           fill={look.fin}
@@ -321,6 +392,9 @@ function SideFish({ look, id }: PartProps) {
       {isShark ? (
         // Underslung mouth.
         <path d={`M${bx(0.93)} ${CY + b.h * 0.3} Q${bx(0.88)} ${CY + b.h * 0.62}, ${bx(0.82)} ${CY + b.h * 0.48}`} stroke="#1a1410" strokeOpacity={0.55} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+      ) : isDolphin ? (
+        // A smile running back from the beak.
+        <path d={`M${SNOUT_X - 2} ${CY + 2.6} L${bx(0.89)} ${CY + 3.2} Q${bx(0.85)} ${CY + 3.2}, ${bx(0.83)} ${CY + 1.4}`} stroke="#1a1410" strokeOpacity={0.5} strokeWidth={0.8} fill="none" strokeLinecap="round" />
       ) : extras.has('cat') ? (
         <CatFace look={look} />
       ) : skin === 'metal' ? (
@@ -531,6 +605,147 @@ function Spark({ b }: { b: BodySpec }) {
     <g className="fish-sprite__spark" style={{ transformOrigin: `${cx}px ${cy}px` }}>
       <path d={rays.join(' ')} fill="#f4ede4" strokeLinejoin="round" stroke="#f4ede4" strokeWidth={0.6} />
       <circle cx={cx} cy={cy} r={2} fill="#f4ede4" />
+    </g>
+  );
+}
+
+// Six rounded loops turned 60° apart, each crossing its neighbours, forming
+// a hexagonal knot.
+function Knot({ b }: { b: BodySpec }) {
+  const cx = bx(0.48);
+  const cy = CY + b.h * 0.05;
+  const r = b.h * 0.6;
+  const w = r * 1.1;
+  const h = r * 0.5;
+  return (
+    <g className="fish-sprite__spark" style={{ transformOrigin: `${cx}px ${cy}px` }} fill="none" stroke="#ffffff" strokeWidth={1.3}>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <rect
+          key={i}
+          x={-w / 2}
+          y={-h / 2}
+          width={w}
+          height={h}
+          rx={h / 2}
+          transform={`translate(${cx} ${cy}) rotate(${i * 60}) translate(${r * 0.2} ${-r * 0.42})`}
+        />
+      ))}
+    </g>
+  );
+}
+
+// A row of navy diamonds along the middle of the side, crossed by thin white
+// diagonals, like the argyle on UNC's basketball uniforms.
+function Argyle({ b }: { b: BodySpec }) {
+  const cy = CY + b.h * 0.05;
+  const dh = b.h * 0.62;
+  const dw = dh * 0.75;
+  const xs = [0.22, 0.4, 0.58, 0.76].map(bx);
+  const diamond = (x: number) => `M${x} ${cy - dh} L${x + dw} ${cy} L${x} ${cy + dh} L${x - dw} ${cy} Z`;
+  // Diagonals through the points where neighbouring diamonds meet, running on
+  // past them like the argyle's overcheck.
+  const lines = xs.flatMap((x) => [
+    `M${x - dw * 2} ${cy - dh * 2} L${x + dw * 2} ${cy + dh * 2}`,
+    `M${x - dw * 2} ${cy + dh * 2} L${x + dw * 2} ${cy - dh * 2}`,
+  ]);
+  return (
+    <g>
+      <path d={xs.map(diamond).join(' ')} fill="#13294b" />
+      <path d={lines.join(' ')} stroke="#ffffff" strokeWidth={0.7} strokeDasharray="1.6 1.2" opacity={0.85} />
+    </g>
+  );
+}
+
+// Salmon nigiri: pale curving fat lines across the salmon back, rice grains
+// packed over the belly and a strip of nori round the middle. Clipped to the
+// body outline.
+function Sushi({ b }: { b: BodySpec }) {
+  const riceTop = CY + b.h * 0.15;
+  const grains: { x: number; y: number; a: number }[] = [];
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 16; col++) {
+      // Fixed jitter so the grains look scattered but don't change between renders.
+      const j = ((row * 7 + col * 13) % 10) / 10;
+      grains.push({
+        x: TAIL_X + 4 + col * (LEN / 15) + (row % 2) * 2 + j * 1.5,
+        y: riceTop + 2.5 + row * 4.2 + j,
+        a: ((row * 31 + col * 47) % 90) - 45,
+      });
+    }
+  }
+  return (
+    <g>
+      {/* Rice, under the nori. */}
+      <rect x={0} y={riceTop} width={120} height={80} fill="#f8f5ec" />
+      {grains
+        // Leave the nori band clear.
+        .filter((g) => Math.abs(g.x - bx(0.46)) > LEN * 0.08)
+        .map((g, i) => (
+          <ellipse key={i} cx={g.x} cy={g.y} rx={1.7} ry={0.9} fill="#ffffff" stroke="#d8d2c2" strokeWidth={0.35} transform={`rotate(${g.a} ${g.x} ${g.y})`} />
+        ))}
+      {/* Fat lines across the salmon. */}
+      {[0.12, 0.27, 0.62, 0.77, 0.92].map((x) => (
+        <path
+          key={x}
+          d={`M${bx(x) - 4} ${CY - b.h - 2} Q${bx(x) + 2} ${CY - b.h * 0.4}, ${bx(x) - 1} ${riceTop}`}
+          stroke="#ffe6d8"
+          strokeWidth={1.6}
+          strokeOpacity={0.85}
+          fill="none"
+        />
+      ))}
+      {/* Nori. */}
+      <rect x={bx(0.46) - LEN * 0.065} y={0} width={LEN * 0.13} height={80} fill="#1c2a1e" />
+    </g>
+  );
+}
+
+// A pickup truck's bodywork, clipped to the body: a cab window with a door
+// line under it, the bed behind, a chrome grille and headlight at the snout
+// and a FISH-150 badge on the door.
+function TruckBody({ b }: { b: BodySpec }) {
+  const top = CY - b.h;
+  return (
+    <g>
+      {/* Cab window. */}
+      <path d={`M${bx(0.56)} ${CY - b.h * 0.15} L${bx(0.56)} ${top} L${bx(0.76)} ${top} L${bx(0.84)} ${CY - b.h * 0.15} Z`} fill="#bfe6ff" stroke="#1a2a3a" strokeWidth={1} />
+      <line x1={bx(0.68)} y1={top} x2={bx(0.68)} y2={CY - b.h * 0.15} stroke="#1a2a3a" strokeWidth={1} />
+      {/* Door, and the bed behind the cab. */}
+      <path d={`M${bx(0.56)} ${CY - b.h * 0.15} L${bx(0.56)} ${CY + b.h * 0.6} L${bx(0.8)} ${CY + b.h * 0.6}`} stroke="#0e2450" strokeWidth={0.8} fill="none" />
+      <line x1={bx(0.05)} y1={CY - b.h * 0.3} x2={bx(0.53)} y2={CY - b.h * 0.3} stroke="#0e2450" strokeWidth={0.9} />
+      <line x1={bx(0.53)} y1={top} x2={bx(0.53)} y2={CY + b.h * 0.6} stroke="#0e2450" strokeWidth={0.8} />
+      {/* Grille and headlight. */}
+      <rect x={SNOUT_X - 9} y={CY - 2} width={8} height={9} rx={1.2} fill="#d8dee4" stroke="#7a848e" strokeWidth={0.5} />
+      {[0, 1, 2].map((k) => (
+        <line key={k} x1={SNOUT_X - 8} y1={CY + 0.5 + k * 2.4} x2={SNOUT_X - 2} y2={CY + 0.5 + k * 2.4} stroke="#4a545e" strokeWidth={0.6} />
+      ))}
+      <ellipse cx={SNOUT_X - 4} cy={CY - 5} rx={2.6} ry={1.8} fill="#fff6c0" stroke="#c8b860" strokeWidth={0.4} />
+      {/* Badge. */}
+      <text x={bx(0.67)} y={CY + b.h * 0.32} fontSize={4.2} fontWeight={800} fontFamily="Arial, Helvetica, sans-serif" fill="#eef2f5" textAnchor="middle" letterSpacing={0.2}>
+        FISH-150
+      </text>
+    </g>
+  );
+}
+
+// Two wheels on the belly, in front of the body, their hubs turning.
+function TruckWheels({ b }: { b: BodySpec }) {
+  const r = b.h * 0.4;
+  const cy = CY + b.h * 0.82;
+  return (
+    <g>
+      {[bx(0.24), bx(0.72)].map((cx) => (
+        <g key={cx}>
+          <circle cx={cx} cy={cy} r={r} fill="#1a1c1e" />
+          <g className="fish-sprite__wheel" style={{ transformOrigin: `${cx}px ${cy}px` }}>
+            <circle cx={cx} cy={cy} r={r * 0.55} fill="#c8d0d8" stroke="#6a747e" strokeWidth={0.5} />
+            {[0, 1, 2, 3, 4].map((k) => {
+              const a = (k / 5) * Math.PI * 2;
+              return <line key={k} x1={cx} y1={cy} x2={cx + Math.cos(a) * r * 0.5} y2={cy + Math.sin(a) * r * 0.5} stroke="#6a747e" strokeWidth={0.7} />;
+            })}
+          </g>
+        </g>
+      ))}
     </g>
   );
 }

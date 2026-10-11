@@ -51,7 +51,6 @@ export function HomeScreen({ app }: HomeScreenProps) {
   return (
     <div className="screen home">
       <header className="topbar">
-        <Brand />
         <div className="topbar__actions">
           <PointsBadge balance={app.points} />
           <ProfileMenu
@@ -154,15 +153,6 @@ export function HomeScreen({ app }: HomeScreenProps) {
   );
 }
 
-function Brand() {
-  return (
-    <div className="brand">
-      <span className="brand__orb" aria-hidden="true" />
-      <span className="brand__name">Fishtank</span>
-    </div>
-  );
-}
-
 // Big grey time and date in the middle of the dock, like the Wii menu.
 function DockClock() {
   const [now, setNow] = useState(() => new Date());
@@ -173,7 +163,7 @@ function DockClock() {
   return (
     <div className="dock__clock">
       <span className="dock__time">{now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-      <span className="dock__date">{now.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' })}</span>
+      <span className="dock__date">{now.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric', year: '2-digit' })}</span>
     </div>
   );
 }
