@@ -10,7 +10,6 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.view.WindowCompat
@@ -27,13 +26,12 @@ import com.focusflip.app.focus.FocusSessionManager
 import com.focusflip.app.focus.KioskMode
 import com.focusflip.app.focus.Phase
 import com.focusflip.app.ui.MainActivity
-import com.focusflip.app.ui.theme.FocusFlipTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Full-screen flip phone shown for the whole focus session. The back button is swallowed and
- * the guard / kiosk mode keeps this on top until the commitment is up or the user ends early.
+ * Full-screen flip phone shown for the whole run (focus + break).
+ * During FOCUS the back button is swallowed and the guard / kiosk mode keeps this on top.
  */
 class LockActivity : ComponentActivity() {
 
@@ -45,8 +43,10 @@ class LockActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         hideSystemBars()
 
-        // Locked: the back button does nothing.
-        onBackPressedDispatcher.addCallback(this) {}
+        onBackPressedDispatcher.addCallback(this) {
+            // Locked: ignore. On break the phone is free, so just step out of the way.
+            if (FocusSessionManager.state.value.phase == Phase.BREAK) moveTaskToBack(true)
+        }
         // Media stream so the hardware volume keys (and the silent/media slider)
         // control keypad tones. STREAM_DTMF is a hidden in-call slider on most phones.
         volumeControlStream = AudioManager.STREAM_MUSIC
@@ -64,6 +64,7 @@ class LockActivity : ComponentActivity() {
                 FocusSessionManager.state.collect { s ->
                     when (s.phase) {
                         Phase.FOCUS -> KioskMode.enter(this@LockActivity)
+                        Phase.BREAK -> KioskMode.exit(this@LockActivity)
                         Phase.IDLE -> leave()
                     }
                 }
@@ -71,30 +72,26 @@ class LockActivity : ComponentActivity() {
         }
 
         setContent {
-            FocusFlipTheme { LockContent() }
+            val state by FocusSessionManager.state.collectAsStateWithLifecycle()
+            val whitelist by ServiceLocator.whitelistStore.packages.collectAsStateWithLifecycle()
+            val apps = remember(whitelist) {
+                whitelist
+                    .filter { InstalledApps.isInstalled(this, it) }
+                    .map { LockApp(it, InstalledApps.label(this, it)) }
+                    .sortedBy { it.label.lowercase() }
+            }
+            FlipPhoneScreen(
+                state = state,
+                apps = apps,
+                onLaunchApp = {
+                    FocusGuardService.onWhitelistedAppLaunch()
+                    InstalledApps.launch(this, it.packageName)
+                },
+                onChooseContinue = FocusSessionManager::setContinueAfterBreak,
+                onDevUnlock = FocusSessionManager::stop,
+                onKeyTone = ::playTone,
+            )
         }
-    }
-
-    @Composable
-    private fun LockContent() {
-        val state by FocusSessionManager.state.collectAsStateWithLifecycle()
-        val whitelist by ServiceLocator.whitelistStore.packages.collectAsStateWithLifecycle()
-        val apps = remember(whitelist) {
-            whitelist
-                .filter { InstalledApps.isInstalled(this, it) }
-                .map { LockApp(it, InstalledApps.label(this, it)) }
-                .sortedBy { it.label.lowercase() }
-        }
-        FlipPhoneScreen(
-            state = state,
-            apps = apps,
-            onLaunchApp = {
-                FocusGuardService.onWhitelistedAppLaunch()
-                InstalledApps.launch(this, it.packageName)
-            },
-            onEndEarly = FocusSessionManager::endEarly,
-            onKeyTone = ::playTone,
-        )
     }
 
     override fun onResume() {

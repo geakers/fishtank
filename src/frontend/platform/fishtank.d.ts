@@ -146,6 +146,9 @@ declare global {
     getPoints(uid: string): Promise<number | null>;
     // Resolves with null if there is no such profile.
     verifyPoints(uid: string): Promise<FishtankPointsCheck | null>;
+    // TEMPORARY: adds points to the logged-in user's saved points if code is
+    // right. Resolves with the new balance.
+    redeemCode(code: string): Promise<number>;
     // Logs in and keeps the session, including across restarts.
     logIn(credentials: { email: string; password: string }): Promise<FishtankUser>;
     logOut(): Promise<void>;

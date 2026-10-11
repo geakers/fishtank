@@ -1,31 +1,35 @@
 # FocusFlip (Android)
 
-Android companion for Fishtank, at `src/mobile`. It matches the iOS app (`src/ios`): the same
-Frutiger Aero flip-phone UI in Selawik (the desktop's open Segoe UI stand-in), the same
-committed focus sessions, and the same Supabase account (`profiles.minutes_studied` and
-`profiles.points`, plus study groups).
+Android companion for Fishtank, living at `src/mobile` on the `mobile` branch.
+It uses the same Supabase project as the desktop app (`src/database`, `src/db.js`).
+Completed focus blocks add their duration to `profiles.focus_ms`
+(see `src/database/profiles-focus-ms.sql`).
 
 > Status: **beta / test build**. Set `USE_MOCK_BACKEND = true` in
 > `app/build.gradle.kts` only if you need an offline login for UI work.
 
-## Features (matched to iOS)
+## Features
 
-- **Register / log in** once. The session is stored on the device.
-- **Home screen in the desktop's style**: the Wii-white top bar (points pill, profile with stats, sync and log out), the flip phone on its stand where the desktop shows its tank, the big **Focus** button, **Study apps** (the whitelist) and **Focus Guard**, a study groups panel and the dock clock.
-- **Committed sessions**: Focus first asks how long you commit to (presets of 15/25/45/60/90 minutes, or 1 to 240 with −/+). The phone stays locked for exactly that long and the session ends by itself.
-- **Points only for finished commitments, same rules as the desktop** (`sessionEarnings` in `src/desktop/profiles.js`): a session that lasts its commitment adds its minutes to `profiles.minutes_studied` and earns points for the time committed to. Ending early with **END** still adds the minutes studied, but earns no points. `Points.TEST_POINT_PER_SECOND` mirrors the desktop's `TEST_POINT_PER_SECOND`; flip both together.
-- **Flip phone lock screen**: LCD + keypad (soft keys, CALL/END, D-pad + OK, 0-9 / * / # with DTMF tones). The LCD counts down the time left and shows the points waiting at the end.
-- **Study groups**: the same groups as the desktop. Create a group, accept or decline invites, see who is in each group, and (as its leader) invite people by username. Needs `src/database/study-groups.sql` and `study-group-invites.sql` in the database.
-- Sessions are kept on the phone until they sync, and minutes and points are saved in one request.
+- **Register / log in** once. The session is stored on the device, so the next launches go straight to the home screen until you log out.
+- **Retro home screen**: a silver flip phone look with a green LCD panel that shows today's stats, sync status and guard status. It has two main buttons:
+  - **START LOCK**: starts a 45-minute focus block. The phone becomes a full-screen flip phone, and you cannot leave the app or open other apps.
+  - **WHITELIST**: lists every installed app with a launcher icon. Check the apps that you are allowed to open while locked.
+- **Flip phone lock screen**:
+  - The top half is the LCD display: a countdown, a progress bar and the list of whitelisted apps.
+  - The bottom half is the keypad: soft keys, CALL/END, a 4-way D-pad with a center OK key, and 0-9 / * / # with DTMF tones.
+  - Use Up/Down to pick a whitelisted app and OK (or CALL) to open it. When you leave that app (back or home), you land back on the FocusFlip lock screen.
+- **Break**: after 45 minutes you get a 15-minute break, and the phone is usable again. On the break screen you choose what happens when the break ends: **Continue focus** (the default, starts the next 45-minute block automatically) or **Exit session**.
+- **Desktop sync**: every focus block (completed or aborted) is saved locally and pushed with **SYNC NOW**. Changes to the whitelist are mirrored too.
+- **Dev tools** (test build only): a small red **DEV UNLOCK** button on the keypad ends the session at once. A **Fast timers** toggle on the home screen switches to 45 s focus / 15 s break.
 
 ## Keypad reference (lock screen)
 
 | Key | Action |
 |---|---|
 | Up / Down | Move the selection |
-| OK, CALL, left soft key | Open the selected app |
+| OK, CALL, left soft key | Open the selected app (focus) / choose an option (break) |
 | Left / Right, right soft key | Switch between the **Apps** page and the big **Clock** page |
-| END | End the session early (asks first; no points) |
+| END | Jump to the clock page |
 | 1-9 | Jump to list entry N |
 | `*` | Toggle the LCD backlight |
 | `#` | Show a motivational tip |
@@ -34,51 +38,74 @@ committed focus sessions, and the same Supabase account (`profiles.minutes_studi
 
 Android does not let a normal app fully take over the phone, so FocusFlip combines several layers:
 
-1. **LockActivity**: a full-screen, immersive activity. The back button is swallowed, the screen stays on, and the activity is shown above the keyguard.
-2. **Focus Guard (AccessibilityService)**: `focus/FocusGuardService.kt`. While a session runs, any window from an app that is *not* FocusFlip, a whitelisted app, the keyboard, or a critical system surface (emergency dialer, permission prompts) immediately brings LockActivity back. This covers the home screen, recents and settings. It also closes the notification shade on Android 12+. The service only reads the package name of the foreground window; it never reads screen content.
-3. **FocusTimerService (foreground service)**: keeps the process alive, ends the session when its time is up and shows a countdown notification. State is stored as absolute timestamps, so it survives process death and reboots (`BootReceiver`).
-4. **Optional kiosk mode (device owner)**: if the app is provisioned as device owner, sessions use Android *lock task mode*. The OS itself disables home, recents and the status bar, and only FocusFlip plus whitelisted apps can run. This is meant for dedicated or test devices:
+1. **LockActivity**: a full-screen, immersive activity. The back button is swallowed during focus, the screen stays on, and the activity is shown above the keyguard.
+2. **Focus Guard (AccessibilityService)**: `focus/FocusGuardService.kt`. While a focus block runs, any window from an app that is *not* FocusFlip, a whitelisted app, the keyboard, or a critical system surface (emergency dialer, permission prompts) immediately brings LockActivity back. This covers the home screen, recents and settings. It also closes the notification shade on Android 12+. The service only reads the package name of the foreground window; it never reads screen content.
+3. **FocusTimerService (foreground service)**: keeps the process alive, ticks the state machine every second and shows a countdown notification. State is stored as absolute timestamps, so it survives process death and reboots (`BootReceiver`).
+4. **Optional kiosk mode (device owner)**: if the app is provisioned as device owner, focus blocks use Android *lock task mode*. The OS itself disables home, recents and the status bar, and only FocusFlip plus whitelisted apps can run. This is meant for dedicated or test devices:
    ```
    adb shell dpm set-device-owner com.focusflip.app/.focus.FocusDeviceAdminReceiver
    ```
-   (The phone must have no accounts added. Use **Release device owner** in the profile sheet (test builds) before you uninstall.)
+   (The phone must have no accounts added. Use **RELEASE DEVICE OWNER** in the dev tools on the home screen before you uninstall.)
 
 Without the accessibility guard *or* device owner, the timer still runs but other apps are not blocked. The home screen warns about this.
 
 ## Project structure
 
 ```
-app/src/main/
-├── java/com/focusflip/app/
-│   ├── FocusFlipApp.kt              Application: wires ServiceLocator, notifications, session state
-│   ├── di/ServiceLocator.kt         <- choose MOCK vs REAL backend here
-│   ├── data/
-│   │   ├── auth/                    Supabase auth, SessionStore (persistent login), mock
-│   │   ├── sync/                    Points (the points rules), sync to profiles, offline queue, mock
-│   │   ├── groups/                  Study groups (same calls as src/desktop/groups.js)
-│   │   └── apps/                    InstalledApps (list/launch), WhitelistStore
-│   ├── focus/
-│   │   ├── FocusSessionManager.kt   IDLE -> FOCUS(committed minutes) -> IDLE
-│   │   ├── FocusTimerService.kt     foreground countdown service
-│   │   ├── FocusGuardService.kt     accessibility "lock"
-│   │   ├── KioskMode.kt             optional device-owner lock task mode
-│   │   ├── Notifications.kt
-│   │   └── BootReceiver.kt
-│   └── ui/
-│       ├── MainActivity.kt          auth -> home -> study apps / study groups
-│       ├── auth/  home/  whitelist/  groups/
-│       ├── lock/                    LockActivity (full-screen host), FlipPhoneScreen (LCD + keypad)
-│       └── theme/                   Wii.kt (desktop tokens, Selawik, theme), Retro.kt (flip phone, LCD)
-└── res/font/                        Selawik (SIL OFL, see SELAWIK-LICENSE.txt)
+app/src/main/java/com/focusflip/app/
+├── FocusFlipApp.kt              Application: wires ServiceLocator, notifications, session state
+├── di/ServiceLocator.kt         <- choose MOCK vs REAL backend here
+├── data/
+│   ├── auth/                    AuthRepository, SessionStore (persistent login),
+│   │                            MockAuthRepository, RemoteAuthRepository (stub)
+│   ├── sync/                    SyncRepository, LocalRecordStore (offline queue),
+│   │                            MockSyncRepository, RemoteSyncRepository (stub)
+│   └── apps/                    InstalledApps (list/launch), WhitelistStore
+├── focus/
+│   ├── FocusSessionManager.kt   IDLE -> FOCUS(45) -> BREAK(15) -> FOCUS | IDLE state machine
+│   ├── FocusTimerService.kt     foreground countdown service
+│   ├── FocusGuardService.kt     accessibility "lock"
+│   ├── KioskMode.kt             optional device-owner lock task mode
+│   ├── Notifications.kt
+│   └── BootReceiver.kt
+└── ui/
+    ├── MainActivity.kt          auth -> home -> whitelist navigation
+    ├── auth/AuthScreen.kt
+    ├── home/HomeScreen.kt
+    ├── whitelist/WhitelistScreen.kt
+    ├── lock/LockActivity.kt     full-screen lock host
+    ├── lock/FlipPhoneScreen.kt  LCD + keypad UI
+    └── theme/                   retro palette, LCD widgets
 ```
 
-## Backend
+## Backend integration
 
-The app talks to the shared Fishtank Supabase project directly (`SupabaseAuthRepository`,
-`RemoteSyncRepository`, `GroupsRepository`). Row level security on `profiles` and the study
-group tables decides what each user may read and change. `USE_MOCK_BACKEND = true` swaps in
-`MockAuthRepository` / `MockSyncRepository` (demo user `demo@focusflip.app` / `demo1234`);
-study groups need the real database. For release builds, set `DEV_TOOLS = false`.
+All backend access goes through two interfaces, so swapping the mock for the real API means changing only a few files:
+
+| Interface | Mock (current) | Real (to implement) |
+|---|---|---|
+| `AuthRepository` | `MockAuthRepository`: accounts stored on the device, demo user `demo@focusflip.app` / `demo1234` | `RemoteAuthRepository` |
+| `SyncRepository` | `MockSyncRepository`: fakes the upload and marks records as synced | `RemoteSyncRepository` |
+
+Steps to go live:
+
+1. Implement the `TODO(backend)` blocks in `RemoteAuthRepository.kt` and `RemoteSyncRepository.kt`.
+2. In `app/build.gradle.kts`, set `API_BASE_URL` to the real server and set `USE_MOCK_BACKEND = false`.
+3. Optional: move the token in `SessionStore` to EncryptedSharedPreferences or the Android Keystore, and add refresh tokens.
+4. For release builds, set `DEV_TOOLS = false` to hide the dev unlock button and fast timers.
+
+Expected API contract (please confirm with the desktop/backend team):
+
+```
+POST auth/login          { email, password }               -> { token, user: { id, email, displayName } }
+POST auth/register       { displayName, email, password }  -> { token, user: { ... } }
+POST auth/logout         (Bearer token)
+POST sync/sessions       [ { id, startedAt, endedAt, plannedMinutes, completed } ] -> { acceptedIds: [...] }
+GET  sync/sessions?since=<epochMs>                          -> [ records created on desktop ]
+PUT  settings/whitelist  { packages: [ "com.example.app", ... ] }
+```
+
+Timestamps are epoch milliseconds (UTC). Record IDs are client-generated UUIDs, so uploads are idempotent.
 
 ## Building
 

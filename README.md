@@ -139,7 +139,7 @@ The login session is kept by `src/desktop/session.js`. It is saved to disk encry
 
 ## Focus sessions
 
-Every session starts by asking how long the user commits to: 15, 25, 45, 60 or 90 minutes, or any whole number of minutes from 1 to 240. The screen counts down, and the session ends by itself when the time is up. Ending it early asks first, and earns no points (see Points).
+Every session starts by asking how long the user commits to: 5, 15, 25, 45, 60, 90, 120 or 180 minutes, or any whole number of minutes from 1 to 240. The screen counts down, and the session ends by itself when the time is up. Ending it early asks first, and earns no points (see Points).
 
 There are two kinds of session. Both run the same timer and earn the same points.
 
@@ -233,7 +233,7 @@ It also needs:
 ## Known gaps
 
 - `TEST_POINT_PER_SECOND` is switched on, so sessions earn one point per second.
-- Pressing P gives 1,000 free points for testing. They are not saved.
+- Typing p02162008 (outside a text box, one key at a time) adds 1,000,000 points to the logged-in account for testing. They are saved.
 - Display-name edits and session stats (streak, session count, longest session) are not saved.
 - Fish prices (200 to 110,000 points) and the study rate (one point per hour) have not been balanced against each other.
 - `buy_fish` takes the price from the app, so the database does not check it against the catalog.

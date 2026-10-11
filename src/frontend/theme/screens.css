@@ -611,7 +611,7 @@
 }
 
 .dock__pod--right {
-  right: 64px;
+  right: var(--aero-space-6);
 }
 
 .dock__pod:hover {
@@ -1616,14 +1616,14 @@
 }
 
 .commit__presets {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--aero-space-2);
   margin-top: var(--aero-space-3);
 }
 
 .commit__preset {
-  padding: 8px 16px;
+  padding: 8px 12px;
   border: 2px solid var(--aero-line);
   border-radius: var(--aero-radius-pill);
   background: var(--aero-gradient-button);
@@ -1631,6 +1631,8 @@
   color: var(--aero-ink);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     border-color var(--aero-duration-fast),
@@ -1667,9 +1669,28 @@
   align-items: center;
 }
 
-.lockin__timer {
+/* The current time, the countdown and when the session ends, in one row. */
+.lockin__clocks {
+  display: grid;
+  /* Equal sides, however wide their text, keep the countdown centered. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--aero-space-6);
+  width: min(1080px, calc(100% - 40px));
   margin-bottom: var(--aero-space-4);
+}
+
+.lockin__clocks.is-hidden {
+  visibility: hidden;
+}
+
+/* Wide enough for the longest time ("4:00:00") so the box never resizes as it
+   counts down. */
+.lockin__timer {
+  box-sizing: content-box;
+  width: 7ch;
   padding: 4px 36px;
+  text-align: center;
   border: 2px solid var(--aero-line);
   border-radius: var(--aero-radius-pill);
   background: var(--aero-gradient-button);
@@ -1681,15 +1702,30 @@
   line-height: 1.2;
 }
 
-.lockin__timer.is-hidden,
-.lockin__goal.is-hidden {
-  visibility: hidden;
+.lockin__clock {
+  display: flex;
+  flex-direction: column;
+  color: var(--aero-ink);
+  line-height: 1.2;
 }
 
-/* The commitment under the timer. */
-.lockin__goal {
-  margin: calc(-1 * var(--aero-space-2)) 0 var(--aero-space-3);
+.lockin__clock--now {
+  align-items: flex-end;
+}
+
+.lockin__clock--end {
+  align-items: flex-start;
+}
+
+.lockin__clock-label {
+  font-size: 14px;
   font-weight: 600;
+}
+
+.lockin__clock-value {
+  font-size: 26px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
 }
 
 .lockin__tank-wrap {
@@ -1849,7 +1885,7 @@
     padding-top: 0;
   }
   .dock__pod {
-    right: var(--aero-space-6);
+    right: var(--aero-space-4);
     width: 84px;
     height: 84px;
     font-size: 13px;

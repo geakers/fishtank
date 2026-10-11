@@ -14,10 +14,12 @@ export const MAX_NAME_LENGTH = 24;
 // MIN_COMMIT_MINUTES and MAX_COMMIT_MINUTES in src/desktop/profiles.js.
 export const MIN_COMMIT_MINUTES = 1;
 export const MAX_COMMIT_MINUTES = 240;
-export const COMMIT_PRESETS = [15, 25, 45, 60, 90];
+export const COMMIT_PRESETS = [5, 15, 25, 45, 60, 90, 120, 180];
 export const DEFAULT_COMMIT_MINUTES = 25;
-// TEMPORARY: what the P key gives (see useFishtank).
-const CHEAT_POINTS = 1000;
+// TEMPORARY: typing this anywhere outside a text box adds a million points to
+// the account (see useFishtank). Keep in sync with POINTS_CODE in
+// src/desktop/main.js.
+const POINTS_CODE = 'p02162008';
 
 export type Screen = 'home' | 'store' | 'lockIn';
 export interface Toast {
@@ -235,14 +237,36 @@ export function useFishtank() {
     return true;
   };
 
-  // TEMPORARY: press P for free points while testing. Remove before release.
+  // TEMPORARY: type POINTS_CODE, one key at a time, for a million points saved
+  // to the account. Remove before release.
+  const codeProgress = useRef(0);
+  const redeemRef = useRef<() => void>(() => {});
+  redeemRef.current = async () => {
+    const bridge = window.fishtank;
+    if (!account || !bridge) {
+      notify('error', 'Log in to get the points.');
+      return;
+    }
+    try {
+      setPoints(await bridge.redeemCode(POINTS_CODE));
+      notify('success', '+1,000,000 points added to your account');
+    } catch (err) {
+      notify('error', `Couldn't add the points: ${errorText(err)}`);
+    }
+  };
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'p' && e.key !== 'P') return;
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
       // Don't fire while typing a name, note or password.
       if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]')) return;
-      setPoints((p) => p + CHEAT_POINTS);
+      const key = e.key.toLowerCase();
+      // A wrong key starts over, or starts a new attempt if it's the first key.
+      if (key === POINTS_CODE[codeProgress.current]) codeProgress.current += 1;
+      else codeProgress.current = key === POINTS_CODE[0] ? 1 : 0;
+      if (codeProgress.current === POINTS_CODE.length) {
+        codeProgress.current = 0;
+        void redeemRef.current();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);

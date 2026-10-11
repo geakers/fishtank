@@ -11,7 +11,7 @@ export interface LockInScreenProps {
 }
 
 // Focus mode: the user's fish tank on a stand, with the time left on their
-// commitment above it. The session ends by itself when that runs out. In
+// commitment above it, flanked by the current time and when the session ends. The session ends by itself when that runs out. In
 // strict mode the window is locked to this screen; in study mode the user can
 // switch to their study apps and come back.
 export function LockInScreen({ app }: LockInScreenProps) {
@@ -52,10 +52,17 @@ export function LockInScreen({ app }: LockInScreenProps) {
     <div className="screen lockin">
       <div className="lockin__stage">
         {/* Kept in the layout when hidden so the tank doesn't jump. */}
-        <div className={`lockin__timer ${running ? '' : 'is-hidden'}`}>{formatClock(remaining)}</div>
-        <p className={`lockin__goal muted ${running ? '' : 'is-hidden'}`}>
-          {session ? `${session.commitMinutes}-minute focus · ends at ${endTime(session.startedAt + commitMs)}` : ' '}
-        </p>
+        <div className={`lockin__clocks ${running ? '' : 'is-hidden'}`}>
+          <div className="lockin__clock lockin__clock--now">
+            <span className="lockin__clock-label">{today(now)}</span>
+            <span className="lockin__clock-value">{timeOfDay(now)}</span>
+          </div>
+          <div className="lockin__timer">{formatClock(remaining)}</div>
+          <div className="lockin__clock lockin__clock--end">
+            <span className="lockin__clock-label">Ends at</span>
+            <span className="lockin__clock-value">{session ? timeOfDay(session.startedAt + commitMs) : ''}</span>
+          </div>
+        </div>
         <div className="lockin__tank-wrap">
           <Aquarium
             fish={app.tank}
@@ -135,9 +142,6 @@ export function LockInScreen({ app }: LockInScreenProps) {
         <GlassPanel className="lockin__dialog lockin__summary" variant="raised">
           <span className="lockin__summary-kicker">{session.reward?.completed === false ? 'Ended early' : 'Session complete'}</span>
           <span className="lockin__summary-time">{formatDuration(elapsed)}</span>
-          <p className="muted">
-            of focused study · {app.stats.streakDays}-day streak · {app.stats.sessions} sessions total
-          </p>
           <SessionReward reward={session.reward} loggedIn={app.account !== null} />
           <AeroButton onClick={app.leaveLockIn}>Back home</AeroButton>
         </GlassPanel>
@@ -165,7 +169,12 @@ function SessionReward({ reward, loggedIn }: { reward?: FishtankSessionResult; l
   return <p className="muted">This session was too short to earn points.</p>;
 }
 
-// When the session will end, as a time of day ("3:45 PM").
-function endTime(ms: number): string {
+// A moment as a time of day ("3:45 PM").
+function timeOfDay(ms: number): string {
   return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+// A moment's date ("Sat, Oct 10").
+function today(ms: number): string {
+  return new Date(ms).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 }

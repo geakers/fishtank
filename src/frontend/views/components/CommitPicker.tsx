@@ -38,14 +38,9 @@ export function CommitPicker({ mode, initialMinutes, onStart, onClose }: CommitP
         >
           <div className="modal__header">
             <h2 id="commit-title" className="panel-title">
-              {mode === 'strict' ? 'Strict lock-in' : 'Focus'}: how long?
+              {mode === 'strict' ? 'Strict lock-in' : 'Focus'}
             </h2>
           </div>
-          <p className="muted">
-            Commit to a length of time. The session ends by itself when it's up, and you only earn points if you stay
-            for all of it.
-          </p>
-
           <div className="commit__presets" role="group" aria-label="Common lengths">
             {COMMIT_PRESETS.map((preset) => (
               <button

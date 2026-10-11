@@ -1,8 +1,6 @@
 package com.focusflip.app.data.auth
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.IOException
@@ -46,12 +44,7 @@ class SupabaseAuthRepository(
         }
     }
 
-    /** Supabase refresh tokens work once, so two refreshes at the same time would log the user out. */
-    private val refreshing = Mutex()
-
-    override suspend fun refreshSession(): Boolean = refreshing.withLock { renew() }
-
-    private suspend fun renew(): Boolean {
+    override suspend fun refreshSession(): Boolean {
         val current = sessionStore.session.value ?: return false
         val refreshToken = current.refreshToken ?: run {
             sessionStore.clear()
@@ -76,8 +69,7 @@ class SupabaseAuthRepository(
         val token = sessionStore.session.value?.accessToken
         sessionStore.clear()
         if (token != null) {
-            // scope=local, as on the desktop: sessions on the user's other devices stay logged in.
-            runCatching { withContext(Dispatchers.IO) { post("/auth/v1/logout?scope=local", JSONObject(), bearer = token) } }
+            runCatching { withContext(Dispatchers.IO) { post("/auth/v1/logout", JSONObject(), bearer = token) } }
         }
     }
 

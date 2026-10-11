@@ -104,6 +104,8 @@ const PATHS = [
   { name: 'path-arc', rise: 16, dip: 0 },
   { name: 'path-zigzag', rise: 9, dip: 9 },
 ];
+// Scales every fish's speed: 0.7 swims 30% slower than fish.speed says.
+const SWIM_SPEED = 0.7;
 // Lanes span this range of the water, top of the fish's box.
 const LANE_TOP = 8;
 const LANE_BOTTOM = 64;
@@ -115,7 +117,7 @@ function layoutSwimmers(fish: Fish[], fishSize: number): Swimmer[] {
   return fish.filter((f) => f.look.body !== 'none').map((f) => {
     const h = hash(f.id);
     const size = Math.round(fishSize * f.size);
-    const duration = 30 / f.speed;
+    const duration = 30 / (f.speed * SWIM_SPEED);
     const path = PATHS[(h >>> 11) % PATHS.length];
     const laneMin = LANE_TOP + path.rise;
     const laneCount = LANE_BOTTOM - path.dip - laneMin + 1;

@@ -51,17 +51,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.focusflip.app.data.sync.Points
+import com.focusflip.app.BuildConfig
 import com.focusflip.app.focus.Phase
 import com.focusflip.app.focus.SessionState
+import com.focusflip.app.ui.theme.AeroBubbles
 import com.focusflip.app.ui.theme.LcdPanel
 import com.focusflip.app.ui.theme.gloss
 import com.focusflip.app.ui.theme.LcdProgress
 import com.focusflip.app.ui.theme.LcdStatusBar
 import com.focusflip.app.ui.theme.Retro
-import com.focusflip.app.ui.theme.WiiBackdrop
-import com.focusflip.app.ui.theme.formatElapsed
-import com.focusflip.app.ui.theme.formatPoints
+import com.focusflip.app.ui.theme.formatCountdown
 import com.focusflip.app.ui.theme.rememberNow
 import kotlinx.coroutines.delay
 
@@ -93,15 +92,15 @@ private val QUOTES = listOf(
 /**
  * The whole lock UI: top half is the LCD, bottom half is the keypad.
  * Up/Down choose an item, OK/Call opens it, Left/Right or the right soft key switch pages,
- * End (the red key) ends the session early, 1-9 jump straight to that list entry, * toggles
- * the backlight. The session ends by itself when the time committed to runs out.
+ * End jumps to the clock, 1-9 jump straight to that list entry, * toggles the backlight.
  */
 @Composable
 fun FlipPhoneScreen(
     state: SessionState,
     apps: List<LockApp>,
     onLaunchApp: (LockApp) -> Unit,
-    onEndEarly: () -> Unit,
+    onChooseContinue: (Boolean) -> Unit,
+    onDevUnlock: () -> Unit,
     onKeyTone: (Char) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -109,10 +108,10 @@ fun FlipPhoneScreen(
     var selected by remember { mutableIntStateOf(0) }
     var backlight by remember { mutableStateOf(true) }
     var toast by remember { mutableStateOf<String?>(null) }
-    var confirmEnd by remember { mutableStateOf(false) }
+    var confirmUnlock by remember { mutableStateOf(false) }
 
-    LaunchedEffect(state.startedAt) {
-        selected = 0
+    LaunchedEffect(state.phase) {
+        selected = if (state.phase == Phase.BREAK && !state.continueAfterBreak) 1 else 0
         page = Page.APPS
     }
     LaunchedEffect(toast) {
@@ -122,10 +121,18 @@ fun FlipPhoneScreen(
         }
     }
 
-    val itemCount = if (page == Page.APPS) apps.size else 0
+    val itemCount = when {
+        state.phase == Phase.BREAK -> 2
+        page == Page.APPS -> apps.size
+        else -> 0
+    }
 
     fun activate() {
         when {
+            state.phase == Phase.BREAK -> {
+                onChooseContinue(selected == 0)
+                toast = if (selected == 0) "Next block queued" else "Will exit after break"
+            }
             page == Page.CLOCK -> page = Page.APPS
             apps.isEmpty() -> toast = "Whitelist is empty"
             else -> apps.getOrNull(selected)?.let {
@@ -144,8 +151,7 @@ fun FlipPhoneScreen(
             Key.Left, Key.Right, Key.SoftRight ->
                 if (state.phase == Phase.FOCUS) page = if (page == Page.APPS) Page.CLOCK else Page.APPS
             Key.Ok, Key.SoftLeft, Key.Call -> activate()
-            // The red END key ends the session, after a confirmation.
-            Key.End -> if (state.phase == Phase.FOCUS) confirmEnd = true
+            Key.End -> if (state.phase == Phase.FOCUS) page = Page.CLOCK
             is Key.Digit -> when (key.char) {
                 '*' -> backlight = !backlight
                 '#' -> toast = QUOTES.random()
@@ -157,8 +163,8 @@ fun FlipPhoneScreen(
         }
     }
 
-    // The same Wii-white pinstripe backdrop as the home screen, the iOS app and the desktop.
-    WiiBackdrop {
+    Box(Modifier.fillMaxSize().background(Retro.shellBrush)) {
+        AeroBubbles(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp)) {
             Lid(Modifier.weight(1f)) {
                 LcdPanel(Modifier.fillMaxSize(), backlight = backlight, contentPadding = 10.dp, fillHeight = true) {
@@ -166,29 +172,19 @@ fun FlipPhoneScreen(
                 }
             }
             Hinge()
-            Base(Modifier.weight(1.08f), onKey = { press(it) })
+            Base(Modifier.weight(1.08f), onKey = { press(it) }, onDevUnlock = { confirmUnlock = true })
         }
     }
 
-    if (confirmEnd && state.phase == Phase.FOCUS) {
+    if (confirmUnlock) {
         AlertDialog(
-            onDismissRequest = { confirmEnd = false },
-            title = { Text("End early?") },
-            text = {
-                Text(
-                    "You committed to ${state.commitMinutes} minutes and have " +
-                        "${formatElapsed(state.remainingSeconds())} to go. If you stop now your study " +
-                        "time still counts, but you won't earn any points."
-                )
-            },
+            onDismissRequest = { confirmUnlock = false },
+            title = { Text("Force unlock?") },
+            text = { Text("Test build only. This ends the current session immediately.") },
             confirmButton = {
-                TextButton(onClick = { confirmEnd = false }) { Text("Keep focusing") }
+                TextButton(onClick = { confirmUnlock = false; onDevUnlock() }) { Text("Unlock") }
             },
-            dismissButton = {
-                TextButton(onClick = { confirmEnd = false; onEndEarly() }) {
-                    Text("End without points", color = Retro.EndRed)
-                }
-            },
+            dismissButton = { TextButton(onClick = { confirmUnlock = false }) { Text("Cancel") } },
         )
     }
 }
@@ -204,8 +200,8 @@ private fun ColumnScope.LcdContent(
     toast: String?,
 ) {
     val now = rememberNow()
-    val remaining = state.remainingSeconds(now)
-    val progress = state.progress(now)
+    val remaining = state.remainingMs(now)
+    val progress = if (state.phaseDurationMs > 0) 1f - remaining.toFloat() / state.phaseDurationMs else 0f
 
     LcdStatusBar(now)
     Spacer(Modifier.height(6.dp))
@@ -213,9 +209,10 @@ private fun ColumnScope.LcdContent(
     Spacer(Modifier.height(6.dp))
 
     Column(Modifier.weight(1f).fillMaxWidth()) {
-        when (page) {
-            Page.CLOCK -> ClockPage(state, remaining, progress)
-            Page.APPS -> AppsPage(state, remaining, progress, apps, selected)
+        when {
+            state.phase == Phase.BREAK -> BreakPage(state, remaining, progress, selected)
+            page == Page.CLOCK -> ClockPage(state, remaining, progress)
+            else -> AppsPage(state, remaining, progress, apps, selected)
         }
     }
 
@@ -233,9 +230,10 @@ private fun ColumnScope.LcdContent(
         Spacer(Modifier.height(4.dp))
     }
 
-    val (left, right) = when (page) {
-        Page.CLOCK -> "Apps" to "Apps"
-        Page.APPS -> "Open" to "Clock"
+    val (left, right) = when {
+        state.phase == Phase.BREAK -> "Choose" to ""
+        page == Page.CLOCK -> "Apps" to "Apps"
+        else -> "Open" to "Clock"
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(Retro.LcdMid))
     Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -247,20 +245,15 @@ private fun ColumnScope.LcdContent(
     }
 }
 
-/** What the session earns if the user stays for all of it. */
-private fun commitPoints(state: SessionState): Double = Points.earnings(state.commitMinutes * 60L).points
-
 @Composable
-private fun AppsPage(state: SessionState, remaining: Int, progress: Float, apps: List<LockApp>, selected: Int) {
+private fun AppsPage(state: SessionState, remaining: Long, progress: Float, apps: List<LockApp>, selected: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("FOCUS ${state.commitMinutes} MIN", style = Retro.lcdText(14, bold = true))
+        Text("FOCUS #${state.cycle}", style = Retro.lcdText(14, bold = true))
         Spacer(Modifier.weight(1f))
-        Text(formatElapsed(remaining), style = Retro.lcdText(20, bold = true))
+        Text(formatCountdown(remaining), style = Retro.lcdText(20, bold = true))
     }
     Spacer(Modifier.height(4.dp))
     LcdProgress(progress)
-    Spacer(Modifier.height(4.dp))
-    Text("+${formatPoints(commitPoints(state))} PTS IF YOU FINISH", style = Retro.lcdText(12, bold = true, color = Retro.LcdMid))
     Spacer(Modifier.height(8.dp))
     Text("ALLOWED APPS", style = Retro.lcdText(11, bold = true, color = Retro.LcdMid))
     Spacer(Modifier.height(2.dp))
@@ -282,16 +275,34 @@ private fun AppsPage(state: SessionState, remaining: Int, progress: Float, apps:
 }
 
 @Composable
-private fun ClockPage(state: SessionState, remaining: Int, progress: Float) {
+private fun ClockPage(state: SessionState, remaining: Long, progress: Float) {
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text("TIME LEFT", style = Retro.lcdText(13, bold = true))
-        Text(formatElapsed(remaining), style = Retro.lcdText(54, bold = true), maxLines = 1)
-        Text("+${formatPoints(commitPoints(state))} PTS AT THE END", style = Retro.lcdText(13, bold = true, color = Retro.LcdMid))
+        Text("FOCUS BLOCK ${state.cycle}", style = Retro.lcdText(13, bold = true))
+        Text(formatCountdown(remaining), style = Retro.lcdText(54, bold = true))
+        Text("REMAINING", style = Retro.lcdText(12))
         Spacer(Modifier.height(10.dp))
         LcdProgress(progress)
         Spacer(Modifier.height(10.dp))
         Text("PHONE LOCKED", style = Retro.lcdText(13, bold = true), textAlign = TextAlign.Center)
     }
+}
+
+@Composable
+private fun BreakPage(state: SessionState, remaining: Long, progress: Float, selected: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("BREAK", style = Retro.lcdText(18, bold = true))
+        Spacer(Modifier.weight(1f))
+        Text(formatCountdown(remaining), style = Retro.lcdText(24, bold = true))
+    }
+    Spacer(Modifier.height(4.dp))
+    LcdProgress(progress)
+    Spacer(Modifier.height(8.dp))
+    Text("Phone unlocked. Stretch, drink water.", style = Retro.lcdText(12))
+    Spacer(Modifier.height(10.dp))
+    Text("AFTER THE BREAK:", style = Retro.lcdText(11, bold = true, color = Retro.LcdMid))
+    Spacer(Modifier.height(2.dp))
+    MenuRow(if (state.continueAfterBreak) "(*)" else "( )", "Continue focus", selected == 0)
+    MenuRow(if (!state.continueAfterBreak) "(*)" else "( )", "Exit session", selected == 1)
 }
 
 @Composable
@@ -362,7 +373,7 @@ private fun Hinge() {
 }
 
 @Composable
-private fun Base(modifier: Modifier, onKey: (Key) -> Unit) {
+private fun Base(modifier: Modifier, onKey: (Key) -> Unit, onDevUnlock: () -> Unit) {
     Column(
         modifier
             .fillMaxWidth()
@@ -399,8 +410,22 @@ private fun Base(modifier: Modifier, onKey: (Key) -> Unit) {
             }
         }
 
-        // Microphone pinhole
-        Box(Modifier.width(6.dp).height(6.dp).clip(CircleShape).background(Retro.ShellDark))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Microphone pinhole
+            Box(Modifier.width(6.dp).height(6.dp).clip(CircleShape).background(Retro.ShellDark))
+            Spacer(Modifier.weight(1f))
+            if (BuildConfig.DEV_TOOLS) {
+                Text(
+                    "DEV UNLOCK",
+                    style = Retro.lcdText(9, bold = true, color = Retro.EndRed),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .border(1.dp, Retro.EndRed, RoundedCornerShape(4.dp))
+                        .clickable(onClick = onDevUnlock)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+        }
     }
 }
 

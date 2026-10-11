@@ -77,6 +77,23 @@ async function endSession(win) {
   return result;
 }
 
+// TEMPORARY: typing this code on the home screen adds CODE_POINTS to the
+// logged-in user's saved points. Keep in sync with POINTS_CODE in
+// src/frontend/useFishtank.ts. Remove before release.
+const POINTS_CODE = 'p02162008';
+const CODE_POINTS = 1_000_000;
+
+// Adds CODE_POINTS to the logged-in user's saved points if code is
+// POINTS_CODE. Returns the new balance.
+async function redeemCode(code) {
+  if (code !== POINTS_CODE) throw new Error('That code does nothing');
+  const user = currentUser();
+  if (!user) throw new Error('Log in first');
+  const points = await getPoints(user.uid);
+  if (points === null) throw new Error('No profile found');
+  return setPoints(user.uid, points + CODE_POINTS);
+}
+
 // Set by `npm run dev` (scripts/dev.mjs) to load the Vite dev server with hot
 // reload. Otherwise the built frontend in dist/frontend is loaded.
 const devServerUrl = process.env.FISHTANK_DEV_SERVER_URL;
@@ -130,6 +147,7 @@ app.whenReady().then(() => {
   ipcMain.handle('get-profile', (event, uid) => getProfile(uid));
   ipcMain.handle('get-points', (event, uid) => getPoints(uid));
   ipcMain.handle('verify-points', (event, uid) => verifyPoints(uid));
+  ipcMain.handle('redeem-code', (event, code) => redeemCode(code));
   ipcMain.handle('log-in', (event, credentials) => logIn(credentials));
   ipcMain.handle('log-out', () => logOut());
   ipcMain.handle('get-current-user', async () => {

@@ -41,29 +41,6 @@ class LocalRecordStore(context: Context) {
         get() = prefs.getLong(KEY_ACCOUNT_MS, 0L)
         set(value) { prefs.edit().putLong(KEY_ACCOUNT_MS, value).apply() }
 
-    var accountPoints: Double
-        get() = Double.fromBits(prefs.getLong(KEY_ACCOUNT_POINTS, 0.0.toRawBits()))
-        set(value) { prefs.edit().putLong(KEY_ACCOUNT_POINTS, value.toRawBits()).apply() }
-
-    var username: String?
-        get() = prefs.getString(KEY_USERNAME, null)
-        set(value) { prefs.edit().putString(KEY_USERNAME, value).apply() }
-
-    var pointsValid: Boolean
-        get() = prefs.getBoolean(KEY_POINTS_VALID, true)
-        set(value) { prefs.edit().putBoolean(KEY_POINTS_VALID, value).apply() }
-
-    /** Forgets the cached account so the next user doesn't see it. Unsynced records stay. */
-    fun clearAccount() {
-        prefs.edit()
-            .remove(KEY_ACCOUNT_MS)
-            .remove(KEY_ACCOUNT_POINTS)
-            .remove(KEY_USERNAME)
-            .remove(KEY_POINTS_VALID)
-            .remove(KEY_LAST_SYNC)
-            .apply()
-    }
-
     fun buildStatus(isSyncing: Boolean = false, error: String? = null): SyncStatus {
         val records = all()
         val startOfDay = Calendar.getInstance().apply {
@@ -77,9 +54,6 @@ class LocalRecordStore(context: Context) {
             todayFocusMinutes = today.sumOf { ((it.endedAt - it.startedAt) / 60_000L).toInt() },
             todaySessions = today.count { it.completed },
             accountFocusMs = accountFocusMs,
-            accountPoints = accountPoints,
-            username = username,
-            pointsValid = pointsValid,
             isSyncing = isSyncing,
             lastError = error,
         )
@@ -105,9 +79,6 @@ class LocalRecordStore(context: Context) {
         const val KEY_RECORDS = "records"
         const val KEY_LAST_SYNC = "last_sync_at"
         const val KEY_ACCOUNT_MS = "account_focus_ms"
-        const val KEY_ACCOUNT_POINTS = "account_points"
-        const val KEY_USERNAME = "username"
-        const val KEY_POINTS_VALID = "points_valid"
         const val MAX_RECORDS = 500
     }
 }
