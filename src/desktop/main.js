@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const { createAccount } = require('../database/accounts');
 const {
@@ -11,6 +11,7 @@ const {
   verifyPoints,
 } = require('./profiles');
 const { createGroup, listGroups, addMember, groupRoster, searchUsernames } = require('./groups');
+const { listNotes, submitNote, deleteNote, noteFileUrl } = require('./notes');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
 
 // When the running lockdown session started (ms since epoch), or null.
@@ -108,6 +109,12 @@ app.whenReady().then(() => {
   ipcMain.handle('add-member', (event, groupId, username) => addMember(groupId, username));
   ipcMain.handle('group-roster', (event, groupId) => groupRoster(groupId));
   ipcMain.handle('search-usernames', (event, query) => searchUsernames(query));
+
+  ipcMain.handle('list-notes', () => listNotes());
+  ipcMain.handle('submit-note', (event, note) => submitNote(note));
+  ipcMain.handle('delete-note', (event, noteId) => deleteNote(noteId));
+  // Opens the file in the default browser or viewer through a 5-minute link.
+  ipcMain.handle('open-note-file', async (event, storagePath) => shell.openExternal(await noteFileUrl(storagePath)));
 
   restoreSession();
 

@@ -2,9 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { EMPTY_STATS, FISH, type Fish } from './data';
 
 export const START_POINTS = 100_000;
-export const NOTE_REWARD = 25;
 export const BONUS_REWARD = 50;
+// Typed-only notes need this much text; notes with a file don't.
 export const MIN_NOTE_LENGTH = 20;
+// What the notes bucket accepts (see src/database/notes.sql).
+export const NOTE_FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+export const MAX_NOTE_FILES = 10;
+export const MAX_NOTE_FILE_MB = 10;
 export const MAX_NAME_LENGTH = 24;
 // TEMPORARY: what the P key gives (see useFishtank).
 const CHEAT_POINTS = 1000;
@@ -46,6 +50,9 @@ export function useFishtank() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [lockError, setLockError] = useState<string | null>(null);
+  // The notes the logged-in user can see, and the study groups they can share to.
+  const [notes, setNotes] = useState<FishtankNote[]>([]);
+  const [groups, setGroups] = useState<FishtankGroup[]>([]);
 
   const owned = FISH.filter((f) => ownedIds.includes(f.id));
   const tank = owned.filter((f) => tankIds.includes(f.id));
@@ -72,14 +79,69 @@ export function useFishtank() {
     setTankIds((ids) => (inTank ? [...ids.filter((id) => id !== fish.id), fish.id] : ids.filter((id) => id !== fish.id)));
   };
 
-  // Returns an error message, or null when the note was accepted.
-  const shareNote = (title: string, body: string): string | null => {
+  // --- Notes ---
+  // Points for notes will come from the AI review of their quality, not from uploading.
+
+  // Loads the notes the user can see and the study groups they can share to.
+  const refreshNotes = async () => {
+    const bridge = window.fishtank;
+    if (!bridge) return;
+    try {
+      const [nextNotes, nextGroups] = await Promise.all([bridge.listNotes(), bridge.listGroups()]);
+      setNotes(nextNotes);
+      setGroups(nextGroups);
+    } catch (err) {
+      notify('error', `Couldn't load your notes: ${errorText(err)}`);
+    }
+  };
+
+  // Uploads a note: typed text and/or PDFs and screenshots, personal (groupId
+  // null) or shared with a study group. Returns an error message, or null when
+  // the note was uploaded.
+  const uploadNote = async (title: string, body: string, groupId: number | null, files: File[]): Promise<string | null> => {
+    const bridge = window.fishtank;
+    if (!bridge) return NO_BRIDGE;
+    if (!account) return 'Log in to upload notes.';
     if (!title.trim()) return 'Give your note a title.';
-    if (body.trim().length < MIN_NOTE_LENGTH) return `Notes need at least ${MIN_NOTE_LENGTH} characters.`;
-    earn(NOTE_REWARD);
+    if (files.length === 0 && body.trim().length < MIN_NOTE_LENGTH) {
+      return `Add a file, or at least ${MIN_NOTE_LENGTH} characters of typed notes.`;
+    }
+    if (files.length > MAX_NOTE_FILES) return `A note can have at most ${MAX_NOTE_FILES} files.`;
+    const wrongType = files.find((file) => !NOTE_FILE_TYPES.includes(file.type));
+    if (wrongType) return `${wrongType.name} isn't a PDF or an image.`;
+    const tooBig = files.find((file) => file.size > MAX_NOTE_FILE_MB * 1024 * 1024);
+    if (tooBig) return `${tooBig.name} is over ${MAX_NOTE_FILE_MB} MB.`;
+
+    try {
+      const uploads = await Promise.all(
+        files.map(async (file) => ({ name: file.name, type: file.type, bytes: new Uint8Array(await file.arrayBuffer()) })),
+      );
+      await bridge.submitNote({ title: title.trim(), body: body.trim() ? body : null, groupId, files: uploads });
+    } catch (err) {
+      return errorText(err);
+    }
     setStats((s) => ({ ...s, notes: s.notes + 1 }));
-    notify('success', `+${NOTE_REWARD} points for “${title.trim()}”`);
+    notify('success', `Uploaded “${title.trim()}”`);
+    await refreshNotes();
     return null;
+  };
+
+  const openNoteFile = async (storagePath: string) => {
+    try {
+      await window.fishtank?.openNoteFile(storagePath);
+    } catch (err) {
+      notify('error', `Couldn't open that file: ${errorText(err)}`);
+    }
+  };
+
+  const deleteNote = async (note: FishtankNote) => {
+    try {
+      await window.fishtank?.deleteNote(note.id);
+      notify('info', `Deleted “${note.title}”`);
+    } catch (err) {
+      notify('error', errorText(err));
+    }
+    await refreshNotes();
   };
 
   const rename = (newName: string): boolean => {
@@ -117,12 +179,15 @@ export function useFishtank() {
       setName(GUEST_NAME);
       setPoints(START_POINTS);
       setStats(EMPTY_STATS);
+      setNotes([]);
+      setGroups([]);
       return;
     }
     setName(user.username || user.email);
 
     const bridge = window.fishtank;
     if (!bridge) return;
+    void refreshNotes();
     try {
       const profile = await bridge.getProfile(user.uid);
       if (!profile) return;
@@ -235,7 +300,8 @@ export function useFishtank() {
   return {
     screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
     account, logIn, createAccount, logOut,
-    buy, setInTank, shareNote, rename, setAvatarId, grantBonus,
+    buy, setInTank, rename, setAvatarId, grantBonus,
+    notes, groups, refreshNotes, uploadNote, openNoteFile, deleteNote,
     session, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
 }

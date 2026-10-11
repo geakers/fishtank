@@ -54,6 +54,36 @@ declare global {
     role: 'leader' | 'member';
   }
 
+  // A file attached to a note (a row of the note_files table).
+  interface FishtankNoteFile {
+    id: string;
+    // Where the file is in the notes bucket: <owner uid>/<note id>/<file name>.
+    storage_path: string;
+    mime_type: string;
+    size_bytes: number;
+  }
+
+  // A study note (a row of the notes table) with its files, as returned by
+  // listNotes. group_id is null for a personal note.
+  interface FishtankNote {
+    id: string;
+    owner_id: string;
+    group_id: number | null;
+    title: string;
+    body: string | null;
+    status: 'draft' | 'submitted' | 'reviewing' | 'reviewed' | 'failed';
+    created_at: string;
+    submitted_at: string | null;
+    note_files: FishtankNoteFile[];
+  }
+
+  // A file picked for upload: a PDF or an image, at most 10 MB.
+  interface FishtankUploadFile {
+    name: string;
+    type: string;
+    bytes: Uint8Array;
+  }
+
   interface FishtankBridge {
     // Turns kiosk lockdown on/off. Resolves with the window's actual kiosk state.
     lockDown(enabled: boolean): Promise<boolean>;
@@ -86,6 +116,16 @@ declare global {
     groupRoster(groupId: number): Promise<FishtankGroupMember[]>;
     // Resolves with up to 10 usernames containing the search text.
     searchUsernames(query: string): Promise<string[]>;
+    // Resolves with the notes the logged-in user can see (their own and their
+    // groups'), newest first.
+    listNotes(): Promise<FishtankNote[]>;
+    // Uploads a note with up to 10 files and submits it. Resolves with its id.
+    // groupId null makes it a personal note. It needs typed notes or a file.
+    submitNote(note: { title: string; body: string | null; groupId: number | null; files: FishtankUploadFile[] }): Promise<string>;
+    // Deletes one of the logged-in user's own notes and its files.
+    deleteNote(noteId: string): Promise<void>;
+    // Opens a note's file in the default browser or viewer.
+    openNoteFile(storagePath: string): Promise<void>;
   }
 
   interface Window {

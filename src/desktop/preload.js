@@ -15,4 +15,8 @@ contextBridge.exposeInMainWorld('fishtank', {
   addMember: (groupId, username) => ipcRenderer.invoke('add-member', groupId, username),
   groupRoster: (groupId) => ipcRenderer.invoke('group-roster', groupId),
   searchUsernames: (query) => ipcRenderer.invoke('search-usernames', query),
+  listNotes: () => ipcRenderer.invoke('list-notes'),
+  submitNote: (note) => ipcRenderer.invoke('submit-note', note),
+  deleteNote: (noteId) => ipcRenderer.invoke('delete-note', noteId),
+  openNoteFile: (storagePath) => ipcRenderer.invoke('open-note-file', storagePath),
 });

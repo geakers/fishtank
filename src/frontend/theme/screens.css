@@ -121,10 +121,129 @@
   padding-bottom: 56px;
 }
 
-/* Blank for now; fills the column above the Focus button. */
+/* Fills the column above the Focus button. */
 .home__panel {
   flex: 1;
   min-height: 0;
+}
+
+/* ---------- Study notes panel ---------- */
+
+.notes-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-3);
+}
+
+.notes-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+}
+
+.notes-panel__header .panel-title {
+  flex: 1;
+}
+
+/* Scrolls inside the panel when there are many notes. */
+.notes-panel__list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.notes-panel__note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-1);
+  padding: var(--aero-space-3) 0;
+  border-bottom: 1px solid var(--aero-line-soft);
+}
+
+.notes-panel__note:last-child {
+  border-bottom: none;
+}
+
+.notes-panel__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+}
+
+.notes-panel__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  color: var(--aero-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-panel__status {
+  padding: 1px 10px;
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-surface-sunk);
+  color: var(--aero-ink-muted);
+  font-size: var(--aero-text-sm);
+  font-weight: 600;
+}
+
+.notes-panel__status--submitted,
+.notes-panel__status--reviewing {
+  background: var(--aero-cyan-100);
+  color: var(--aero-cyan-700);
+}
+
+.notes-panel__status--reviewed {
+  background: #e5f6dc;
+  color: var(--aero-grass-600);
+}
+
+.notes-panel__status--failed {
+  background: #fde4e4;
+  color: var(--aero-danger);
+}
+
+/* Shows the first few lines of typed notes. */
+.notes-panel__body {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--aero-ink);
+  font-size: var(--aero-text-sm);
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.notes-panel__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aero-space-1);
+}
+
+.notes-panel__file,
+.notes-panel__delete {
+  padding: 2px 10px;
+  border: 1px solid var(--aero-line);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-white);
+  color: var(--aero-cyan-700);
+  font: inherit;
+  font-size: var(--aero-text-sm);
+  cursor: pointer;
+}
+
+.notes-panel__file:hover {
+  border-color: var(--aero-cyan-500);
+}
+
+.notes-panel__delete {
+  align-self: flex-start;
+  color: var(--aero-danger);
 }
 
 .home__focus {

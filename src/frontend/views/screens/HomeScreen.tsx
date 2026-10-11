@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
+import { NotesPanel } from '../components/NotesPanel';
 import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
 import { Toast } from '../components/Toast';
@@ -12,8 +13,8 @@ export interface HomeScreenProps {
 
 // Layout, after the Wii menu:
 //   top bar - brand on the left; points and profile menu on the right
-//   main    - the user's tank on its cabinet on the left; a blank panel and the Focus button on
-//             the right (stats live in the profile menu)
+//   main    - the user's tank on its cabinet on the left; the study notes panel and the Focus
+//             button on the right (stats live in the profile menu)
 //   dock    - a clock in the middle and a round "Fish Shop" button on the right
 export function HomeScreen({ app }: HomeScreenProps) {
   const openShop = () => app.setScreen('store');
@@ -54,8 +55,7 @@ export function HomeScreen({ app }: HomeScreenProps) {
         </section>
 
         <aside className="home__side">
-          {/* Blank for now. */}
-          <div className="home__panel aero-glass aero-glass--raised" />
+          <NotesPanel app={app} />
           <div className="home__focus">
             <AeroButton variant="hero" onClick={() => app.enterLockIn()}>
               Focus
