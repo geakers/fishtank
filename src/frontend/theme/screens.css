@@ -51,6 +51,7 @@
 /* ---------- Home ---------- */
 
 .home {
+  --dock-height: 80px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
@@ -64,7 +65,7 @@
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: var(--aero-space-8);
   min-height: 0;
-  padding: var(--aero-space-6) var(--aero-space-8) 56px;
+  padding: var(--aero-space-6) var(--aero-space-8) 0;
 }
 
 .home__tank-panel {
@@ -79,15 +80,14 @@
   min-height: 0;
 }
 
-/* White shelf under the home tank. */
-.home__tank-panel::after {
-  content: '';
-  height: 14px;
-  margin: 0 -14px;
-  border: 2px solid var(--aero-line);
-  border-radius: 4px 4px 10px 10px;
-  background: var(--aero-gradient-tile);
-  box-shadow: var(--aero-shadow-soft);
+/* The focus-mode cabinet, a little wider than the tank. Its bottom sits
+   behind the dock, so only the top of it shows. Scoped to .home so it wins
+   over the focus-mode .tank-stand rule further down. */
+.home .home__stand {
+  width: auto;
+  height: calc(12vh + var(--dock-height));
+  min-height: calc(64px + var(--dock-height));
+  margin: 0 -24px calc(-1 * var(--dock-height));
 }
 
 .home__tank-empty {
@@ -116,32 +116,31 @@
 .home__side {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: var(--aero-space-8);
+  min-height: 0;
+  padding-bottom: 56px;
+}
+
+/* Blank for now; fills the column above the Focus button. */
+.home__panel {
+  flex: 1;
   min-height: 0;
 }
 
-.home__lockin {
+.home__focus {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--aero-space-3);
-}
-
-.home__lockin-hint {
-  color: var(--aero-ink-muted);
-  font-size: var(--aero-text-sm);
-  font-weight: 600;
+  justify-content: center;
 }
 
 /* ---------- Dock (Wii menu bottom bar) ---------- */
 
 .dock {
   position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100px;
+  height: var(--dock-height);
   border-top: 2px solid var(--aero-line);
   background: linear-gradient(180deg, #f4f7f9 0%, #e3e9ed 100%);
   box-shadow: 0 -4px 14px rgba(40, 60, 80, 0.08), inset 0 1px 0 var(--aero-white);
@@ -168,10 +167,6 @@
     border-color var(--aero-duration-fast),
     box-shadow var(--aero-duration-fast),
     transform var(--aero-duration-fast) var(--aero-ease);
-}
-
-.dock__pod--left {
-  left: var(--aero-space-8);
 }
 
 .dock__pod--right {
@@ -215,15 +210,9 @@
 /* ---------- Stats board ---------- */
 
 .stats-board {
-  width: 100%;
-  padding: var(--aero-space-6);
-}
-
-.stats-board__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--aero-space-3);
-  margin-top: var(--aero-space-4);
 }
 
 .stat-tile {
@@ -246,34 +235,6 @@
 .stat-tile__label {
   font-size: var(--aero-text-sm);
   color: var(--aero-ink-muted);
-}
-
-.collection-meter {
-  margin-top: var(--aero-space-4);
-}
-
-.collection-meter__label {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--aero-space-1);
-  font-size: var(--aero-text-sm);
-  font-weight: 600;
-  color: var(--aero-ink-muted);
-}
-
-.collection-meter__track {
-  height: 14px;
-  overflow: hidden;
-  border: 2px solid var(--aero-line-soft);
-  border-radius: var(--aero-radius-pill);
-  background: var(--aero-surface-sunk);
-}
-
-.collection-meter__fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--aero-gradient-button-cyan);
-  transition: width var(--aero-duration-med) var(--aero-ease);
 }
 
 /* ---------- Profile menu ---------- */
@@ -322,6 +283,10 @@
   width: 280px;
   padding: var(--aero-space-3);
   animation: pop-in var(--aero-duration-fast) var(--aero-ease);
+}
+
+.profile-menu__dropdown.is-wide {
+  width: 340px;
 }
 
 .profile-menu__header {
@@ -449,12 +414,6 @@
   gap: var(--aero-space-3);
 }
 
-.store__sort {
-  display: flex;
-  align-items: center;
-  gap: var(--aero-space-2);
-}
-
 .store__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -527,10 +486,49 @@
   filter: saturate(0.75);
 }
 
+/* Adopted but taken out of the tank. */
+.store-card.is-stored .store-card__sprite {
+  opacity: 0.55;
+}
+
 .store-card__name {
   font-size: var(--aero-text-md);
   font-weight: 600;
   text-align: center;
+}
+
+/* Rarity label; colors climb from plain to gold. */
+.store-card__tier {
+  margin-top: -4px;
+  padding: 1px 10px;
+  border-radius: var(--aero-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #8a99a8;
+}
+
+.store-card__tier--uncommon {
+  background: #3fa34d;
+}
+
+.store-card__tier--rare {
+  background: #2a7ae2;
+}
+
+.store-card__tier--epic {
+  background: #8a3fd1;
+}
+
+.store-card__tier--legendary {
+  background: linear-gradient(180deg, #ffb340, #e07a10);
+}
+
+.store-card__tier--mythic {
+  background: linear-gradient(90deg, #c8901a, #ffe680, #c8901a);
+  color: #4a3000;
 }
 
 .store-card__price {
@@ -620,8 +618,80 @@
   position: absolute;
   inset: 7% 0 0 0;
   overflow: hidden;
-  background: var(--aero-gradient-water);
   container-type: size;
+}
+
+/* The colour of the water itself, on its own layer so it can drain away when
+   the tank bursts. */
+.aquarium__depth {
+  position: absolute;
+  inset: 0;
+  /* Lit from the lamp above: bright cyan under the surface, sinking to deep
+     blue, and darker toward the side walls where light has further to travel. */
+  background:
+    radial-gradient(ellipse 65% 50% at 50% -5%, rgba(170, 238, 255, 0.5), transparent 70%),
+    linear-gradient(90deg, rgba(2, 18, 56, 0.42) 0%, rgba(2, 18, 56, 0.1) 14%, transparent 26% 74%, rgba(2, 18, 56, 0.1) 86%, rgba(2, 18, 56, 0.42) 100%),
+    linear-gradient(180deg, #52c8ee 0%, #2198d6 18%, #1170b8 45%, #0a4f96 75%, #073a78 100%);
+}
+
+/* The underside of the surface, seen from below: a rippling mirror band. */
+.aquarium__ceiling {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 5;
+  height: 11%;
+  background:
+    linear-gradient(180deg, rgba(235, 252, 255, 0.85) 0, rgba(235, 252, 255, 0) 3px),
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='400'%20height='60'%3E%3Cfilter%20id='r'%20x='0'%20y='0'%20width='100%'%20height='100%'%3E%3CfeTurbulence%20type='turbulence'%20baseFrequency='0.006%200.09'%20numOctaves='2'%20seed='5'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20values='0%200%200%200%201%200%200%200%200%201%200%200%200%200%201%20-6%200%200%200%201.1'/%3E%3C/filter%3E%3Crect%20width='100%'%20height='100%'%20filter='url(%23r)'/%3E%3C/svg%3E") 0 0 / 400px 100%,
+    linear-gradient(180deg, rgba(200, 245, 255, 0.35), transparent);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 40%, transparent 100%);
+  opacity: 0.75;
+  animation: ceiling-ripple 9s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes ceiling-ripple {
+  to {
+    background-position:
+      0 0,
+      400px 0,
+      0 0;
+  }
+}
+
+/* The body of water between the glass and everything in the tank: a faint
+   blue cast that deepens toward the bottom and the side walls. */
+/* Water absorbs red light, so everything in the tank takes on a blue cast
+   that grows stronger toward the bottom, where light has travelled furthest. */
+.aquarium__tint {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background:
+    linear-gradient(180deg, rgba(235, 250, 255, 0) 0%, rgba(150, 205, 240, 0.6) 55%, rgba(95, 165, 220, 0.85) 100%),
+    linear-gradient(90deg, rgba(90, 150, 210, 0.5) 0%, transparent 15% 85%, rgba(90, 150, 210, 0.5) 100%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* Light scattering in the water between the glass and the reef. */
+.aquarium__scatter {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: linear-gradient(180deg, rgba(120, 220, 255, 0.04) 0%, rgba(30, 120, 200, 0.08) 55%, rgba(20, 100, 180, 0.16) 100%);
+  pointer-events: none;
+}
+
+/* Distance haze over the back reef, so it sits deeper than the fish. */
+.aquarium__haze {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, transparent 25%, rgba(16, 84, 150, 0.16) 60%, rgba(8, 56, 120, 0.3) 100%),
+    linear-gradient(90deg, rgba(8, 50, 110, 0.25) 0%, transparent 20% 80%, rgba(8, 50, 110, 0.25) 100%);
+  pointer-events: none;
 }
 
 .aquarium__surface {
@@ -629,8 +699,8 @@
   top: 7%;
   left: 0;
   right: 0;
-  height: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.9) 45%, rgba(190, 240, 255, 0.55) 60%, rgba(255, 255, 255, 0) 100%);
+  height: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 45%, rgba(170, 230, 250, 0.5) 62%, rgba(255, 255, 255, 0) 100%);
   translate: 0 -50%;
   animation: surface-ripple 3.5s ease-in-out infinite alternate;
   pointer-events: none;
@@ -710,59 +780,88 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 55% 45% at 50% 20%, rgba(200, 245, 255, 0.55), transparent 70%),
-    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(80, 200, 255, 0.35), transparent 70%);
+    radial-gradient(ellipse 50% 40% at 50% 12%, rgba(200, 245, 255, 0.3), transparent 70%),
+    radial-gradient(ellipse 70% 30% at 50% 100%, rgba(90, 190, 240, 0.18), transparent 70%);
   mix-blend-mode: screen;
   pointer-events: none;
 }
 
 .aquarium__rays {
   position: absolute;
-  inset: -10% -10% 30% -10%;
-  background: repeating-linear-gradient(
-    100deg,
-    rgba(255, 255, 255, 0) 0px,
-    rgba(255, 255, 255, 0.12) 40px,
-    rgba(255, 255, 255, 0) 90px,
-    rgba(255, 255, 255, 0) 160px
-  );
-  mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
-  animation: rays-sway 12s ease-in-out infinite alternate;
+  z-index: 5;
+  inset: -5% -15% 25% -15%;
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.5) 45%, transparent 100%);
+  mix-blend-mode: screen;
   pointer-events: none;
+}
+
+/* Shafts of light of uneven width and brightness slanting down from the lamp. */
+.aquarium__rays::before,
+.aquarium__rays::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  filter: blur(10px);
+  transform-origin: 50% 0;
+}
+
+.aquarium__rays::before {
+  background: linear-gradient(
+    102deg,
+    transparent 0 12%,
+    rgba(210, 245, 255, 0.37) 14%,
+    transparent 17% 26%,
+    rgba(210, 245, 255, 0.2) 27% 29%,
+    transparent 31% 44%,
+    rgba(210, 245, 255, 0.48) 46% 48%,
+    transparent 52% 63%,
+    rgba(210, 245, 255, 0.27) 66%,
+    transparent 70% 81%,
+    rgba(210, 245, 255, 0.34) 83% 84%,
+    transparent 87%
+  );
+  animation: rays-sway 14s ease-in-out infinite alternate;
+}
+
+.aquarium__rays::after {
+  background: linear-gradient(
+    97deg,
+    transparent 0 20%,
+    rgba(220, 250, 255, 0.24) 22% 23%,
+    transparent 26% 36%,
+    rgba(220, 250, 255, 0.34) 38%,
+    transparent 41% 56%,
+    rgba(220, 250, 255, 0.2) 58% 61%,
+    transparent 64% 74%,
+    rgba(220, 250, 255, 0.31) 76%,
+    transparent 79%
+  );
+  animation:
+    rays-sway 9s ease-in-out -4s infinite alternate-reverse,
+    rays-flicker 6s ease-in-out infinite alternate;
 }
 
 @keyframes rays-sway {
   from {
-    transform: translateX(-3%) skewX(-4deg);
+    transform: translateX(-3%) skewX(-5deg);
   }
   to {
-    transform: translateX(3%) skewX(4deg);
+    transform: translateX(3%) skewX(5deg);
   }
 }
 
-/* Caustics: the rippling net of light the surface throws onto the reef. Two
-   noise-generated nets drift in different directions and shimmer where they
-   cross. */
-.aquarium__caustics {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%3E%3Cfilter%20id='c'%20x='0'%20y='0'%20width='100%'%20height='100%'%3E%3CfeTurbulence%20type='turbulence'%20baseFrequency='0.018'%20numOctaves='2'%20seed='3'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20values='0%200%200%200%201%200%200%200%200%201%200%200%200%200%201%20-7%200%200%200%201.25'/%3E%3C/filter%3E%3Crect%20width='100%'%20height='100%'%20filter='url(%23c)'/%3E%3C/svg%3E") 0 0 / 320px 320px,
-    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%3E%3Cfilter%20id='c'%20x='0'%20y='0'%20width='100%'%20height='100%'%3E%3CfeTurbulence%20type='turbulence'%20baseFrequency='0.018'%20numOctaves='2'%20seed='8'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20values='0%200%200%200%201%200%200%200%200%201%200%200%200%200%201%20-7%200%200%200%201.25'/%3E%3C/filter%3E%3Crect%20width='100%'%20height='100%'%20filter='url(%23c)'/%3E%3C/svg%3E") 0 0 / 260px 260px;
-  mix-blend-mode: soft-light;
-  opacity: 0.6;
-  /* Faint in open water, strongest where it lands on the rock and sand. */
-  mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.15) 35%, rgba(0, 0, 0, 0.4) 60%, #000 85%);
-  animation: caustics-drift 22s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes caustics-drift {
-  to {
-    background-position:
-      320px 160px,
-      -260px 130px;
+@keyframes rays-flicker {
+  0% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.45;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.6;
   }
 }
 
@@ -786,6 +885,7 @@
 
 .aquarium__anemone {
   position: absolute;
+  pointer-events: none;
   left: 27%;
   bottom: 2%;
   z-index: 3;
@@ -801,19 +901,41 @@
   inset: 0;
   z-index: 4;
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.7) 0 1px, transparent 1.5px) 0 0 / 97px 83px,
-    radial-gradient(circle, rgba(255, 255, 255, 0.45) 0 0.8px, transparent 1.2px) 31px 17px / 61px 71px,
-    radial-gradient(circle, rgba(255, 255, 255, 0.35) 0 1.4px, transparent 2px) 13px 41px / 151px 127px;
-  animation: particles-drift 40s linear infinite;
+    radial-gradient(circle, rgba(255, 255, 255, 0.7) 0 1px, transparent 1.5px) 0 0 / 211px 181px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.45) 0 0.8px, transparent 1.2px) 31px 17px / 157px 139px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.35) 0 1.4px, transparent 2px) 13px 41px / 307px 263px;
+  animation: particles-drift 90s linear infinite;
   pointer-events: none;
+}
+
+/* Out-of-focus motes further back, drifting slower. */
+.aquarium__particles::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(220, 245, 255, 0.35) 0 1.5px, transparent 3px) 23px 9px / 241px 211px,
+    radial-gradient(circle, rgba(220, 245, 255, 0.25) 0 2px, transparent 3.5px) 57px 61px / 359px 317px;
+  filter: blur(1.2px);
+  animation: particles-drift-far 150s linear infinite;
+}
+
+/* Each layer ends a whole number of tiles from where it started, so the
+   loop has no jump. */
+@keyframes particles-drift-far {
+  to {
+    background-position:
+      -218px -413px,
+      416px -573px;
+  }
 }
 
 @keyframes particles-drift {
   to {
     background-position:
-      40px -166px,
-      51px -125px,
-      -17px -213px;
+      211px -362px,
+      -126px -261px,
+      13px -485px;
   }
 }
 
@@ -858,7 +980,43 @@
   left: 0;
   z-index: 2;
   width: var(--fish-w);
-  animation: swim var(--swim-duration) linear var(--swim-delay) infinite;
+  cursor: pointer;
+  /* The path animation moves the fish up and down in step with the swim, so
+     together they trace its route (see PATHS in Aquarium.tsx). */
+  animation:
+    swim var(--swim-duration) linear var(--swim-delay) infinite,
+    var(--swim-path, none) var(--swim-duration) ease-in-out var(--swim-delay) infinite;
+}
+
+/* A bubble a fish blows when clicked, centered on its mouth. */
+.fish-puff {
+  position: absolute;
+  z-index: 2;
+  translate: -50% -50%;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  background: var(--aero-bubble);
+  box-shadow: inset -1px -2px 4px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  animation: fish-puff 1.5s ease-out both;
+}
+
+@keyframes fish-puff {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+  12% {
+    opacity: 0.95;
+    transform: translate(0, 0) scale(1);
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--puff-dx), var(--puff-rise)) scale(1.15);
+  }
 }
 
 .swimmer__bob {
@@ -888,12 +1046,294 @@
   }
 }
 
+/* Routes. Each one runs over a full lap: 0-48% is the swim to the right and
+   50-98% the swim back. Offsets are in cqh, the height of the water. */
+
+/* Rolling up and down the whole way. */
+@keyframes path-wave {
+  0%, 100% { translate: 0 -7cqh; }
+  16% { translate: 0 7cqh; }
+  32% { translate: 0 -7cqh; }
+  48%, 50% { translate: 0 7cqh; }
+  66% { translate: 0 -7cqh; }
+  82% { translate: 0 7cqh; }
+  98% { translate: 0 -7cqh; }
+}
+
+/* Out along the lane, up at the far wall, back along a higher line. */
+@keyframes path-loop {
+  0%, 100% { translate: 0 -9cqh; }
+  8%, 40% { translate: 0 0; }
+  58%, 90% { translate: 0 -18cqh; }
+}
+
+/* Dips toward the reef on the way out, straight back. */
+@keyframes path-dive {
+  0%, 48%, 100% { translate: 0 0; }
+  24% { translate: 0 18cqh; }
+}
+
+/* Straight out, arcs up over the middle on the way back. */
+@keyframes path-arc {
+  0%, 50%, 98%, 100% { translate: 0 0; }
+  74% { translate: 0 -16cqh; }
+}
+
+/* Sharp diagonal legs. */
+@keyframes path-zigzag {
+  0%, 24%, 48%, 50%, 74%, 98%, 100% { translate: 0 -9cqh; animation-timing-function: linear; }
+  12%, 36%, 62%, 86% { translate: 0 9cqh; animation-timing-function: linear; }
+}
+
 @keyframes bob {
   from {
     transform: translateY(-8px) rotate(-2deg);
   }
   to {
     transform: translateY(8px) rotate(2deg);
+  }
+}
+
+/* ---------- Tank damage (focus mode): cracks, then a burst ---------- */
+
+/* Cracks on the front pane. Each line grows out from where the glass was hit. */
+.tank-cracks {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 1px rgba(0, 30, 70, 0.6));
+  pointer-events: none;
+}
+
+.tank-cracks__line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: crack-spread 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.tank-cracks__line--fine {
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 0.9;
+  animation-delay: 0.5s;
+  animation-duration: 1.8s;
+}
+
+.tank-cracks__pit {
+  fill: rgba(255, 255, 255, 0.85);
+}
+
+.tank-cracks__hole {
+  fill: rgba(255, 255, 255, 0.1);
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 2;
+  stroke-linejoin: bevel;
+}
+
+@keyframes crack-spread {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Draining: the water sinks to the bottom of the tank, leaving the reef dry. */
+.aquarium--burst :is(.aquarium__depth, .aquarium__backlight, .aquarium__haze, .aquarium__tint, .aquarium__scatter) {
+  animation: water-drain 2.4s cubic-bezier(0.4, 0, 0.7, 1) forwards;
+}
+
+.aquarium--burst :is(.aquarium__rays, .aquarium__ceiling, .aquarium__particles, .aquarium__bubbler, .aquarium__surface) {
+  opacity: 0;
+  transition: opacity 0.8s;
+}
+
+@keyframes water-drain {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(94% 0 0 0);
+  }
+}
+
+/* The falling surface while it drains. */
+.aquarium__waterline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  height: 6px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.9) 50%, rgba(170, 230, 250, 0.4) 70%, transparent);
+  translate: 0 -50%;
+  animation: waterline-fall 2.4s cubic-bezier(0.4, 0, 0.7, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes waterline-fall {
+  from {
+    top: 0;
+  }
+  to {
+    top: 94%;
+  }
+}
+
+/* Fish stop where they are, sink with the water and flap on the bottom. */
+.swimmer.is-fallen {
+  animation: fish-fall 1.6s cubic-bezier(0.5, 0, 0.9, 0.6) var(--fall-delay) forwards;
+  cursor: default;
+}
+
+.swimmer.is-fallen .swimmer__bob {
+  animation: fish-flop 1.4s ease-in-out calc(var(--fall-delay) + 1.6s) infinite;
+}
+
+@keyframes fish-fall {
+  to {
+    translate: 0 var(--fall);
+  }
+}
+
+/* A hop and a twist, then a rest. */
+@keyframes fish-flop {
+  0%,
+  45%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  12% {
+    transform: translateY(-16px) rotate(-14deg);
+  }
+  24% {
+    transform: translateY(-4px) rotate(10deg);
+  }
+  32% {
+    transform: translateY(0) rotate(-4deg);
+  }
+}
+
+/* Everything thrown out of the tank, which may land outside it. */
+.tank-spill {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* Water pouring out of the hole and down the front of the tank. */
+.tank-spill__gush {
+  position: absolute;
+  width: 34px;
+  translate: -50% 0;
+  transform-origin: top;
+  border-radius: 40% 40% 6px 6px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55) 30%, transparent 45%, rgba(255, 255, 255, 0.35) 70%, transparent),
+    linear-gradient(180deg, rgba(110, 205, 245, 0.85), rgba(60, 160, 225, 0.6));
+  animation: gush 2.6s ease-in forwards;
+}
+
+@keyframes gush {
+  0% {
+    transform: scale(0.4, 0);
+    opacity: 1;
+  }
+  12% {
+    transform: scale(1.4, 1);
+  }
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(0.1, 1);
+    opacity: 0;
+  }
+}
+
+/* The puddle that spreads over the cabinet top. */
+.tank-spill__puddle {
+  position: absolute;
+  bottom: -14px;
+  width: 520px;
+  height: 26px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 40%, rgba(170, 230, 255, 0.85), rgba(90, 180, 235, 0.55) 55%, transparent 72%);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.7);
+  animation: puddle-spread 2.6s cubic-bezier(0.2, 0.6, 0.3, 1) 0.4s both;
+}
+
+@keyframes puddle-spread {
+  from {
+    transform: scale(0.05, 0.3);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.tank-spill__drop {
+  position: absolute;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, rgba(120, 210, 250, 0.9) 45%, rgba(50, 150, 220, 0.8));
+  translate: -50% -50%;
+  opacity: 0;
+  animation: drop-fly 0.9s cubic-bezier(0.3, 0, 0.8, 0.6) both;
+}
+
+/* Thrown out and up, then down to the floor. */
+@keyframes drop-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  35% {
+    transform: translate(calc(var(--drop-x) * 0.4), var(--drop-lift));
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drop-x), var(--drop-y));
+  }
+}
+
+.tank-spill__shards {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+}
+
+.tank-spill__shard {
+  fill: rgba(225, 245, 255, 0.55);
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 1;
+  animation: shard-fly 1s cubic-bezier(0.3, 0, 0.8, 0.6) forwards;
+}
+
+@keyframes shard-fly {
+  0% {
+    transform: translate(0, 0) rotate(0);
+  }
+  30% {
+    transform: translate(calc(var(--shard-x) * 0.35), var(--shard-lift)) rotate(calc(var(--shard-spin) * 0.3));
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--shard-x), var(--shard-y)) rotate(var(--shard-spin));
   }
 }
 
@@ -933,6 +1373,8 @@
 
 .lockin__tank-wrap {
   position: relative;
+  /* Above the stand, so spilled water and glass land on top of it. */
+  z-index: 1;
   flex: 1;
   width: min(1080px, calc(100% - 40px));
   min-height: 0;
@@ -1031,8 +1473,10 @@
   .swimmer {
     animation-duration: calc(var(--swim-duration) * 2);
   }
-  .aquarium__rays,
-  .aquarium__caustics,
+  .aquarium__rays::before,
+  .aquarium__rays::after,
+  .aquarium__ceiling,
+  .aquarium__particles::before,
   .aquarium__surface,
   .aquarium__plant,
   .aquarium__anemone,
@@ -1048,8 +1492,17 @@
 @media (max-width: 860px) {
   .home__main {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(260px, 1fr) auto;
     overflow-y: auto;
+  }
+  .home__panel {
+    display: none;
+  }
+  /* The Focus button stacks under the tank here, so the cabinet can't reach
+     the dock. */
+  .home .home__stand {
+    height: 10vh;
+    min-height: 56px;
+    margin-bottom: 0;
   }
   .topbar {
     flex-wrap: wrap;

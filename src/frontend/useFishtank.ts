@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { EMPTY_STATS, FISH, type Fish } from './data';
 
-export const START_POINTS = 100;
+export const START_POINTS = 100_000;
 export const NOTE_REWARD = 25;
 export const BONUS_REWARD = 50;
 export const MIN_NOTE_LENGTH = 20;
 export const MAX_NAME_LENGTH = 24;
+// TEMPORARY: what the P key gives (see useFishtank).
+const CHEAT_POINTS = 1000;
 
 export type Screen = 'home' | 'store' | 'lockIn';
 export interface Toast {
@@ -35,6 +37,8 @@ export function useFishtank() {
   const [screen, setScreen] = useState<Screen>('home');
   const [points, setPoints] = useState(START_POINTS);
   const [ownedIds, setOwnedIds] = useState<string[]>([]);
+  // The owned fish currently swimming in the tank.
+  const [tankIds, setTankIds] = useState<string[]>([]);
   const [name, setName] = useState(GUEST_NAME);
   const [account, setAccount] = useState<FishtankUser | null>(null);
   const [avatarId, setAvatarId] = useState<string | null>(null);
@@ -44,6 +48,7 @@ export function useFishtank() {
   const [lockError, setLockError] = useState<string | null>(null);
 
   const owned = FISH.filter((f) => ownedIds.includes(f.id));
+  const tank = owned.filter((f) => tankIds.includes(f.id));
   const avatar = owned.find((f) => f.id === avatarId) ?? null;
   const notify = (tone: Toast['tone'], text: string) => setToast({ tone, text });
   const dismissToast = useCallback(() => setToast(null), []);
@@ -57,7 +62,14 @@ export function useFishtank() {
     if (points < fish.price || ownedIds.includes(fish.id)) return;
     setPoints(points - fish.price);
     setOwnedIds([...ownedIds, fish.id]);
+    setTankIds([...tankIds, fish.id]);
     notify('success', `${fish.name} joined your tank!`);
+  };
+
+  // Puts an owned fish in the tank or takes it out.
+  const setInTank = (fish: Fish, inTank: boolean) => {
+    if (!ownedIds.includes(fish.id)) return;
+    setTankIds((ids) => (inTank ? [...ids.filter((id) => id !== fish.id), fish.id] : ids.filter((id) => id !== fish.id)));
   };
 
   // Returns an error message, or null when the note was accepted.
@@ -77,13 +89,18 @@ export function useFishtank() {
     return true;
   };
 
-  const resetProgress = () => {
-    setPoints(START_POINTS);
-    setOwnedIds([]);
-    setAvatarId(null);
-    setStats(EMPTY_STATS);
-    notify('info', 'Progress reset. Fresh tank!');
-  };
+  // TEMPORARY: press P for free points while testing. Remove before release.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'p' && e.key !== 'P') return;
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Don't fire while typing a name, note or password.
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]')) return;
+      setPoints((p) => p + CHEAT_POINTS);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const grantBonus = () => {
     earn(BONUS_REWARD);
@@ -216,9 +233,9 @@ export function useFishtank() {
   };
 
   return {
-    screen, setScreen, points, owned, name, avatar, stats, toast, dismissToast,
+    screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
     account, logIn, createAccount, logOut,
-    buy, shareNote, rename, setAvatarId, resetProgress, grantBonus,
+    buy, setInTank, shareNote, rename, setAvatarId, grantBonus,
     session, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
 }
