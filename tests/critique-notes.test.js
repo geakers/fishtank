@@ -26,9 +26,9 @@ const NOTES = [
 const REPLY = {
   title: 'Your notes on cells',
   summary: 'Clear but too wordy.',
-  strengths: [{ point: 'Every page is dated.', sources: ['N1'] }],
+  strengths: [{ point: 'Every page is dated.', sources: ['N2'] }],
   improvements: [
-    { issue: 'Full sentences', evidence: 'In "Osmosis" <every> line is a sentence.', suggestion: 'Use phrases.', sources: ['[N1]', 'S1', 'Z9'] },
+    { issue: 'Full sentences', evidence: 'In "Osmosis" <every> line is a sentence.', suggestion: 'Use phrases.', sources: ['[N2]', 'N1', 'Z9'] },
     { issue: 'No self-testing', evidence: 'No questions anywhere.', suggestion: 'Add a question column.', sources: [] },
   ],
   nextSteps: ['Rewrite "Osmosis" as bullets.'],
@@ -79,7 +79,7 @@ test('the critique sends the reference and the picked notes to Claude and saves 
   const parts = seen.claude.messages[0].content;
   const sent = parts.map((p) => p.text ?? '').join('\n');
   assert.match(sent, /STUDY & NOTE-TAKING REFERENCE CONTEXT/);
-  assert.match(sent, /\[N1\] Effective Note-Taking in Class/);
+  assert.match(sent, /\[N2\] Note-Taking Methods: 10 Styles for Students/);
   assert.match(sent, /Title: Osmosis\nFiles: 0\n\nWater moves across a membrane\./);
   assert.match(sent, /File "cells\.pdf" from note 2 \("Cells"\):/);
   assert.doesNotMatch(sent, /A group note/);
@@ -101,17 +101,18 @@ test("the PDF cites only real reference entries, with their URLs, and escapes Cl
   assert.match(html, /<h2>What's working<\/h2>/);
   assert.match(html, /<h2>What to change<\/h2>/);
   assert.match(html, /In &quot;Osmosis&quot; &lt;every&gt; line is a sentence\./);
-  // N1 is a real entry; S1 is marked not available and Z9 doesn't exist.
-  assert.match(html, /Use phrases\. <span class="cite">\[N1\]<\/span>/);
-  assert.doesNotMatch(html, /\[S1\]|\[Z9\]/);
+  // N2 is a real entry; N1 and Z9 aren't in the reference.
+  assert.match(html, /Use phrases\. <span class="cite">\[N2\]<\/span>/);
+  assert.doesNotMatch(html, /\[N1\]|\[Z9\]/);
   assert.match(html, /<h2>Sources<\/h2>/);
-  assert.match(html, /learningcenter\.unc\.edu\/tips-and-tools\/effective-note-taking-in-class\//);
+  assert.match(html, /www\.adobe\.com\/acrobat\/resources\/note-taking-methods\.html/);
 });
 
 test('contextSources reads every available entry of the reference', () => {
   const sources = critique.contextSources(require('node:fs').readFileSync(`${__dirname}/../src/desktop/study-skills/study_context.txt`, 'utf8'));
 
-  assert.equal(Object.keys(sources).length, 14);
+  assert.equal(Object.keys(sources).length, 13);
+  assert.equal('N1' in sources, false);
   assert.equal('S1' in sources, false);
   assert.deepEqual(sources.F1, {
     title: 'Flashcards - University of Toronto Scarborough Learning Strategies',

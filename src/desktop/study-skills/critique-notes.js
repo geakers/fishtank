@@ -25,7 +25,7 @@ You will be given a reference of advice on note-taking and studying, then one or
 Critique the student's note-taking style: structure and format, how well main ideas stand out from detail, wording (their own words or copied text), brevity, use of headings, diagrams, examples and questions, consistency between notes, and how easy the notes would be to review and self-test from. Do not correct or teach the subject matter itself, except to point out where the way the notes are written hides or muddles it.
 
 Base the critique on the reference first, and on your own knowledge of how people learn where the reference says nothing. Follow these rules for sources:
-- In each sources list, give only entry IDs that appear in the reference, such as N1 or S2, and only entries that actually support the point.
+- In each sources list, give only entry IDs that appear in the reference, such as N2 or S2, and only entries that actually support the point.
 - Never cite an entry the reference marks as not available.
 - When a point rests on your own knowledge and not on the reference, leave its sources empty. Never invent a source, a URL or a study.
 - Keep in mind what the reference says about its own entries: some are anecdotal, opinion pieces, or published by a company with something to sell.
@@ -52,8 +52,8 @@ const schema = object({
 const MAX_NOTES = 10;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-// Reads the reference's entries out of its text: { N1: { title, url }, ... }.
-// Each entry starts "[N1] Title" with "URL: ..." on a later line. Entries the
+// Reads the reference's entries out of its text: { N2: { title, url }, ... }.
+// Each entry starts "[N2] Title" with "URL: ..." on a later line. Entries the
 // reference marks NOT AVAILABLE are left out, so they can never be cited.
 function contextSources(context) {
   const sources = {};
@@ -70,7 +70,7 @@ function knownIds(cited, sources) {
   return [...new Set(ids)];
 }
 
-// " [N1] [S2]" after a point, or nothing when it cites no entry.
+// " [N2] [S2]" after a point, or nothing when it cites no entry.
 function citations(ids) {
   return ids.length ? ` <span class="cite">${ids.map((id) => `[${escapeHtml(id)}]`).join(' ')}</span>` : '';
 }

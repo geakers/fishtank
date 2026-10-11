@@ -2,18 +2,16 @@ STUDY & NOTE-TAKING REFERENCE CONTEXT
 =====================================
 Purpose: Source material for reviewing a student's notes and study habits.
 Each entry = paraphrased key points from one article, with its URL.
-When giving feedback, cite the entry ID (e.g., [N1]) and URL. If something
+When giving feedback, cite the entry ID (e.g., [N2]) and URL. If something
 isn't covered here, say so rather than inventing a source.
 
 INDEX
 -----
 NOTE-TAKING
-  [N1] UNC Learning Center - Effective Note-Taking in Class
   [N2] Adobe - 10 Note-Taking Methods
   [N3] UNC Learning Center - Taking Notes While Reading
   [N4] Goodnotes - Best Note-Taking Methods for College Students
 STUDY HABITS
-  [S1] PMC8108503 (NOT AVAILABLE - see entry)
   [S2] UNC Learning Center - Studying 101: Study Smarter Not Harder
   [S3] Vault - 4 Tips for Establishing Good Study Habits
 USING AI FOR STUDYING
@@ -33,44 +31,6 @@ FLASHCARDS
 NOTE-TAKING
 =====================================================================
 
-[N1] Effective Note-Taking in Class - UNC Learning Center
-URL: https://learningcenter.unc.edu/tips-and-tools/effective-note-taking-in-class/
-Why it matters
-- Taking notes in class aids focus, listening, comprehension, and retention.
-- Clear, concise notes save time later; messy or overly wordy notes cost time.
-Before class
-- Preview assigned reading and check the syllabus to anticipate main ideas.
-- Skim the previous session's notes for context.
-- Label each page with course and date; keep each course's notes together,
-  in chronological order.
-During class
-- For conceptual material, capture main points, not every word.
-- For factual material, near-verbatim notes can help short-answer recall,
-  but only if reviewed within ~24 hours.
-- Write down questions and confusing points to follow up on.
-- Jot keywords, names, dates to define later.
-- Use bullets, phrases, abbreviations, symbols - not full sentences.
-- Use one consistent format day to day.
-- Online lectures: watch through first, then rewind to fill gaps; note
-  timestamps of parts to revisit.
-Spotting what's important
-- Intros and conclusions often summarize main points.
-- Signal phrases ("there are three main...", "in summary..."), repetition,
-  and emphasis/gestures flag key content.
-Formats: Cornell, outline, flowchart/concept map, charting, sentence method.
-Handwritten vs. digital
-- Handwritten: easier diagrams, fewer distractions, may help conceptual
-  learning.
-- Digital: faster, higher volume, easy to edit/search/share, may help with
-  factual content.
-After class
-- Revisit notes within a day or two: clarify, define terms, fill gaps,
-  reorganize, note open questions.
-- Summarize in your own words, write questions, chunk into categories.
-- Turn notes into a study guide and self-test.
-- Use office hours and academic coaching when stuck.
-
----------------------------------------------------------------------
 [N2] Note-Taking Methods: 10 Styles for Students - Adobe Acrobat
 URL: https://www.adobe.com/acrobat/resources/note-taking-methods.html
 Benefits claimed: focus, retention, organization, critical thinking via
@@ -148,12 +108,6 @@ revision; Zettelkasten/mind maps for building ideas over time.
 STUDY HABITS
 =====================================================================
 
-[S1] PMC8108503 - NOT AVAILABLE
-URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC8108503/
-Could not be retrieved (site blocked automated access). Do not cite this
-entry for any claim until its content has been added.
-
----------------------------------------------------------------------
 [S2] Studying 101: Study Smarter Not Harder - UNC Learning Center
 URL: https://learningcenter.unc.edu/tips-and-tools/studying-101-study-smarter-not-harder/
 Reading is not studying
@@ -401,10 +355,10 @@ CROSS-SOURCE THEMES (useful for reviews)
 - Active > passive: self-testing, explaining aloud, and own-words
   summaries beat rereading, copying, and heavy highlighting.
   [N3][S2][A2][F1]
-- Review notes within ~1-2 days and turn them into questions/self-tests.
-  [N1][S2]
+- Turn notes into questions and self-tests; review them on a spaced
+  schedule. [S2][F1]
 - Spaced, short, focused sessions beat cramming. [S2][F1][G1]
-- Consistent note structure; choose format by content type. [N1][N2][N4]
+- Consistent note structure; choose format by content type. [N2][N4]
 - AI should support thinking, not replace it; verify its output and
   follow course policy. [A1][A2]
 - Study groups work best small, prepared, structured, and regular.

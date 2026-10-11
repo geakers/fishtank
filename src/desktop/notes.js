@@ -160,4 +160,4 @@ async function downloadNoteFile(storagePath) {
   return new Uint8Array(await res.arrayBuffer());
 }
 
-module.exports = { FILE_TYPES, MAX_FILE_BYTES, MAX_FILES, listNotes, submitNote, deleteNote, noteFileUrl, downloadNoteFile };
+module.exports = { FILE_TYPES, MAX_FILE_BYTES, MAX_FILES, listNotes, submitNote, deleteNote, deleteGroupNotes, noteFileUrl, downloadNoteFile };

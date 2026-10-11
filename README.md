@@ -1,6 +1,6 @@
-# F-Lock
+# Fish Lock
 
-A study tool that locks you into focused work and rewards you for it. You commit to a length of time, F-Lock keeps you to your study apps until it's up, and finished sessions earn points for stocking an aquarium of fish. The look is Frutiger Aero, per the HackNC theme, and takes inspiration from the Wii for UI/UX design. 
+Fish Lock (F-Lock) is a study tool that locks you into focused work and rewards you for it. You commit to a length of time, F-Lock keeps you to your study apps until it's up, and finished sessions earn points for stocking an aquarium of fish. The look is Frutiger Aero, per the HackNC theme, and takes inspiration from the Wii for UI/UX design. 
 
 > **Naming:** F-Lock is the project's new name. It hasn't reached the code yet: the desktop app is still called **Fishtank** and the phone apps **FocusFlip**.
 
@@ -82,11 +82,7 @@ Supabase is set up by running the SQL in `src/database` by hand in the SQL edito
 
 ## Known gaps
 
-- **Testing shortcuts are on.** `TEST_POINT_PER_SECOND` in `src/desktop/profiles.js` makes sessions earn a point per second, and typing `p02162008` adds a million points.
-- **Points aren't balanced.** Fish cost 200 to about 110,000 points against an earn rate of one point per hour.
 - **Some settings aren't saved.** Display-name edits and session stats such as streaks are lost when the app closes.
-- **Prices aren't checked.** The database takes a fish's price from the app without checking it.
-- **Study mode is easy to escape.** You can quit the app, and it does nothing outside macOS. Strict lock-in is the mode that holds.
 - **Notes don't earn anything.** They aren't reviewed and don't earn points yet.
 - **Test coverage is partial.** The tests cover the desktop's main process, not the UI or the SQL.
 - **Assymetric OS Functionality.** The app runs noticeably better on MacOS and iOS with more errors on Windows and Android devices. 
