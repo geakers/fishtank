@@ -10,7 +10,10 @@ const {
   setMinutesStudied,
   verifyPoints,
 } = require('./profiles');
-const { createGroup, listGroups, addMember, groupRoster, searchUsernames } = require('./groups');
+const {
+  createGroup, listGroups, addMember, groupRoster, searchUsernames,
+  inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
+} = require('./groups');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
 
 // When the running lockdown session started (ms since epoch), or null.
@@ -108,6 +111,11 @@ app.whenReady().then(() => {
   ipcMain.handle('add-member', (event, groupId, username) => addMember(groupId, username));
   ipcMain.handle('group-roster', (event, groupId) => groupRoster(groupId));
   ipcMain.handle('search-usernames', (event, query) => searchUsernames(query));
+  ipcMain.handle('invite-member', (event, groupId, username) => inviteMember(groupId, username));
+  ipcMain.handle('list-invites', () => listInvites());
+  ipcMain.handle('accept-invite', (event, groupId) => acceptInvite(groupId));
+  ipcMain.handle('decline-invite', (event, groupId) => declineInvite(groupId));
+  ipcMain.handle('group-invites', (event, groupId) => groupInvites(groupId));
 
   restoreSession();
 

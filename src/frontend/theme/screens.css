@@ -121,10 +121,208 @@
   padding-bottom: 56px;
 }
 
-/* Blank for now; fills the column above the Focus button. */
+/* Fills the column above the Focus button. */
 .home__panel {
   flex: 1;
   min-height: 0;
+}
+
+/* ---------- Study groups panel ---------- */
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-3);
+}
+
+.groups__empty {
+  margin: auto;
+  text-align: center;
+}
+
+/* Search box with the round "new group" button beside it. */
+.groups__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+}
+
+.groups__bar .aero-input {
+  min-width: 0;
+  border-radius: var(--aero-radius-pill);
+}
+
+.groups__round {
+  flex-shrink: 0;
+  width: 40px;
+  padding: 0;
+  font-size: var(--aero-text-lg);
+  line-height: 1;
+}
+
+.groups__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-2);
+  animation: pop-in var(--aero-duration-fast) var(--aero-ease);
+}
+
+.groups__form-actions,
+.groups__invite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--aero-space-2);
+}
+
+/* Small buttons inside the panel. */
+.groups__form-actions .aero-button,
+.groups__invite-actions .aero-button,
+.groups__person .aero-button,
+.groups__add-person {
+  min-height: 30px;
+  padding: 0 var(--aero-space-3);
+  font-size: var(--aero-text-sm);
+}
+
+/* The lists scroll; the search bar above and the message below stay put. */
+.groups__scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--aero-space-3);
+  min-height: 0;
+  margin-right: calc(-1 * var(--aero-space-2));
+  padding-right: var(--aero-space-2);
+  overflow-y: auto;
+}
+
+/* Sections keep their height, so a long list scrolls rather than squashes. */
+.groups__scroll > section {
+  flex-shrink: 0;
+}
+
+.groups__heading {
+  margin-bottom: var(--aero-space-1);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--aero-ink-muted);
+}
+
+.groups__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.groups__item,
+.groups__invite {
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-white);
+}
+
+.groups__item.is-open {
+  border-color: var(--aero-cyan-300);
+}
+
+.groups__invite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-2);
+  padding: var(--aero-space-2) var(--aero-space-3);
+  border-color: var(--aero-cyan-300);
+  background: var(--aero-cyan-100);
+}
+
+.groups__invite-text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--aero-space-2);
+  min-width: 0;
+}
+
+.groups__row {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  width: 100%;
+  padding: var(--aero-space-2) var(--aero-space-3);
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--aero-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.groups__row:hover {
+  background: var(--aero-cyan-100);
+}
+
+.groups__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groups__tag {
+  padding: 1px 8px;
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-cyan-100);
+  color: var(--aero-cyan-700);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.groups__caret {
+  color: var(--aero-ink-muted);
+  transition: rotate var(--aero-duration-fast);
+}
+
+.groups__item.is-open .groups__caret {
+  rotate: 180deg;
+}
+
+/* What drops down under an open group or person. */
+.groups__drop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-2);
+  padding: var(--aero-space-2) var(--aero-space-3) var(--aero-space-3);
+  border-top: 2px solid var(--aero-line-soft);
+}
+
+.groups__person {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  min-height: 30px;
+  font-size: var(--aero-text-sm);
+}
+
+.groups__person.is-pending .groups__name {
+  color: var(--aero-ink-muted);
+}
+
+.groups__add-person {
+  align-self: flex-start;
+}
+
+.groups__invite-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-2);
 }
 
 .home__focus {

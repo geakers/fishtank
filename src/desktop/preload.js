@@ -15,4 +15,9 @@ contextBridge.exposeInMainWorld('fishtank', {
   addMember: (groupId, username) => ipcRenderer.invoke('add-member', groupId, username),
   groupRoster: (groupId) => ipcRenderer.invoke('group-roster', groupId),
   searchUsernames: (query) => ipcRenderer.invoke('search-usernames', query),
+  inviteMember: (groupId, username) => ipcRenderer.invoke('invite-member', groupId, username),
+  listInvites: () => ipcRenderer.invoke('list-invites'),
+  acceptInvite: (groupId) => ipcRenderer.invoke('accept-invite', groupId),
+  declineInvite: (groupId) => ipcRenderer.invoke('decline-invite', groupId),
+  groupInvites: (groupId) => ipcRenderer.invoke('group-invites', groupId),
 });

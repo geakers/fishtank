@@ -54,6 +54,14 @@ declare global {
     role: 'leader' | 'member';
   }
 
+  // An invite to a group study session that the logged-in user hasn't answered
+  // yet, as returned by listInvites. leader is the leader's username.
+  interface FishtankGroupInvite {
+    group_id: number;
+    group_name: string;
+    leader: string;
+  }
+
   interface FishtankBridge {
     // Turns kiosk lockdown on/off. Resolves with the window's actual kiosk state.
     lockDown(enabled: boolean): Promise<boolean>;
@@ -86,6 +94,18 @@ declare global {
     groupRoster(groupId: number): Promise<FishtankGroupMember[]>;
     // Resolves with up to 10 usernames containing the search text.
     searchUsernames(query: string): Promise<string[]>;
+    // Invites the user with this username to the group; they join once they
+    // accept. Rejects unless the logged-in user leads the group, the username
+    // exists and isn't already in the group.
+    inviteMember(groupId: number, username: string): Promise<void>;
+    // Resolves with the invites waiting for the logged-in user, oldest first.
+    listInvites(): Promise<FishtankGroupInvite[]>;
+    // Accepts the logged-in user's invite to the group, making them a member.
+    acceptInvite(groupId: number): Promise<void>;
+    declineInvite(groupId: number): Promise<void>;
+    // Resolves with the usernames invited to the group who haven't answered
+    // yet; empty unless the logged-in user leads it.
+    groupInvites(groupId: number): Promise<string[]>;
   }
 
   interface Window {
