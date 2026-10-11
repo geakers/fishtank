@@ -29,4 +29,8 @@ contextBridge.exposeInMainWorld('fishtank', {
   acceptInvite: (groupId) => ipcRenderer.invoke('accept-invite', groupId),
   declineInvite: (groupId) => ipcRenderer.invoke('decline-invite', groupId),
   groupInvites: (groupId) => ipcRenderer.invoke('group-invites', groupId),
+  listNotes: () => ipcRenderer.invoke('list-notes'),
+  submitNote: (note) => ipcRenderer.invoke('submit-note', note),
+  deleteNote: (noteId) => ipcRenderer.invoke('delete-note', noteId),
+  openNoteFile: (storagePath) => ipcRenderer.invoke('open-note-file', storagePath),
 });

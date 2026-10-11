@@ -605,6 +605,45 @@ p {
   text-align: right;
 }
 
+.note-composer__files {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--aero-space-1);
+}
+
+.note-composer__file {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  width: 100%;
+  padding: 4px 10px;
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-surface-sunk);
+  font-size: var(--aero-text-sm);
+}
+
+.note-composer__file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-composer__remove {
+  border: none;
+  background: none;
+  color: var(--aero-ink-muted);
+  font-size: var(--aero-text-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.note-composer__remove:hover {
+  color: var(--aero-danger);
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

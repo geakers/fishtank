@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { errorText } from '../../useFishtank';
 import { AeroButton } from './AeroButton';
 import { GlassPanel } from './GlassPanel';
+import { NoteList } from './NoteList';
 
 const MAX_GROUP_NAME_LENGTH = 40;
 // How often to check for new invites and groups.
@@ -13,6 +14,19 @@ export interface StudyGroupsProps {
   // The logged-in user, or null for a guest.
   account: FishtankUser | null;
   className?: string;
+  // When given, an open group also shows its study notes and an upload button.
+  notes?: GroupNotesSource;
+}
+
+// The study notes shown inside groups, and what to do with them.
+export interface GroupNotesSource {
+  // The notes the user can see; each group shows the ones shared with it.
+  items: FishtankNote[];
+  // Called when a group is opened, to load its latest notes.
+  onShow: () => void;
+  onUpload: (group: FishtankGroup) => void;
+  onOpenFile: (storagePath: string) => void;
+  onDelete: (note: FishtankNote) => void;
 }
 
 interface Notice {
@@ -23,7 +37,7 @@ interface Notice {
 // The home screen's study groups panel: a search box and "new group" button at
 // the top, then invites waiting for an answer and the user's groups. Clicking
 // a group drops down the people in it, and lets its leader invite more.
-export function StudyGroups({ account, className = '' }: StudyGroupsProps) {
+export function StudyGroups({ account, className = '', notes }: StudyGroupsProps) {
   const bridge = window.fishtank;
   if (!bridge || !account) {
     return (
@@ -36,7 +50,7 @@ export function StudyGroups({ account, className = '' }: StudyGroupsProps) {
     );
   }
   // Keyed by user so nothing from one account is left on screen for the next.
-  return <GroupsPanel key={account.uid} bridge={bridge} account={account} className={className} />;
+  return <GroupsPanel key={account.uid} bridge={bridge} account={account} className={className} notes={notes} />;
 }
 
 // Usernames matching the search text, minus the ones in `exclude`.
@@ -67,9 +81,10 @@ interface GroupsPanelProps {
   bridge: FishtankBridge;
   account: FishtankUser;
   className: string;
+  notes?: GroupNotesSource;
 }
 
-function GroupsPanel({ bridge, account, className }: GroupsPanelProps) {
+function GroupsPanel({ bridge, account, className, notes }: GroupsPanelProps) {
   // null until the first load finishes.
   const [groups, setGroups] = useState<FishtankGroup[] | null>(null);
   const [invites, setInvites] = useState<FishtankGroupInvite[]>([]);
@@ -226,6 +241,7 @@ function GroupsPanel({ bridge, account, className }: GroupsPanelProps) {
                   {open ? (
                     <GroupPeople bridge={bridge} group={g} isLeader={isLeader} version={rosterVersion} onInvite={(username) => invite(g, username)} />
                   ) : null}
+                  {open && notes ? <GroupNotes group={g} groups={groups ?? []} accountUid={account.uid} notes={notes} /> : null}
                 </li>
               );
             })}
@@ -404,6 +420,36 @@ function GroupPeople({ bridge, group, isLeader, version, onInvite }: GroupPeople
           </ul>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+interface GroupNotesProps {
+  group: FishtankGroup;
+  groups: FishtankGroup[];
+  accountUid: string;
+  notes: GroupNotesSource;
+}
+
+// The notes part of the drop-down under a group: the study notes shared with
+// it, and a button for anyone in the group to upload one.
+function GroupNotes({ group, groups, accountUid, notes }: GroupNotesProps) {
+  // Loads the latest notes each time the group is opened. onShow can be a new
+  // function on every render, so only the group decides when this runs.
+  const onShow = useRef(notes.onShow);
+  onShow.current = notes.onShow;
+  useEffect(() => onShow.current(), [group.id]);
+
+  const shared = notes.items.filter((note) => note.group_id === group.id);
+
+  return (
+    <div className="groups__drop groups__notes">
+      <h3 className="groups__heading">Notes</h3>
+      {shared.length === 0 ? <p className="muted">No notes yet.</p> : null}
+      <NoteList notes={shared} accountUid={accountUid} groups={groups} onOpenFile={notes.onOpenFile} onDelete={notes.onDelete} />
+      <AeroButton variant="glass" className="groups__add-person" onClick={() => notes.onUpload(group)}>
+        Upload to this group
+      </AeroButton>
     </div>
   );
 }
