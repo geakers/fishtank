@@ -88,6 +88,16 @@ language sql immutable set search_path = '' as $$
   end;
 $$;
 
+-- Is this note in a study group I lead? Lets a leader delete the group's notes
+-- and files when deleting the group.
+create function public.is_note_in_group_i_lead(nid uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.notes n
+     where n.id = nid and n.group_id is not null and public.is_group_leader(n.group_id)
+  );
+$$;
+
 -- 4. Security rules for the tables.
 alter table public.notes      enable row level security;
 alter table public.note_files enable row level security;
@@ -107,6 +117,9 @@ create policy "edit my drafts" on public.notes for update to authenticated
               and (group_id is null or public.is_group_leader(group_id) or public.is_group_member(group_id)));
 create policy "delete my notes" on public.notes for delete to authenticated
   using (owner_id = (select auth.uid()));
+-- A group's leader can delete any note in it (when deleting the group).
+create policy "leader deletes group notes" on public.notes for delete to authenticated
+  using (group_id is not null and public.is_group_leader(group_id));
 
 -- Files: you see the files of notes you can see. You can add files (at most
 -- 10) to your own drafts, stored under <your uid>/<note id>/, and remove them
@@ -135,6 +148,8 @@ create policy "notes bucket: read my files and my groups' files" on storage.obje
               or public.can_see_note(public.note_id_from_path(name))));
 create policy "notes bucket: delete my own files" on storage.objects for delete to authenticated
   using (bucket_id = 'notes' and split_part(name, '/', 1) = (select auth.uid())::text);
+create policy "notes bucket: leader deletes group note files" on storage.objects for delete to authenticated
+  using (bucket_id = 'notes' and public.is_note_in_group_i_lead(public.note_id_from_path(name)));
 
 -- 6. Submit a draft: the only way a note leaves draft from the app. It needs
 --    some typed text or at least one file. The messages show up in the app.
@@ -163,7 +178,9 @@ revoke execute on function public.is_my_draft_note(uuid)    from public, anon;
 revoke execute on function public.can_add_note_file(uuid)   from public, anon;
 revoke execute on function public.note_id_from_path(text)   from public, anon;
 revoke execute on function public.submit_note(uuid)         from public, anon;
+revoke execute on function public.is_note_in_group_i_lead(uuid) from public, anon;
 grant  execute on function public.can_see_note(uuid)        to authenticated;
+grant  execute on function public.is_note_in_group_i_lead(uuid) to authenticated;
 grant  execute on function public.is_my_draft_note(uuid)    to authenticated;
 grant  execute on function public.can_add_note_file(uuid)   to authenticated;
 grant  execute on function public.note_id_from_path(text)   to authenticated;

@@ -378,8 +378,13 @@ p {
 
 .fish-sprite__arm,
 .fish-sprite__leg,
-.fish-sprite__spark {
+.fish-sprite__spark,
+.fish-sprite__wheel {
   transform-box: view-box;
+}
+
+.fish-sprite__wheel {
+  animation: dude-stroke 1.4s linear infinite;
 }
 
 .fish-sprite__spark {
@@ -436,7 +441,7 @@ p {
   }
 }
 
-/* A full turn; used by the swimmer's arms and the spark. */
+/* A full turn; used by the swimmer's arms, the spark and truck wheels. */
 @keyframes dude-stroke {
   to {
     transform: rotate(360deg);
@@ -470,7 +475,8 @@ p {
   .fish-sprite__blink,
   .fish-sprite__arm,
   .fish-sprite__leg,
-  .fish-sprite__spark {
+  .fish-sprite__spark,
+  .fish-sprite__wheel {
     animation: none;
   }
   .fish-sprite__sparkle {

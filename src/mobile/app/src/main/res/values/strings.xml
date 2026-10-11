@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FocusFlip</string>
+    <string name="guard_service_label">FocusFlip Focus Guard</string>
+    <string name="guard_service_description">Keeps you inside FocusFlip during a focus session. When you switch to an app that is not on your whitelist, FocusFlip brings the lock screen back. FocusFlip does not read or store screen content; it only checks which app is in the foreground while a session is running.</string>
+</resources>

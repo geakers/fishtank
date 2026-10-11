@@ -38,10 +38,14 @@ declare global {
     name: string;
   }
 
-  // What endSession reports. saved is false when nobody is logged in or the
-  // session ran under a minute; error is set when saving failed.
+  // What endSession reports. completed is true when the session lasted the
+  // minutes the user committed to; only then does it earn points. saved is
+  // false when nobody is logged in or the session ran under a minute; error is
+  // set when saving failed.
   interface FishtankSessionResult {
     locked: boolean;
+    completed: boolean;
+    commitMinutes: number | null;
     minutes: number;
     pointsEarned: number;
     saved: boolean;
@@ -110,14 +114,16 @@ declare global {
   }
 
   interface FishtankBridge {
-    // Turns kiosk lockdown (strict mode) on/off. Resolves with the window's
+    // Turns kiosk lockdown (strict mode) on/off. Turning it on starts a
+    // session the user commits commitMinutes to. Resolves with the window's
     // actual kiosk state.
-    lockDown(enabled: boolean): Promise<boolean>;
-    // Starts study mode: grows the window to fill the screen, silences
+    lockDown(enabled: boolean, commitMinutes?: number): Promise<boolean>;
+    // Starts study mode for a session the user commits commitMinutes to:
+    // grows the window to fill the screen, silences
     // notifications and keeps apps that aren't on the user's list from staying
     // in front. notificationsSilenced is false when the user hasn't made the
     // Focus shortcuts.
-    startStudy(): Promise<{ notificationsSilenced: boolean }>;
+    startStudy(commitMinutes: number): Promise<{ notificationsSilenced: boolean }>;
     // Resolves with the apps that are open right now, other than Fishtank.
     listRunningApps(): Promise<FishtankStudyApp[]>;
     // The apps the user may use in study mode. setAllowedApps resolves with
@@ -128,7 +134,8 @@ declare global {
     // Returns a function that stops the calls.
     onStudyAppBlocked(callback: (appName: string) => void): () => void;
     // Ends the session, whichever mode it is: turns kiosk and study mode off
-    // and adds the minutes and points it earned to the logged-in user's profile.
+    // and adds the minutes it ran to the logged-in user's profile, and the
+    // points too if it lasted the full commitment.
     endSession(): Promise<FishtankSessionResult>;
     // Creates an account. needsConfirmation is true when the user must confirm
     // their email before they can log in.
@@ -139,6 +146,9 @@ declare global {
     getPoints(uid: string): Promise<number | null>;
     // Resolves with null if there is no such profile.
     verifyPoints(uid: string): Promise<FishtankPointsCheck | null>;
+    // TEMPORARY: adds points to the logged-in user's saved points if code is
+    // right. Resolves with the new balance.
+    redeemCode(code: string): Promise<number>;
     // Logs in and keeps the session, including across restarts.
     logIn(credentials: { email: string; password: string }): Promise<FishtankUser>;
     logOut(): Promise<void>;

@@ -26,38 +26,20 @@
   gap: var(--aero-space-3);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--aero-space-2);
-}
-
-.brand__orb {
-  width: 30px;
-  height: 30px;
-  border: 3px solid var(--aero-white);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #d6f6ff 0%, var(--aero-cyan-500) 55%, var(--aero-cyan-700) 100%);
-  box-shadow: 0 0 0 1px var(--aero-cyan-700), var(--aero-shadow-soft);
-}
-
-.brand__name {
-  font-size: var(--aero-text-lg);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--aero-ink);
-}
-
 /* ---------- Home ---------- */
 
 .home {
-  --dock-height: 80px;
+  --dock-height: 128px;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
+/* Points and profile float in the top right corner, over the side column,
+   so the tank can start right at the top. */
 .home .topbar {
-  margin: var(--aero-space-6) var(--aero-space-6) 0;
+  position: absolute;
+  top: var(--aero-space-6);
+  right: var(--aero-space-6);
 }
 
 /* Groups and notes | the tank | Study Skills and the Focus buttons. */
@@ -128,6 +110,8 @@
   flex-direction: column;
   gap: var(--aero-space-8);
   min-height: 0;
+  /* Clears the points and profile buttons above it. */
+  padding-top: 64px;
   padding-bottom: 56px;
 }
 
@@ -789,11 +773,13 @@
 
 .dock__pod {
   position: absolute;
-  top: -30px;
+  /* Sits in the bar, centred on it, rather than hanging off its top edge. */
+  top: 50%;
+  translate: 0 -50%;
   display: grid;
   place-items: center;
-  width: 112px;
-  height: 112px;
+  width: 104px;
+  height: 104px;
   padding: 0 var(--aero-space-4);
   border: 3px solid var(--aero-line);
   border-radius: 50%;
@@ -811,7 +797,7 @@
 }
 
 .dock__pod--right {
-  right: var(--aero-space-8);
+  right: var(--aero-space-6);
 }
 
 .dock__pod:hover {
@@ -837,7 +823,7 @@
 }
 
 .dock__time {
-  font-size: 44px;
+  font-size: 56px;
   font-weight: 300;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -1262,8 +1248,7 @@
   container-type: size;
 }
 
-/* The colour of the water itself, on its own layer so it can drain away when
-   the tank bursts. */
+/* The colour of the water itself. */
 .aquarium__depth {
   position: absolute;
   inset: 0;
@@ -1735,247 +1720,123 @@
   }
 }
 
-/* ---------- Tank damage (focus mode): cracks, then a burst ---------- */
+/* ---------- Drawing on the Canvas Fish ---------- */
 
-/* Cracks on the front pane. Each line grows out from where the glass was hit. */
-.tank-cracks {
+.fish-canvas {
+  width: min(680px, 100%);
+}
+
+/* The blank fish with the canvas laid exactly over it. */
+.fish-canvas__stage {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  margin: var(--aero-space-3) 0;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-md);
+  background: linear-gradient(180deg, #cdeeff 0%, #8fd2f2 100%);
+  overflow: hidden;
+}
+
+.fish-canvas__guide,
+.fish-canvas__canvas {
   position: absolute;
   inset: 0;
-  z-index: 6;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  filter: drop-shadow(0 0 1px rgba(0, 30, 70, 0.6));
-  pointer-events: none;
 }
 
-.tank-cracks__line {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.9);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: crack-spread 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+.fish-canvas__canvas {
+  cursor: crosshair;
+  touch-action: none;
 }
 
-.tank-cracks__line--fine {
-  stroke: rgba(255, 255, 255, 0.7);
-  stroke-width: 0.9;
-  animation-delay: 0.5s;
-  animation-duration: 1.8s;
+.fish-canvas__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--aero-space-3);
 }
 
-.tank-cracks__pit {
-  fill: rgba(255, 255, 255, 0.85);
+.fish-canvas__swatches,
+.fish-canvas__brushes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.tank-cracks__hole {
-  fill: rgba(255, 255, 255, 0.1);
-  stroke: rgba(255, 255, 255, 0.95);
-  stroke-width: 2;
-  stroke-linejoin: bevel;
-}
-
-@keyframes crack-spread {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-/* Draining: the water sinks to the bottom of the tank, leaving the reef dry. */
-.aquarium--burst :is(.aquarium__depth, .aquarium__backlight, .aquarium__haze, .aquarium__tint, .aquarium__scatter) {
-  animation: water-drain 2.4s cubic-bezier(0.4, 0, 0.7, 1) forwards;
-}
-
-.aquarium--burst :is(.aquarium__rays, .aquarium__ceiling, .aquarium__particles, .aquarium__bubbler, .aquarium__surface) {
-  opacity: 0;
-  transition: opacity 0.8s;
-}
-
-@keyframes water-drain {
-  from {
-    clip-path: inset(0 0 0 0);
-  }
-  to {
-    clip-path: inset(94% 0 0 0);
-  }
-}
-
-/* The falling surface while it drains. */
-.aquarium__waterline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 5;
-  height: 6px;
-  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.9) 50%, rgba(170, 230, 250, 0.4) 70%, transparent);
-  translate: 0 -50%;
-  animation: waterline-fall 2.4s cubic-bezier(0.4, 0, 0.7, 1) forwards;
-  pointer-events: none;
-}
-
-@keyframes waterline-fall {
-  from {
-    top: 0;
-  }
-  to {
-    top: 94%;
-  }
-}
-
-/* Fish stop where they are, sink with the water and flap on the bottom. */
-.swimmer.is-fallen {
-  animation: fish-fall 1.6s cubic-bezier(0.5, 0, 0.9, 0.6) var(--fall-delay) forwards;
-  cursor: default;
-}
-
-.swimmer.is-fallen .swimmer__bob {
-  animation: fish-flop 1.4s ease-in-out calc(var(--fall-delay) + 1.6s) infinite;
-}
-
-@keyframes fish-fall {
-  to {
-    translate: 0 var(--fall);
-  }
-}
-
-/* A hop and a twist, then a rest. */
-@keyframes fish-flop {
-  0%,
-  45%,
-  100% {
-    transform: translateY(0) rotate(0);
-  }
-  12% {
-    transform: translateY(-16px) rotate(-14deg);
-  }
-  24% {
-    transform: translateY(-4px) rotate(10deg);
-  }
-  32% {
-    transform: translateY(0) rotate(-4deg);
-  }
-}
-
-/* Everything thrown out of the tank, which may land outside it. */
-.tank-spill {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  pointer-events: none;
-}
-
-/* Water pouring out of the hole and down the front of the tank. */
-.tank-spill__gush {
-  position: absolute;
-  width: 34px;
-  translate: -50% 0;
-  transform-origin: top;
-  border-radius: 40% 40% 6px 6px;
-  background:
-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55) 30%, transparent 45%, rgba(255, 255, 255, 0.35) 70%, transparent),
-    linear-gradient(180deg, rgba(110, 205, 245, 0.85), rgba(60, 160, 225, 0.6));
-  animation: gush 2.6s ease-in forwards;
-}
-
-@keyframes gush {
-  0% {
-    transform: scale(0.4, 0);
-    opacity: 1;
-  }
-  12% {
-    transform: scale(1.4, 1);
-  }
-  70% {
-    opacity: 0.85;
-  }
-  100% {
-    transform: scale(0.1, 1);
-    opacity: 0;
-  }
-}
-
-/* The puddle that spreads over the cabinet top. */
-.tank-spill__puddle {
-  position: absolute;
-  bottom: -14px;
-  width: 520px;
+.fish-canvas__swatch {
+  width: 26px;
   height: 26px;
-  translate: -50% 0;
+  border: 2px solid var(--aero-white);
   border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 40%, rgba(170, 230, 255, 0.85), rgba(90, 180, 235, 0.55) 55%, transparent 72%);
-  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.7);
-  animation: puddle-spread 2.6s cubic-bezier(0.2, 0.6, 0.3, 1) 0.4s both;
+  box-shadow: 0 0 0 1px var(--aero-line);
+  cursor: pointer;
 }
 
-@keyframes puddle-spread {
-  from {
-    transform: scale(0.05, 0.3);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+.fish-canvas__brush {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: 50%;
+  background: var(--aero-white);
+  cursor: pointer;
 }
 
-.tank-spill__drop {
-  position: absolute;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: radial-gradient(circle at 35% 30%, #ffffff, rgba(120, 210, 250, 0.9) 45%, rgba(50, 150, 220, 0.8));
-  translate: -50% -50%;
-  opacity: 0;
-  animation: drop-fly 0.9s cubic-bezier(0.3, 0, 0.8, 0.6) both;
+.fish-canvas__brush span {
+  border-radius: 50%;
+  background: var(--aero-ink);
 }
 
-/* Thrown out and up, then down to the floor. */
-@keyframes drop-fly {
-  0% {
-    opacity: 1;
-    transform: translate(0, 0);
-  }
-  35% {
-    transform: translate(calc(var(--drop-x) * 0.4), var(--drop-lift));
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--drop-x), var(--drop-y));
-  }
+.fish-canvas__swatch.is-active,
+.fish-canvas__brush.is-active,
+.fish-canvas__tools .aero-button.is-active {
+  box-shadow: 0 0 0 3px var(--aero-cyan-500);
 }
 
-.tank-spill__shards {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: visible;
+/* ---------- Commitment picker ---------- */
+
+.commit {
+  max-width: 460px;
 }
 
-.tank-spill__shard {
-  fill: rgba(225, 245, 255, 0.55);
-  stroke: rgba(255, 255, 255, 0.95);
-  stroke-width: 1;
-  animation: shard-fly 1s cubic-bezier(0.3, 0, 0.8, 0.6) forwards;
+.commit__presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--aero-space-2);
+  margin-top: var(--aero-space-3);
 }
 
-@keyframes shard-fly {
-  0% {
-    transform: translate(0, 0) rotate(0);
-  }
-  30% {
-    transform: translate(calc(var(--shard-x) * 0.35), var(--shard-lift)) rotate(calc(var(--shard-spin) * 0.3));
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--shard-x), var(--shard-y)) rotate(var(--shard-spin));
-  }
+.commit__preset {
+  padding: 8px 12px;
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gradient-button);
+  box-shadow: var(--aero-shadow-inset-gloss);
+  color: var(--aero-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--aero-duration-fast),
+    background var(--aero-duration-fast);
+}
+
+.commit__preset:hover {
+  border-color: var(--aero-cyan-300);
+}
+
+.commit__preset.is-active {
+  border-color: var(--aero-cyan-500);
+  background: var(--aero-cyan-100);
+  color: var(--aero-cyan-700);
+}
+
+.commit__input {
+  max-width: 140px;
 }
 
 /* ---------- Lock-in: the tank on a stand in a bright room ---------- */
@@ -1994,9 +1855,28 @@
   align-items: center;
 }
 
-.lockin__timer {
+/* The current time, the countdown and when the session ends, in one row. */
+.lockin__clocks {
+  display: grid;
+  /* Equal sides, however wide their text, keep the countdown centered. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--aero-space-6);
+  width: min(1080px, calc(100% - 40px));
   margin-bottom: var(--aero-space-4);
+}
+
+.lockin__clocks.is-hidden {
+  visibility: hidden;
+}
+
+/* Wide enough for the longest time ("4:00:00") so the box never resizes as it
+   counts down. */
+.lockin__timer {
+  box-sizing: content-box;
+  width: 7ch;
   padding: 4px 36px;
+  text-align: center;
   border: 2px solid var(--aero-line);
   border-radius: var(--aero-radius-pill);
   background: var(--aero-gradient-button);
@@ -2008,14 +1888,34 @@
   line-height: 1.2;
 }
 
-.lockin__timer.is-hidden {
-  visibility: hidden;
+.lockin__clock {
+  display: flex;
+  flex-direction: column;
+  color: var(--aero-ink);
+  line-height: 1.2;
+}
+
+.lockin__clock--now {
+  align-items: flex-end;
+}
+
+.lockin__clock--end {
+  align-items: flex-start;
+}
+
+.lockin__clock-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lockin__clock-value {
+  font-size: 26px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
 }
 
 .lockin__tank-wrap {
   position: relative;
-  /* Above the stand, so spilled water and glass land on top of it. */
-  z-index: 1;
   flex: 1;
   width: min(1080px, calc(100% - 40px));
   min-height: 0;
@@ -2191,9 +2091,25 @@
   .topbar {
     flex-wrap: wrap;
   }
+  /* One column, so the top bar goes back above the tank. */
+  .home {
+    --dock-height: 104px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .home .topbar {
+    position: relative;
+    top: auto;
+    right: auto;
+    justify-content: flex-end;
+    margin: var(--aero-space-6) var(--aero-space-6) 0;
+  }
+  .home__side {
+    padding-top: 0;
+  }
   .dock__pod {
-    width: 88px;
-    height: 88px;
+    right: var(--aero-space-4);
+    width: 84px;
+    height: 84px;
     font-size: 13px;
   }
 }

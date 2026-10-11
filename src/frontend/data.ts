@@ -1,14 +1,17 @@
 // Body outline. 'slender' to 'deep' are side-on fish of increasing height;
-// 'shark' is long with a pointed snout and gill slits. 'human' is a person
+// 'shark' is long with a pointed snout and gill slits. 'dolphin' is long and
+// smooth with a rounded forehead and a short beak. 'human' is a person
 // swimming front crawl (back = skin, belly = trunks, fin = swim cap).
 // 'none' draws nothing.
-export type FishBody = 'slender' | 'oval' | 'deep' | 'puffer' | 'shark' | 'jelly' | 'human' | 'none';
-// 'shark' has a long upper lobe and a short lower one.
-export type FishTail = 'forked' | 'rounded' | 'fan' | 'veil' | 'lyre' | 'shark';
+export type FishBody = 'slender' | 'oval' | 'deep' | 'puffer' | 'shark' | 'dolphin' | 'jelly' | 'human' | 'none';
+// 'shark' has a long upper lobe and a short lower one. 'flukes' is a
+// dolphin's smooth crescent, without fin rays.
+export type FishTail = 'forked' | 'rounded' | 'fan' | 'veil' | 'lyre' | 'shark' | 'flukes';
 // Dorsal and anal fins: 'short' rounded, 'spiny' long and low, 'flowing'
 // long trailing (betta), 'sail' tall swept-back (angelfish), 'shark' one
-// tall triangular dorsal with big pectorals.
-export type FishFins = 'short' | 'spiny' | 'flowing' | 'sail' | 'shark';
+// tall triangular dorsal with big pectorals, 'dolphin' one hooked dorsal and
+// a flipper, without fin rays.
+export type FishFins = 'short' | 'spiny' | 'flowing' | 'sail' | 'shark' | 'dolphin';
 // Surface finish: 'scales' (default), 'smooth' skin, or 'metal' plating.
 export type FishSkin = 'scales' | 'smooth' | 'metal';
 
@@ -29,7 +32,20 @@ export type FishExtra =
   // Stars and stripes: the US flag across the body.
   | 'flag'
   // A slowly turning starburst on the side.
-  | 'spark';
+  | 'spark'
+  // A slowly turning knot of six interlocking loops on the side.
+  | 'knot'
+  // A band of navy argyle diamonds along the side, like UNC's uniforms.
+  | 'argyle'
+  // Salmon nigiri: white fat lines across the salmon back, rice grains on
+  // the belly and a strip of nori round the middle.
+  | 'sushi'
+  // A pickup truck: cab window, grille, headlight, a FISH-150 badge and two
+  // spinning wheels.
+  | 'truck'
+  // A blank fish for the user to draw on; shows their drawing (see
+  // CustomArtContext in FishSprite.tsx).
+  | 'canvas';
 
 // Markings are placed in body coordinates: x runs 0 (tail end) to 1 (snout),
 // y runs -1 (back) to 1 (belly). They're clipped to the body outline.
@@ -289,6 +305,18 @@ const CATALOG: Omit<Fish, 'price'>[] = [
     id: 'moon-jelly', name: 'Moon Jelly', tier: 'rare', speed: 0.45, size: 1.0,
     look: { body: 'jelly', tail: 'rounded', fins: 'short', back: '#e6f6ff', belly: '#7ac8ff', fin: '#b0e0ff' },
   },
+  {
+    id: 'dolphin', name: 'Bottlenose Dolphin', tier: 'rare', speed: 1.5, size: 1.4,
+    look: { body: 'dolphin', tail: 'flukes', fins: 'dolphin', skin: 'smooth', back: '#6e8698', belly: '#eef2f5', fin: '#62798b', eye: '#1a2228' },
+  },
+  {
+    // Plain white, ready to draw on in the Fish Shop.
+    id: 'canvas-fish', name: 'Canvas Fish', tier: 'rare', speed: 1.0, size: 1.1,
+    look: {
+      body: 'oval', tail: 'rounded', fins: 'short', skin: 'smooth', back: '#ffffff', belly: '#f2f4f6', fin: '#f4f6f8', finEdge: '#c4ccd4', eye: '#2a2a2a',
+      extras: ['canvas'],
+    },
+  },
   // ---- Epic ----
   {
     id: 'koi', name: 'Sky Koi', tier: 'epic', speed: 0.7, size: 1.3,
@@ -382,6 +410,26 @@ const CATALOG: Omit<Fish, 'price'>[] = [
       extras: ['ninja'],
     },
   },
+  {
+    // Go Heels.
+    id: 'unc-fish', name: 'UNC Fish', tier: 'epic', speed: 1.1, size: 1.0,
+    look: {
+      body: 'oval', tail: 'forked', fins: 'short', skin: 'smooth', back: '#7bafd4', belly: '#ffffff', fin: '#ffffff', tailColor: '#7bafd4', finEdge: '#13294b', eye: '#13294b',
+      extras: ['argyle'],
+    },
+  },
+  {
+    id: 'sushi-fish', name: 'Sushi Fish', tier: 'epic', speed: 0.9, size: 1.0,
+    look: {
+      body: 'oval', tail: 'rounded', fins: 'short', skin: 'smooth', back: '#ff7a4a', belly: '#f8f5ec', fin: '#ff9a6e', finEdge: '#ffe2d2', eye: '#2a1a14',
+      extras: ['sushi'],
+    },
+  },
+  {
+    // Built Fish Tough.
+    id: 'fish-150', name: 'Fish-150', tier: 'epic', speed: 1.2, size: 1.15,
+    look: { body: 'oval', tail: 'forked', fins: 'short', skin: 'smooth', back: '#2456b8', belly: '#1a3f88', fin: '#a8b2bc', finEdge: '#eef2f5', eye: '#14181c', extras: ['truck'] },
+  },
   // ---- Legendary ----
   {
     id: 'golden-arowana', name: 'Golden Arowana', tier: 'legendary', speed: 0.6, size: 1.5,
@@ -417,6 +465,13 @@ const CATALOG: Omit<Fish, 'price'>[] = [
     },
   },
   {
+    id: 'openai-fish', name: 'OpenAI Fish', tier: 'legendary', speed: 1.0, size: 1.0,
+    look: {
+      body: 'oval', tail: 'rounded', fins: 'short', skin: 'smooth', back: '#0d0d0d', belly: '#3a3a3a', fin: '#1e1e1e', finEdge: '#ffffff', eye: '#ffffff',
+      extras: ['knot'],
+    },
+  },
+  {
     // Just a guy. Swimming. Fish-sized.
     id: 'some-dude', name: 'Some Dude', tier: 'legendary', speed: 0.9, size: 1.0,
     look: { body: 'human', tail: 'rounded', fins: 'short', back: '#d9a07a', belly: '#2a6ae8', fin: '#ff4a3a' },
@@ -425,6 +480,17 @@ const CATALOG: Omit<Fish, 'price'>[] = [
     // There is nothing to see. Paying for it is the whole experience.
     id: 'invisible-fish', name: 'Invisible Fish', tier: 'legendary', speed: 1, size: 1,
     look: { body: 'none', tail: 'rounded', fins: 'short', back: 'transparent', belly: 'transparent', fin: 'transparent' },
+  },
+  {
+    id: 'rainbow-fish', name: 'Rainbow Fish', tier: 'legendary', speed: 1.0, size: 1.05,
+    look: {
+      body: 'oval', tail: 'veil', fins: 'flowing', back: '#ff3b3b', belly: '#8a4bff', fin: '#fff4ff', finEdge: '#ff7ad9', eye: '#3a2a6a',
+      extras: ['sparkle'],
+      // Red at the top through to violet at the bottom.
+      markings: ['#ff3b3b', '#ff9a2a', '#ffe23a', '#3ad65a', '#2a9cff', '#5a4bff', '#b04bff'].map((color, i) => ({
+        kind: 'stripe' as const, y: -0.86 + i * 0.287, width: 0.32, from: -0.1, to: 1.1, color,
+      })),
+    },
   },
   // ---- Mythic ----
   {

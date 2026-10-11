@@ -1,46 +1,45 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from 'react';
 import type { Fish } from '../../data';
 import { hash } from '../format';
 import { Bubble } from './Bubble';
 import { FishSprite } from './FishSprite';
 import { Anemone, BackScape, FrontScape, Seagrass } from './Reefscape';
-import { BurstSpill, Cracks, useTankDamage } from './TankDamage';
 
 export interface AquariumProps {
   fish: Fish[];
   // Width in px of a size-1.0 fish. The tank itself sizes to its container.
   fishSize?: number;
   className?: string;
-  // When true, clicking the fish too fast cracks the glass and, in the end,
-  // bursts the tank. The damage lasts until the aquarium unmounts.
-  breakable?: boolean;
+  // Called when the fish are clicked too fast (RAPID_CLICKS clicks within
+  // RAPID_WINDOW_MS).
+  onTapTooFast?: () => void;
 }
 
 // A Frutiger Aero LED aquarium lamp: silver lid and base, rounded glass and
 // glowing backlit water around a realistic reef, with the given fish swimming
 // back and forth inside the glass.
-export function Aquarium({ fish, fishSize = 120, className = '', breakable = false }: AquariumProps) {
+export function Aquarium({ fish, fishSize = 120, className = '', onTapTooFast }: AquariumProps) {
   const swimmers = useMemo(() => layoutSwimmers(fish, fishSize), [fish, fishSize]);
-  const tankRef = useRef<HTMLDivElement>(null);
-  const glassRef = useRef<HTMLDivElement>(null);
   const waterRef = useRef<HTMLDivElement>(null);
   const { puffs, blowBubbles } = useFishBubbles(waterRef);
-  const { cracks, burst, onFishClick } = useTankDamage(tankRef, glassRef, breakable);
-  const fallen = useFallenFish(waterRef, burst !== null);
+  const clicks = useRef<number[]>([]);
 
   const clickFish = (e: MouseEvent<HTMLElement>, f: Fish) => {
-    // No bubbles once the water has gone.
-    if (burst) return;
     blowBubbles(e, f);
-    onFishClick(e);
+    if (!onTapTooFast) return;
+    const now = performance.now();
+    clicks.current = [...clicks.current.filter((t) => now - t < RAPID_WINDOW_MS), now];
+    if (clicks.current.length < RAPID_CLICKS) return;
+    clicks.current = [];
+    onTapTooFast();
   };
 
   return (
-    <div className={`aquarium ${burst ? 'aquarium--burst' : ''} ${className}`} ref={tankRef}>
+    <div className={`aquarium ${className}`}>
       <div className="aquarium__lid">
         <span className="aquarium__lamp" />
       </div>
-      <div className="aquarium__glass" ref={glassRef}>
+      <div className="aquarium__glass">
         <div className="aquarium__water" ref={waterRef}>
           <div className="aquarium__depth" aria-hidden="true" />
           <div className="aquarium__backlight" aria-hidden="true" />
@@ -51,9 +50,8 @@ export function Aquarium({ fish, fishSize = 120, className = '', breakable = fal
           {swimmers.map((s) => (
             <div
               key={s.key}
-              data-key={s.key}
-              className={`swimmer ${fallen?.[s.key] ? 'is-fallen' : ''}`}
-              style={fallen?.[s.key] ? { ...s.style, ...fallen[s.key] } : s.style}
+              className="swimmer"
+              style={s.style}
               onClick={(e) => clickFish(e, s.fish)}
             >
               <div className="swimmer__bob">
@@ -72,19 +70,21 @@ export function Aquarium({ fish, fishSize = 120, className = '', breakable = fal
           <div className="aquarium__scatter" aria-hidden="true" />
           <div className="aquarium__rays" aria-hidden="true" />
           <div className="aquarium__ceiling" aria-hidden="true" />
-          {burst ? <div className="aquarium__waterline" aria-hidden="true" /> : null}
         </div>
         <div className="aquarium__surface" aria-hidden="true" />
         <div className="aquarium__shine" aria-hidden="true" />
-        <Cracks cracks={cracks} burst={burst} />
       </div>
       <div className="aquarium__base">
         <span className="aquarium__switch" />
       </div>
-      {burst ? <BurstSpill burst={burst} /> : null}
     </div>
   );
 }
+
+// Clicking the fish this many times within RAPID_WINDOW_MS is tapping on the
+// glass.
+const RAPID_CLICKS = 5;
+const RAPID_WINDOW_MS = 2000;
 
 interface Swimmer {
   key: string;
@@ -104,6 +104,8 @@ const PATHS = [
   { name: 'path-arc', rise: 16, dip: 0 },
   { name: 'path-zigzag', rise: 9, dip: 9 },
 ];
+// Scales every fish's speed: 0.7 swims 30% slower than fish.speed says.
+const SWIM_SPEED = 0.7;
 // Lanes span this range of the water, top of the fish's box.
 const LANE_TOP = 8;
 const LANE_BOTTOM = 64;
@@ -115,7 +117,7 @@ function layoutSwimmers(fish: Fish[], fishSize: number): Swimmer[] {
   return fish.filter((f) => f.look.body !== 'none').map((f) => {
     const h = hash(f.id);
     const size = Math.round(fishSize * f.size);
-    const duration = 30 / f.speed;
+    const duration = 30 / (f.speed * SWIM_SPEED);
     const path = PATHS[(h >>> 11) % PATHS.length];
     const laneMin = LANE_TOP + path.rise;
     const laneCount = LANE_BOTTOM - path.dip - laneMin + 1;
@@ -134,39 +136,6 @@ function layoutSwimmers(fish: Fish[], fishSize: number): Swimmer[] {
       } as CSSProperties,
     };
   });
-}
-
-// When the tank bursts, each fish stops where it is and drops to the bottom
-// with the water. Returns the style that pins each fish in place and sets how
-// far it falls, keyed by swimmer, or null while the tank is whole.
-function useFallenFish(waterRef: RefObject<HTMLDivElement | null>, burst: boolean) {
-  const [fallen, setFallen] = useState<Record<string, CSSProperties> | null>(null);
-
-  // Measured before paint, so the fish don't flash back to the start of
-  // their swim when the animation is swapped for the fall.
-  useLayoutEffect(() => {
-    const water = waterRef.current;
-    if (!burst || !water) return;
-    const tank = water.getBoundingClientRect();
-    const styles: Record<string, CSSProperties> = {};
-    water.querySelectorAll<HTMLElement>('.swimmer').forEach((el) => {
-      const box = el.getBoundingClientRect();
-      const facingLeft = new DOMMatrix(getComputedStyle(el).transform).a < 0;
-      const top = box.top - tank.top;
-      // Rest on the sand, a little apart from each other's heights.
-      const rest = tank.height * (0.9 + Math.random() * 0.05) - box.height;
-      styles[el.dataset.key!] = {
-        left: box.left - tank.left,
-        top,
-        transform: facingLeft ? 'scaleX(-1)' : undefined,
-        '--fall': `${Math.max(rest - top, 0)}px`,
-        '--fall-delay': `${(Math.random() * 0.4).toFixed(2)}s`,
-      } as CSSProperties;
-    });
-    setFallen(styles);
-  }, [burst, waterRef]);
-
-  return fallen;
 }
 
 // Where bubbles leave the sprite, as fractions of its box when facing right:

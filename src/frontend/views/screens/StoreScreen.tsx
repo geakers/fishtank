@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FISH, type Fish } from '../../data';
 import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
+import { FishCanvas } from '../components/FishCanvas';
 import { FishSprite } from '../components/FishSprite';
 import { PointsBadge } from '../components/PointsBadge';
 import { Toast } from '../components/Toast';
@@ -27,6 +28,8 @@ const byPrice = (a: Fish, b: Fish) => a.price - b.price || a.name.localeCompare(
 // as soon as they're added to FISH.
 export function StoreScreen({ app }: StoreScreenProps) {
   const [filter, setFilter] = useState<Filter>('all');
+  // The blank fish being drawn on, if any.
+  const [drawing, setDrawing] = useState<Fish | null>(null);
 
   const isOwned = (fish: Fish) => app.owned.includes(fish);
   const isInTank = (fish: Fish) => app.tank.includes(fish);
@@ -83,12 +86,25 @@ export function StoreScreen({ app }: StoreScreenProps) {
             balance={app.points}
             onBuy={() => app.buy(fish)}
             onSetInTank={(inTank) => app.setInTank(fish, inTank)}
+            onDraw={fish.look.extras?.includes('canvas') ? () => setDrawing(fish) : undefined}
           />
         ))}
         {shown.length === 0 ? (
           <p className="store__empty muted">{emptyText[filter]}</p>
         ) : null}
       </div>
+
+      {drawing ? (
+        <FishCanvas
+          fish={drawing}
+          art={app.customArt}
+          onSave={(art) => {
+            app.setCustomArt(art);
+            setDrawing(null);
+          }}
+          onCancel={() => setDrawing(null)}
+        />
+      ) : null}
 
       <Toast notice={app.toast} onDismiss={app.dismissToast} />
     </div>
@@ -102,9 +118,11 @@ interface StoreCardProps {
   balance: number;
   onBuy: () => void;
   onSetInTank: (inTank: boolean) => void;
+  // Set for fish the user can draw on.
+  onDraw?: () => void;
 }
 
-function StoreCard({ fish, owned, inTank, balance, onBuy, onSetInTank }: StoreCardProps) {
+function StoreCard({ fish, owned, inTank, balance, onBuy, onSetInTank, onDraw }: StoreCardProps) {
   return (
     <article className={`store-card ${owned ? 'is-owned' : ''} ${owned && !inTank ? 'is-stored' : ''}`}>
       <div className="store-card__tank">
@@ -131,6 +149,11 @@ function StoreCard({ fish, owned, inTank, balance, onBuy, onSetInTank }: StoreCa
       ) : (
         <AeroButton onClick={onBuy}>Adopt</AeroButton>
       )}
+      {owned && onDraw ? (
+        <AeroButton variant="glass" onClick={onDraw}>
+          Draw on it
+        </AeroButton>
+      ) : null}
     </article>
   );
 }

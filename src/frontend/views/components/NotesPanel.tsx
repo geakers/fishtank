@@ -29,9 +29,7 @@ export function NotesPanel({ app, className = '', onUpload }: NotesPanelProps) {
 
       {!app.account ? (
         <p className="muted">Log in to upload PDFs, screenshots and typed notes.</p>
-      ) : app.notes.length === 0 ? (
-        <p className="muted">No notes yet. Upload a PDF, a screenshot or some typed notes.</p>
-      ) : (
+      ) : app.notes.length === 0 ? null : (
         <NoteList
           notes={app.notes}
           accountUid={app.account.uid}

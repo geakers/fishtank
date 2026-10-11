@@ -5,17 +5,22 @@ const session = require('../src/desktop/session');
 // The logged-in user's access token, or null to act as if nobody is logged in.
 let token = 'dud-access-token';
 
-// groups.js picks up getAccessToken when it loads, so swap it out first.
+const GROUP = { id: 1, name: 'Biology revision', leader_id: '00000000-0000-4000-8000-000000000001' };
+// The logged-in user: GROUP's leader unless a test changes it.
+let user = { uid: GROUP.leader_id, email: 'dud@example.com', username: 'dud-user' };
+
+// groups.js picks up getAccessToken and currentUser when it loads, so swap
+// them out first.
 mock.method(session, 'getAccessToken', async () => token);
+mock.method(session, 'currentUser', () => user);
 const {
   createGroup, listGroups, deleteGroup, leaveGroup, addMember, groupRoster, searchUsernames,
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 } = require('../src/desktop/groups');
 
-const GROUP = { id: 1, name: 'Biology revision', leader_id: '00000000-0000-4000-8000-000000000001' };
-
 // Stands in for Supabase so the test never touches the real database. Each
-// path maps to the response it returns. Returns the requests that were made.
+// path maps to the response it returns, which can depend on the request's
+// method. Returns the requests that were made.
 function mockSupabase(responses) {
   const requests = [];
 
@@ -30,7 +35,7 @@ function mockSupabase(responses) {
     });
 
     const respond = responses[pathname];
-    if (respond) return respond();
+    if (respond) return respond(options.method);
     return Response.json({ message: `Unexpected request to ${pathname}` }, { status: 404 });
   });
 
@@ -39,6 +44,7 @@ function mockSupabase(responses) {
 
 function reset(t) {
   token = 'dud-access-token';
+  user = { uid: GROUP.leader_id, email: 'dud@example.com', username: 'dud-user' };
   t.after(() => mock.restoreAll());
 }
 
@@ -73,21 +79,63 @@ test('listGroups lists the groups sorted by name', async (t) => {
   assert.equal(requests[0].search, '?select=id,name,leader_id&order=name');
 });
 
-test('deleteGroup deletes the group by id', async (t) => {
+// A group with one note holding one file, for the deleteGroup tests.
+const NOTE = { id: '00000000-0000-4000-8000-0000000000aa', owner_id: '00000000-0000-4000-8000-000000000002' };
+const FILE_PATH = `${NOTE.owner_id}/${NOTE.id}/1-notes.pdf`;
+function groupWithNote({ filesDeleted = [{ name: FILE_PATH }], groupDeleted = [{ id: 1 }] } = {}) {
+  return {
+    '/rest/v1/study_groups': (method) => Response.json(method === 'GET' ? [{ leader_id: GROUP.leader_id }] : groupDeleted),
+    '/rest/v1/notes': (method) => Response.json(method === 'GET' ? [NOTE] : [{ id: NOTE.id }]),
+    '/storage/v1/object/list/notes': () => Response.json([{ id: 'f1', name: '1-notes.pdf' }]),
+    '/storage/v1/object/notes': () => Response.json(filesDeleted),
+  };
+}
+const steps = (requests) => requests.map((r) => `${r.method} ${r.pathname}`);
+
+test("deleteGroup deletes the group's notes and their files, then the group", async (t) => {
   reset(t);
-  const requests = mockSupabase({ '/rest/v1/study_groups': () => Response.json([{ id: 1 }]) });
+  const requests = mockSupabase(groupWithNote());
 
   await deleteGroup(1);
 
-  assert.equal(requests[0].method, 'DELETE');
-  assert.equal(requests[0].search, '?id=eq.1&select=id');
-  assert.equal(requests[0].headers.Prefer, 'return=representation');
+  assert.deepEqual(steps(requests), [
+    'GET /rest/v1/study_groups',
+    'GET /rest/v1/notes',
+    'POST /storage/v1/object/list/notes',
+    'DELETE /storage/v1/object/notes',
+    'DELETE /rest/v1/notes',
+    'DELETE /rest/v1/study_groups',
+  ]);
+  assert.equal(requests[1].search, '?group_id=eq.1&select=id,owner_id');
+  assert.deepEqual(requests[3].body, { prefixes: [FILE_PATH] });
+  const last = requests.at(-1);
+  assert.equal(last.search, '?id=eq.1&select=id');
+  assert.equal(last.headers.Prefer, 'return=representation');
+});
+
+test("deleteGroup refuses anyone but the leader before touching notes", async (t) => {
+  reset(t);
+  user = { uid: '00000000-0000-4000-8000-000000000009', email: 'other@example.com', username: 'other' };
+  const requests = mockSupabase(groupWithNote());
+
+  await assert.rejects(deleteGroup(1), /Only the group leader can delete a study group/);
+  assert.deepEqual(steps(requests), ['GET /rest/v1/study_groups']);
+});
+
+test('deleteGroup keeps the group when a note\'s files can\'t all be deleted', async (t) => {
+  reset(t);
+  // Supabase reports success but skipped the file.
+  const requests = mockSupabase(groupWithNote({ filesDeleted: [] }));
+
+  await assert.rejects(deleteGroup(1), /Couldn't delete 1 of this note's files/);
+  assert.ok(!steps(requests).includes('DELETE /rest/v1/study_groups'));
+  assert.ok(!steps(requests).includes('DELETE /rest/v1/notes'));
 });
 
 test('deleteGroup says so when the group was not deleted', async (t) => {
   reset(t);
   // What Supabase returns when row level security hides the group.
-  mockSupabase({ '/rest/v1/study_groups': () => Response.json([]) });
+  mockSupabase(groupWithNote({ groupDeleted: [] }));
 
   await assert.rejects(deleteGroup(1), /Only the group leader can delete a study group/);
 });

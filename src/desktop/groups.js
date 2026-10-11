@@ -1,4 +1,6 @@
 const { request, rpc } = require('./supabase');
+const { currentUser } = require('./session');
+const { deleteGroupNotes } = require('./notes');
 
 // Group study sessions. The code calls them groups, since "session" already
 // means the login session.
@@ -33,12 +35,22 @@ function listGroups() {
   return request('/rest/v1/study_groups?select=id,name,leader_id&order=name');
 }
 
-// Deletes the group along with its members and invites. Only the group's
-// leader can; row level security hides the group from anyone else's delete,
-// so nothing coming back means nothing was deleted.
+// Deletes the group along with its notes and their files, its members and its
+// invites. Only the group's leader can. The notes go first (the database would
+// otherwise turn them into their authors' personal notes); if any can't be
+// deleted, the group is kept so it can be tried again.
 async function deleteGroup(groupId) {
   if (!Number.isInteger(groupId)) throw new Error('A study group is required');
 
+  // Checked before anything is deleted, so nobody else starts removing notes.
+  const [group] = await request(`/rest/v1/study_groups?id=eq.${groupId}&select=leader_id`);
+  const user = currentUser();
+  if (!group || !user || group.leader_id !== user.uid) throw new Error('Only the group leader can delete a study group');
+
+  await deleteGroupNotes(groupId);
+
+  // Row level security hides the group from anyone else's delete, so nothing
+  // coming back means nothing was deleted.
   const deleted = await request(`/rest/v1/study_groups?id=eq.${groupId}&select=id`, {
     method: 'DELETE',
     headers: { Prefer: 'return=representation' },

@@ -11,7 +11,7 @@ let user = USER;
 // notes.js picks these up when it loads, so swap them out first.
 mock.method(session, 'getAccessToken', async () => (user ? 'dud-access-token' : null));
 mock.method(session, 'currentUser', () => user);
-const { listNotes, submitNote, deleteNote, noteFileUrl } = require('../src/desktop/notes');
+const { listNotes, submitNote, deleteNote, deleteGroupNotes, noteFileUrl } = require('../src/desktop/notes');
 
 const pdf = (name = 'My notes.pdf', size = 10) => ({ name, type: 'application/pdf', bytes: new Uint8Array(size).fill(1) });
 const png = (name = 'screenshot.png') => ({ name, type: 'image/png', bytes: new Uint8Array([137, 80, 78, 71]) });
@@ -209,6 +209,42 @@ test("deleteNote refuses someone else's note and bad ids", async (t) => {
   await assert.rejects(deleteNote(NOTE_ID), /only delete your own notes/);
   await assert.rejects(deleteNote('1&owner_id=neq.x'), /A note id is required/);
   assert.equal(requests.filter((r) => r.key.startsWith('DELETE')).length, 0);
+});
+
+test("deleteGroupNotes deletes every note in the group, each one's files first", async (t) => {
+  reset(t);
+  // Two notes by different members; each folder holds one file.
+  const OTHER = '00000000-0000-4000-8000-000000000002';
+  const NOTE_2 = '00000000-0000-4000-8000-0000000000bb';
+  const requests = mockSupabase({
+    'GET /rest/v1/notes': ok([{ id: NOTE_ID, owner_id: USER.uid }, { id: NOTE_2, owner_id: OTHER }]),
+    'POST /storage/v1/object/list/notes': ok(folder('1-a.pdf')),
+    'DELETE /storage/v1/object/notes': () => {
+      // Report back exactly what was asked to be deleted.
+      const asked = requests.at(-1).body.prefixes;
+      return Response.json(asked.map((name) => ({ name })));
+    },
+    'DELETE /rest/v1/notes': ok([{ id: 'x' }]),
+  });
+
+  await deleteGroupNotes(7);
+  assert.equal(requests[0].search, '?group_id=eq.7&select=id,owner_id');
+  const deletes = requests.filter((r) => r.key === 'DELETE /storage/v1/object/notes').map((r) => r.body.prefixes);
+  assert.deepEqual(deletes, [[`${USER.uid}/${NOTE_ID}/1-a.pdf`], [`${OTHER}/${NOTE_2}/1-a.pdf`]]);
+  assert.equal(requests.filter((r) => r.key === 'DELETE /rest/v1/notes').length, 2);
+});
+
+test("deleteGroupNotes stops when a note's files can't all be deleted", async (t) => {
+  reset(t);
+  const requests = mockSupabase({
+    'GET /rest/v1/notes': ok([{ id: NOTE_ID, owner_id: USER.uid }]),
+    'POST /storage/v1/object/list/notes': ok(folder('1-a.pdf')),
+    'DELETE /storage/v1/object/notes': ok([]),
+  });
+
+  await assert.rejects(deleteGroupNotes(7), /Couldn't delete 1 of this note's files/);
+  assert.equal(requests.filter((r) => r.key === 'DELETE /rest/v1/notes').length, 0);
+  await assert.rejects(deleteGroupNotes('7 or true'), /A study group is required/);
 });
 
 test('noteFileUrl returns a full signed link', async (t) => {

@@ -155,6 +155,8 @@ function GroupsPanel({ bridge, account, className, notes }: GroupsPanelProps) {
     try {
       await bridge.deleteGroup(group.id);
       setNotice({ tone: 'ok', text: `Deleted ${group.name}.` });
+      // Its notes went with it, so the notes lists need reloading.
+      notes?.onShow();
     } catch (err) {
       fail(err);
     }
@@ -318,7 +320,7 @@ function GroupsPanel({ bridge, account, className, notes }: GroupsPanelProps) {
       {deleting ? (
         <ConfirmDialog
           title={`Delete ${deleting.name}?`}
-          body="Everyone in this study group will be removed from it and any invites to it will be cancelled. This can't be undone."
+          body="Everyone in this study group will be removed from it, its notes and their files will be deleted, and any invites to it will be cancelled. This can't be undone."
           confirmLabel="Delete group"
           onConfirm={() => deleteGroup(deleting)}
           onCancel={() => setDeleting(null)}

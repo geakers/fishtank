@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FocusFlip" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/sky_mid</item>
+        <item name="android:statusBarColor">@color/sky_mid</item>
+        <item name="android:navigationBarColor">@color/grass_bottom</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.FocusFlip.Lock">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>
