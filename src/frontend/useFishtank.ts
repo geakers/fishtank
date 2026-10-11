@@ -10,6 +10,12 @@ export const NOTE_FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'i
 export const MAX_NOTE_FILES = 10;
 export const MAX_NOTE_FILE_MB = 10;
 export const MAX_NAME_LENGTH = 24;
+// How long a user can commit to focusing for, in minutes. Keep in sync with
+// MIN_COMMIT_MINUTES and MAX_COMMIT_MINUTES in src/desktop/profiles.js.
+export const MIN_COMMIT_MINUTES = 1;
+export const MAX_COMMIT_MINUTES = 240;
+export const COMMIT_PRESETS = [15, 25, 45, 60, 90];
+export const DEFAULT_COMMIT_MINUTES = 25;
 // TEMPORARY: what the P key gives (see useFishtank).
 const CHEAT_POINTS = 1000;
 
@@ -24,6 +30,9 @@ export type LockMode = 'study' | 'strict';
 export interface Session {
   mode: LockMode;
   startedAt: number;
+  // How long the user committed to focusing for. The session ends by itself
+  // once it has run this long, and only a session that does earns points.
+  commitMinutes: number;
   // Study mode only: whether notifications were silenced. Missing outside
   // Electron.
   notificationsSilenced?: boolean;
@@ -59,8 +68,13 @@ export function useFishtank() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [lockError, setLockError] = useState<string | null>(null);
-  // The mode the lock-in screen is in, kept so "Try again" retries the same one.
+  // The mode and commitment the lock-in screen is in, kept so "Try again"
+  // retries the same ones.
   const [lockMode, setLockMode] = useState<LockMode>('study');
+  const [lockMinutes, setLockMinutes] = useState(DEFAULT_COMMIT_MINUTES);
+  // Set while endLock is waiting on the desktop app, so the timer running out
+  // and the End button can't end the same session twice.
+  const ending = useRef(false);
   // The notes the logged-in user can see, and the study groups they can share to.
   const [notes, setNotes] = useState<FishtankNote[]>([]);
   const [groups, setGroups] = useState<FishtankGroup[]>([]);
@@ -322,33 +336,36 @@ export function useFishtank() {
 
   // --- Lock-in ---
 
-  const startLock = async (mode: LockMode = lockMode) => {
+  const startLock = async (mode: LockMode = lockMode, commitMinutes: number = lockMinutes) => {
     setLockError(null);
     try {
       // Outside Electron there is nothing to lock.
       const bridge = window.fishtank;
       if (mode === 'strict') {
-        if (bridge && !(await bridge.lockDown(true))) throw new Error('lockdown failed');
-        setSession({ mode, startedAt: Date.now() });
+        if (bridge && !(await bridge.lockDown(true, commitMinutes))) throw new Error('lockdown failed');
+        setSession({ mode, commitMinutes, startedAt: Date.now() });
       } else {
-        const study = await bridge?.startStudy();
-        setSession({ mode, startedAt: Date.now(), notificationsSilenced: study?.notificationsSilenced });
+        const study = await bridge?.startStudy(commitMinutes);
+        setSession({ mode, commitMinutes, startedAt: Date.now(), notificationsSilenced: study?.notificationsSilenced });
       }
     } catch {
       setLockError("Couldn't enter focus mode. Please try again.");
     }
   };
 
-  const enterLockIn = (mode: LockMode) => {
+  const enterLockIn = (mode: LockMode, commitMinutes: number) => {
     setLockMode(mode);
+    setLockMinutes(commitMinutes);
     setScreen('lockIn');
-    void startLock(mode);
+    void startLock(mode, commitMinutes);
   };
 
   // Say which app study mode just sent to the back.
   useEffect(() => window.fishtank?.onStudyAppBlocked((appName) => notify('info', `${appName} isn't one of your study apps.`)), []);
 
   const endLock = async () => {
+    if (ending.current) return;
+    ending.current = true;
     let reward: FishtankSessionResult | undefined;
     try {
       // The desktop app unlocks the window and saves the points and minutes.
@@ -357,6 +374,8 @@ export function useFishtank() {
     } catch {
       setLockError("Couldn't leave focus mode. Try again in a moment.");
       return;
+    } finally {
+      ending.current = false;
     }
     if (!session) return;
     const endedAt = Date.now();
@@ -387,7 +406,7 @@ export function useFishtank() {
     account, logIn, createAccount, logOut,
     buy, setInTank, rename, setAvatarId: chooseAvatar, grantBonus, customArt, setCustomArt,
     notes, groups, refreshNotes, uploadNote, openNoteFile, deleteNote,
-    session, lockMode, lockError, enterLockIn, startLock, endLock, leaveLockIn,
+    session, lockMode, lockMinutes, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
 }
 

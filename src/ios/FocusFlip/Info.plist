@@ -72,6 +72,13 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>selawkl.ttf</string>
+		<string>selawk.ttf</string>
+		<string>selawksb.ttf</string>
+		<string>selawkb.ttf</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

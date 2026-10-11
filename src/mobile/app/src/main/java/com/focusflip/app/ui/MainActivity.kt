@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,8 +16,10 @@ import com.focusflip.app.di.ServiceLocator
 import com.focusflip.app.focus.FocusSessionManager
 import com.focusflip.app.focus.Phase
 import com.focusflip.app.ui.auth.AuthScreen
+import com.focusflip.app.ui.groups.StudyGroupsScreen
 import com.focusflip.app.ui.home.HomeScreen
 import com.focusflip.app.ui.lock.LockActivity
+import com.focusflip.app.ui.theme.FocusFlipTheme
 import com.focusflip.app.ui.whitelist.WhitelistScreen
 import kotlinx.coroutines.launch
 
@@ -24,8 +27,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Every screen draws its own backdrop under the system bars, as on iOS.
+        enableEdgeToEdge()
         lifecycleScope.launch { ServiceLocator.authRepository.refreshSession() }
-        setContent { FocusFlipRoot() }
+        setContent { FocusFlipTheme { FocusFlipRoot() } }
     }
 
     override fun onResume() {
@@ -36,7 +41,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { HOME, WHITELIST }
+private enum class Screen { HOME, WHITELIST, GROUPS }
+
+/** auth -> home -> whitelist / study groups. A running session opens LockActivity over all of it. */
 
 @Composable
 private fun FocusFlipRoot() {
@@ -52,10 +59,15 @@ private fun FocusFlipRoot() {
         Screen.HOME -> HomeScreen(
             session = current,
             onOpenWhitelist = { screen = Screen.WHITELIST },
+            onOpenGroups = { screen = Screen.GROUPS },
         )
         Screen.WHITELIST -> {
             BackHandler { screen = Screen.HOME }
             WhitelistScreen(onBack = { screen = Screen.HOME })
+        }
+        Screen.GROUPS -> {
+            BackHandler { screen = Screen.HOME }
+            StudyGroupsScreen(onBack = { screen = Screen.HOME })
         }
     }
 }

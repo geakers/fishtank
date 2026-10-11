@@ -46,11 +46,6 @@ fun formatFocusTotal(ms: Long): String {
     return if (minutes >= 60) "${minutes / 60}H ${minutes % 60}M" else "$minutes MIN"
 }
 
-fun formatCountdown(ms: Long): String {
-    val total = (ms + 999) / 1000
-    return "%02d:%02d".format(total / 60, total % 60)
-}
-
 /** Signal bars - carrier name - battery, the top row of every old phone. */
 @Composable
 fun LcdStatusBar(now: Long, carrier: String = "FOCUS-NET") {

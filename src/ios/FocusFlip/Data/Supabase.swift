@@ -245,8 +245,8 @@ final class SyncRepository: ObservableObject {
             }
             var profile = try await fetchProfile(uid: uid, token: token)
             let pending = load().filter { !$0.synced }
-            // Every session counts for the time it actually ran.
-            let earned = pending.map { Config.earnings(seconds: Int(max(0, $0.endedAt - $0.startedAt))) }
+            // Every session adds the time it ran; only finished commitments add points.
+            let earned = pending.map(Config.earnings(for:))
             let addedMinutes = earned.reduce(0) { $0 + $1.minutes }
             let pointsDelta = earned.reduce(0) { $0 + $1.points }
 

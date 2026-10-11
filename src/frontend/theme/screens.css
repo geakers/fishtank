@@ -1609,6 +1609,48 @@
   box-shadow: 0 0 0 3px var(--aero-cyan-500);
 }
 
+/* ---------- Commitment picker ---------- */
+
+.commit {
+  max-width: 460px;
+}
+
+.commit__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aero-space-2);
+  margin-top: var(--aero-space-3);
+}
+
+.commit__preset {
+  padding: 8px 16px;
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gradient-button);
+  box-shadow: var(--aero-shadow-inset-gloss);
+  color: var(--aero-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    border-color var(--aero-duration-fast),
+    background var(--aero-duration-fast);
+}
+
+.commit__preset:hover {
+  border-color: var(--aero-cyan-300);
+}
+
+.commit__preset.is-active {
+  border-color: var(--aero-cyan-500);
+  background: var(--aero-cyan-100);
+  color: var(--aero-cyan-700);
+}
+
+.commit__input {
+  max-width: 140px;
+}
+
 /* ---------- Lock-in: the tank on a stand in a bright room ---------- */
 
 .lockin {
@@ -1639,8 +1681,15 @@
   line-height: 1.2;
 }
 
-.lockin__timer.is-hidden {
+.lockin__timer.is-hidden,
+.lockin__goal.is-hidden {
   visibility: hidden;
+}
+
+/* The commitment under the timer. */
+.lockin__goal {
+  margin: calc(-1 * var(--aero-space-2)) 0 var(--aero-space-3);
+  font-weight: 600;
 }
 
 .lockin__tank-wrap {

@@ -2,8 +2,8 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const { createAccount } = require('../database/accounts');
 const {
-  TEST_POINT_PER_SECOND,
-  POINTS_PER_MINUTE,
+  isValidCommitment,
+  sessionEarnings,
   getProfile,
   getPoints,
   setPoints,
@@ -22,6 +22,8 @@ const { listRunningApps, getAllowedApps, setAllowedApps, startStudy, stopStudy }
 // When the running session (strict lockdown or study mode) started (ms since
 // epoch), or null.
 let sessionStartedAt = null;
+// How many minutes the user committed to for the running session, or null.
+let sessionCommitMinutes = null;
 
 // Puts the given window into kiosk mode (enabled = true) or takes it back out
 // (enabled = false). Returns the window's actual kiosk state afterwards.
@@ -30,24 +32,32 @@ function lockDown(win, enabled) {
   return win.isKiosk();
 }
 
+// Starts timing a session the user committed commitMinutes to. A session
+// already running keeps its start and commitment.
+function beginSession(commitMinutes) {
+  if (!isValidCommitment(commitMinutes)) throw new Error('Choose how long to focus for first');
+  if (sessionStartedAt !== null) return;
+  sessionStartedAt = Date.now();
+  sessionCommitMinutes = commitMinutes;
+}
+
 // Ends the running session, whichever kind it is: takes the window out of
-// kiosk mode and stops study mode, then adds the whole minutes the session ran
-// to the logged-in user's minutes studied and 1/60 of a point per minute to
-// their points. Both are turned off even if those can't be saved.
+// kiosk mode and stops study mode, then adds the minutes the session ran to
+// the logged-in user's minutes studied. Points are only added when the
+// session lasted as long as the user committed to (see sessionEarnings).
+// Kiosk and study mode are turned off even if nothing can be saved.
 async function endSession(win) {
   const locked = lockDown(win, false);
   await stopStudy();
   const seconds = sessionStartedAt === null ? 0 : Math.floor((Date.now() - sessionStartedAt) / 1000);
+  const commitMinutes = sessionCommitMinutes;
   sessionStartedAt = null;
+  sessionCommitMinutes = null;
 
-  // In test mode every second earns a point, and a part minute counts as a
-  // whole one so the points never outrun what verifyPoints allows.
-  const minutes = TEST_POINT_PER_SECOND ? Math.ceil(seconds / 60) : Math.floor(seconds / 60);
-  const pointsEarned = TEST_POINT_PER_SECOND ? seconds : minutes * POINTS_PER_MINUTE;
-
-  const result = { locked, minutes, pointsEarned, saved: false, error: null };
+  const { completed, minutes, pointsEarned } = sessionEarnings(seconds, commitMinutes);
+  const result = { locked, completed, commitMinutes, minutes, pointsEarned, saved: false, error: null };
   const user = currentUser();
-  if (!user || pointsEarned === 0) return result;
+  if (!user || minutes === 0) return result;
 
   try {
     const profile = await getProfile(user.uid);
@@ -56,8 +66,10 @@ async function endSession(win) {
     // Minutes go first: if the points write then fails, the user is short of
     // points rather than holding points that verifyPoints can't account for.
     await setMinutesStudied(user.uid, (profile.minutes_studied ?? 0) + minutes);
-    // Rounded so repeated additions don't pick up floating point noise.
-    await setPoints(user.uid, Math.round((profile.points + result.pointsEarned) * 10000) / 10000);
+    if (pointsEarned > 0) {
+      // Rounded so repeated additions don't pick up floating point noise.
+      await setPoints(user.uid, Math.round((profile.points + pointsEarned) * 10000) / 10000);
+    }
     result.saved = true;
   } catch (err) {
     result.error = err.message;
@@ -92,16 +104,19 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle('lock-down', (event, enabled) => {
+  ipcMain.handle('lock-down', (event, enabled, commitMinutes) => {
     const win = BrowserWindow.fromWebContents(event.sender);
+    if (enabled) beginSession(commitMinutes);
     const locked = lockDown(win, Boolean(enabled));
-    if (!locked) sessionStartedAt = null;
-    else sessionStartedAt ??= Date.now();
+    if (!locked) {
+      sessionStartedAt = null;
+      sessionCommitMinutes = null;
+    }
     return locked;
   });
-  ipcMain.handle('start-study', (event) => {
+  ipcMain.handle('start-study', (event, commitMinutes) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    sessionStartedAt ??= Date.now();
+    beginSession(commitMinutes);
     return startStudy(win, (appName) => {
       if (!win.isDestroyed()) win.webContents.send('study-app-blocked', appName);
     });

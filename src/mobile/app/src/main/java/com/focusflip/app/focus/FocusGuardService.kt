@@ -20,6 +20,8 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.core.content.res.ResourcesCompat
+import com.focusflip.app.R
 import com.focusflip.app.di.ServiceLocator
 import com.focusflip.app.ui.lock.LockActivity
 import kotlinx.coroutines.MainScope
@@ -158,7 +160,9 @@ class FocusGuardService : AccessibilityService() {
         val density = resources.displayMetrics.density
         val lcd = TextView(this).apply {
             text = "FOCUSFLIP\n\nPHONE LOCKED\n\nThis app is not on\nyour whitelist.\n\n[ TAP TO RETURN ]"
-            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            // Selawik, like the rest of the app; the system's bold sans if it can't load.
+            typeface = runCatching { ResourcesCompat.getFont(this@FocusGuardService, R.font.selawik_bold) }.getOrNull()
+                ?: Typeface.DEFAULT_BOLD
             textSize = 20f
             gravity = Gravity.CENTER
             setTextColor(Color.parseColor("#053A5C"))
@@ -171,7 +175,8 @@ class FocusGuardService : AccessibilityService() {
             }
         }
         return FrameLayout(this).apply {
-            setBackgroundColor(Color.parseColor("#0A3557"))
+            // The Wii-white backdrop the lock screen sits on, as on iOS.
+            setBackgroundColor(Color.parseColor("#F7F9FB"))
             addView(
                 lcd,
                 FrameLayout.LayoutParams(

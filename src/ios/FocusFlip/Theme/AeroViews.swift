@@ -46,7 +46,9 @@ struct LcdPanel<Content: View>: View {
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(hex: 0x1C5F8C), Color(hex: 0x062A47)], startPoint: .top, endPoint: .bottom)
-            content()
+            // One stack, so several views passed in are laid out in a column rather than each
+            // getting its own padding and background on top of the others.
+            VStack(alignment: .leading, spacing: 0, content: content)
                 .padding(10)
                 .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .topLeading)
                 .background(

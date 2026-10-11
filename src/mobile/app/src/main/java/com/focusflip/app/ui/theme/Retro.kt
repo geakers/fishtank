@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -80,7 +79,8 @@ object Retro {
     val EndRed = Color(0xFFE2474C)
     val Amber = Color(0xFFE07A00)
 
-    val Pixel = FontFamily.Monospace
+    /** The LCD's type: Selawik like everything else. Its digits are all the same width. */
+    val Pixel = Selawik
 
     val shellBrush = Brush.verticalGradient(listOf(SkyTop, SkyMid, GrassTop, GrassBottom))
     val silverBrush = Brush.verticalGradient(listOf(Color.White, Silver, SilverDark))
@@ -90,7 +90,6 @@ object Retro {
         fontSize = size.sp,
         fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
         color = color,
-        letterSpacing = 0.5.sp,
     )
 }
 

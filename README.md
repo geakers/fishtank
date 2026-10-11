@@ -28,7 +28,7 @@ npm run dev
 
 ## What you can do
 
-- **Focus.** The big Focus button starts a study session that keeps you to the apps you chose. Strict lock-in locks the whole screen to Fishtank instead.
+- **Focus.** Choose how long you commit to, and the big Focus button starts a study session of that length that keeps you to the apps you chose. Strict lock-in locks the whole screen to Fishtank instead. You only earn points if you stay for the whole session.
 - **Keep fish.** Spend points in the Fish Shop, choose which fish swim in your tank, and pick one as your avatar.
 - **Study in groups.** Create a study group, invite people by username, accept invites, leave a group, or delete one you lead.
 - **Share notes.** Upload typed notes, PDFs and screenshots, either for yourself or to a study group.
@@ -63,7 +63,8 @@ src/
     groups.js           Study groups, members and invites
     notes.js            Study notes and their files
   frontend/             React UI (see src/frontend/README.md)
-  mobile/               Empty on this branch; the Android app is on the mobile branch
+  mobile/               FocusFlip, the Android companion app (see src/mobile/README.md)
+  ios/                  FocusFlip for iPhone (see src/ios/README.md)
 scripts/dev.mjs         Starts Vite and Electron together for npm run dev
 tests/                  Tests, run with Node's built-in test runner
 ```
@@ -76,9 +77,9 @@ Every function returns a promise except `onStudyAppBlocked`. Calls that need an 
 
 | Function | Returns |
 | --- | --- |
-| `startStudy()` | Starts study mode. Resolves with `{ notificationsSilenced }`. |
-| `lockDown(enabled)` | Turns kiosk mode (strict lock-in) on or off; resolves with the window's actual kiosk state. |
-| `endSession()` | Ends the session, whichever mode it is, and saves its minutes and points. Resolves with `{ locked, minutes, pointsEarned, saved, error }`. |
+| `startStudy(commitMinutes)` | Starts study mode for a session the user commits `commitMinutes` to. Resolves with `{ notificationsSilenced }`. |
+| `lockDown(enabled, commitMinutes)` | Turns kiosk mode (strict lock-in) on or off; turning it on starts a session the user commits `commitMinutes` to. Resolves with the window's actual kiosk state. |
+| `endSession()` | Ends the session, whichever mode it is, and saves its minutes, and its points if it lasted the full commitment. Resolves with `{ locked, completed, commitMinutes, minutes, pointsEarned, saved, error }`. |
 | `listRunningApps()` | The apps open right now, as `[{ id, name }]`. |
 | `getAllowedApps()` | The user's study apps, as `[{ id, name }]`. |
 | `setAllowedApps(apps)` | Saves the study apps and resolves with what was saved. Rejects during a study session. |
@@ -138,6 +139,8 @@ The login session is kept by `src/desktop/session.js`. It is saved to disk encry
 
 ## Focus sessions
 
+Every session starts by asking how long the user commits to: 15, 25, 45, 60 or 90 minutes, or any whole number of minutes from 1 to 240. The screen counts down, and the session ends by itself when the time is up. Ending it early asks first, and earns no points (see Points).
+
 There are two kinds of session. Both run the same timer and earn the same points.
 
 **Study mode** is what the Focus button starts. It is the softer one:
@@ -153,7 +156,12 @@ Study mode only works on macOS. It reads the front app with `lsappinfo` and runs
 
 ## Points
 
-A session starts when study mode or kiosk mode is switched on and ends with `endSession()`. Ending a session adds its whole minutes to the user's `minutes_studied` and 1/60 of a point per minute to their `points`, which is one point per hour. Nothing is saved if nobody is logged in.
+A session starts when study mode or kiosk mode is switched on, with the minutes the user committed to, and ends with `endSession()`. The rules are `sessionEarnings` in `src/desktop/profiles.js`, and the mobile apps follow the same ones:
+
+- Every session adds the whole minutes it ran to the user's `minutes_studied`.
+- Only a session that lasted its full commitment earns points: 1/60 of a point per committed minute, which is one point per hour. Running past the commitment earns no more, and ending early earns nothing.
+
+The main process keeps its own start time and commitment, so the front end can't claim a session ran longer than it did. Nothing is saved if nobody is logged in.
 
 `verifyPoints` checks that a user's points are no more than their minutes studied allow. The app trusts its own writes, so this catches a balance that was changed on its own, not deliberate tampering.
 

@@ -19,7 +19,8 @@ private let quotes = [
 /**
  * The whole lock UI: top half is the LCD, bottom half is the keypad.
  * Up/Down choose an item, OK/Call opens it, Left/Right or the right soft key switch pages,
- * End (the red key) ends the session, 1-9 jump straight to that list entry, * toggles the backlight.
+ * End (the red key) ends the session early, 1-9 jump straight to that list entry, * toggles
+ * the backlight. The session ends by itself when the time committed to runs out.
  */
 struct FlipPhoneScreen: View {
     @EnvironmentObject private var model: AppModel
@@ -72,6 +73,7 @@ struct FlipPhoneScreen: View {
         }
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { tick in
             now = tick
+            model.sessions.tick(now: tick)
         }
         .onChange(of: toast) { value in
             guard value != nil else { return }
@@ -80,12 +82,11 @@ struct FlipPhoneScreen: View {
                 if toast == value { toast = nil }
             }
         }
-        .alert("End session?", isPresented: $confirmEnd) {
-            Button("End session") { model.sessions.stop() }
+        .alert("End early?", isPresented: $confirmEnd) {
+            Button("End without points", role: .destructive) { model.sessions.endEarly() }
             Button("Keep focusing", role: .cancel) {}
         } message: {
-            let seconds = state.elapsedSeconds()
-            Text("You've focused for \(formatElapsed(seconds)). It's saved to your account and earns \(formatPoints(Config.earnings(seconds: seconds).points)) points.")
+            Text("You committed to \(state.commitMinutes) minutes and have \(formatElapsed(state.remainingSeconds())) to go. If you stop now your study time still counts, but you won't earn any points.")
         }
     }
 
@@ -147,8 +148,6 @@ private struct LcdContent: View {
     let toast: String?
     let now: Date
 
-    private var elapsed: Int { state.elapsedSeconds(now: now) }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             LcdStatusBar(now: now)
@@ -158,9 +157,9 @@ private struct LcdContent: View {
 
             Group {
                 if page == .clock {
-                    ClockPage(elapsed: elapsed)
+                    ClockPage(state: state, now: now)
                 } else {
-                    AppsPage(elapsed: elapsed, apps: apps, selected: selected)
+                    AppsPage(state: state, now: now, apps: apps, selected: selected)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -197,22 +196,22 @@ private struct LcdContent: View {
 }
 
 private struct AppsPage: View {
-    let elapsed: Int
+    let state: SessionState
+    let now: Date
     let apps: [CatalogApp]
     let selected: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("FOCUSING").font(lcdFont(14, bold: true)).foregroundStyle(Palette.lcdInk)
+                Text("FOCUS \(state.commitMinutes) MIN").font(lcdFont(14, bold: true)).foregroundStyle(Palette.lcdInk)
                 Spacer()
-                Text(formatElapsed(elapsed)).font(lcdFont(20, bold: true)).foregroundStyle(Palette.lcdInk)
+                Text(formatElapsed(state.remainingSeconds(now: now))).font(lcdFont(20, bold: true)).foregroundStyle(Palette.lcdInk)
             }
             Spacer().frame(height: 4)
-            // Sweeps across once a minute, so the screen shows the time moving.
-            LcdProgress(progress: CGFloat(elapsed % 60) / 60)
+            LcdProgress(progress: CGFloat(state.progress(now: now)))
             Spacer().frame(height: 4)
-            Text("+\(formatPoints(Config.earnings(seconds: elapsed).points)) PTS SO FAR")
+            Text("+\(formatPoints(commitPoints(state))) PTS IF YOU FINISH")
                 .font(lcdFont(12, bold: true))
                 .foregroundStyle(Palette.lcdMid)
             Spacer().frame(height: 8)
@@ -243,26 +242,32 @@ private struct AppsPage: View {
 }
 
 private struct ClockPage: View {
-    let elapsed: Int
+    let state: SessionState
+    let now: Date
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            Text("FOCUSED FOR").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdInk)
-            Text(formatElapsed(elapsed))
+            Text("TIME LEFT").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdInk)
+            Text(formatElapsed(state.remainingSeconds(now: now)))
                 .font(lcdFont(54, bold: true))
                 .foregroundStyle(Palette.lcdInk)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-            Text("+\(formatPoints(Config.earnings(seconds: elapsed).points)) PTS").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdMid)
+            Text("+\(formatPoints(commitPoints(state))) PTS AT THE END").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdMid)
             Spacer().frame(height: 10)
-            LcdProgress(progress: CGFloat(elapsed % 60) / 60)
+            LcdProgress(progress: CGFloat(state.progress(now: now)))
             Spacer().frame(height: 10)
             Text("PHONE LOCKED").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdInk)
             Spacer()
         }
         .frame(maxWidth: .infinity)
     }
+}
+
+/// What the session earns if the user stays for all of it.
+private func commitPoints(_ state: SessionState) -> Double {
+    Config.earnings(seconds: state.commitMinutes * 60).points
 }
 
 private struct MenuRow: View {

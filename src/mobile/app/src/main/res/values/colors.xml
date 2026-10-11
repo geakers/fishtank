@@ -6,4 +6,5 @@
     <color name="lcd_aqua">#FFD2F5FF</color>
     <color name="lcd_ink">#FF053A5C</color>
     <color name="shell_dark">#FF0A3557</color>
+    <color name="wii_backdrop">#FFF7F9FB</color>
 </resources>

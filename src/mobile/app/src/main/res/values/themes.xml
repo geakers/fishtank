@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Screens draw edge to edge (MainActivity.enableEdgeToEdge); these show only before
+         the first frame. Views without a font of their own use Selawik, like the desktop. -->
     <style name="Theme.FocusFlip" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/sky_mid</item>
-        <item name="android:statusBarColor">@color/sky_mid</item>
-        <item name="android:navigationBarColor">@color/grass_bottom</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/wii_backdrop</item>
+        <item name="android:fontFamily">@font/selawik_regular</item>
     </style>
 
     <style name="Theme.FocusFlip.Lock">

@@ -4,7 +4,8 @@ import UIKit
 /// Laid out after the desktop home screen (src/frontend/views/screens/HomeScreen.tsx), with
 /// the flip phone where the desktop has its tank:
 ///   top bar - brand on the left; points and profile on the right
-///   hero    - the flip phone on its stand; tap it or Focus to start a session
+///   hero    - the flip phone on its stand; tap it or Focus to start a session, which first
+///             asks how long to commit to
 ///   actions - Focus, then Study apps (the whitelist) and Focus Guard (Guided Access)
 ///   panel   - study groups
 ///   dock    - a big grey clock and the date
@@ -17,6 +18,9 @@ struct HomeScreen: View {
     @State private var now = Date()
     @State private var showGuardDialog = false
     @State private var showProfile = false
+    @State private var showCommit = false
+    /// The minutes chosen in the commitment sheet, waiting on the Focus Guard question.
+    @State private var pendingMinutes = Config.defaultCommitMinutes
     @State private var guardOn = UIAccessibility.isGuidedAccessEnabled
     /// nil until the first load finishes.
     @State private var groups: [StudyGroup]?
@@ -40,7 +44,7 @@ struct HomeScreen: View {
                 ScrollView {
                     VStack(spacing: 18) {
                         Button(action: startPressed) {
-                            PhoneHero(status: model.sync.status, guardOn: guardOn, now: now)
+                            PhoneHero(status: model.sync.status, guardOn: guardOn, commitMinutes: model.sessions.lastCommitMinutes, now: now)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Start a focus session")
@@ -73,16 +77,49 @@ struct HomeScreen: View {
         .sheet(isPresented: $showProfile) {
             ProfileSheet(name: displayName)
         }
+        .sheet(isPresented: $showCommit) {
+            CommitSheet(initialMinutes: model.sessions.lastCommitMinutes) { minutes in
+                showCommit = false
+                commit(to: minutes)
+            }
+        }
+        .alert(finishedTitle, isPresented: showFinished) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(finishedMessage)
+        }
         .alert("Turn on Focus Guard?", isPresented: $showGuardDialog) {
             Button("Open settings") { openGuidedAccessSettings() }
-            Button("Start anyway") { model.sessions.startFocus() }
+            Button("Start anyway") { model.sessions.startFocus(minutes: pendingMinutes) }
         } message: {
             Text("To keep you inside FocusFlip during a session, turn on Guided Access under Settings > Accessibility, then triple-click the side button after you start.\n\nWithout it the timer still runs, but other apps are not blocked.")
         }
     }
 
     private func startPressed() {
-        if guardOn { model.sessions.startFocus() } else { showGuardDialog = true }
+        showCommit = true
+    }
+
+    private func commit(to minutes: Int) {
+        pendingMinutes = minutes
+        if guardOn { model.sessions.startFocus(minutes: minutes) } else { showGuardDialog = true }
+    }
+
+    private var showFinished: Binding<Bool> {
+        Binding(get: { model.sessions.finished != nil }, set: { if !$0 { model.sessions.finished = nil } })
+    }
+
+    private var finishedTitle: String {
+        model.sessions.finished?.completed == false ? "Ended early" : "Session complete"
+    }
+
+    private var finishedMessage: String {
+        guard let done = model.sessions.finished else { return "" }
+        if done.completed {
+            let points = Config.earnings(seconds: done.commitMinutes * 60).points
+            return "You focused for the full \(done.commitMinutes) minutes and earned \(formatPoints(points)) points."
+        }
+        return "You ended before your \(done.commitMinutes)-minute commitment, so this session earned no points. Your \(formatElapsed(done.seconds)) of study still counts."
     }
 
     private func reload() async {
@@ -133,13 +170,13 @@ private struct TopBar: View {
         HStack(spacing: 8) {
             HStack(spacing: 8) {
                 Orb(size: 26)
-                Text("FocusFlip").font(.system(size: 19, weight: .semibold)).foregroundStyle(Wii.ink)
+                Text("FocusFlip").font(.selawik(19, .semibold)).foregroundStyle(Wii.ink)
             }
             Spacer(minLength: 4)
             HStack(spacing: 5) {
                 Orb(size: 20)
-                Text(formatPointsGrouped(points)).font(.system(size: 14, weight: .bold)).foregroundStyle(Wii.ink)
-                Text("pts").font(.system(size: 12)).foregroundStyle(Wii.inkMuted)
+                Text(formatPointsGrouped(points)).font(.selawik(14, .bold)).foregroundStyle(Wii.ink)
+                Text("pts").font(.selawik(12)).foregroundStyle(Wii.inkMuted)
             }
             .lineLimit(1)
             .padding(.leading, 5)
@@ -149,8 +186,8 @@ private struct TopBar: View {
             Button(action: onProfile) {
                 HStack(spacing: 6) {
                     Avatar(name: name, size: 30)
-                    Text(name).font(.system(size: 14, weight: .semibold)).foregroundStyle(Wii.ink).lineLimit(1)
-                    Text("▾").font(.system(size: 10)).foregroundStyle(Wii.inkMuted)
+                    Text(name).font(.selawik(14, .semibold)).foregroundStyle(Wii.ink).lineLimit(1)
+                    Text("▾").font(.selawik(10)).foregroundStyle(Wii.inkMuted)
                 }
                 .padding(.leading, 3)
                 .padding(.trailing, 10)
@@ -183,7 +220,7 @@ private struct Avatar: View {
     var body: some View {
         Circle()
             .fill(LinearGradient(colors: [Wii.cyan100, Wii.cyan300], startPoint: .top, endPoint: .bottom))
-            .overlay(Text(String(name.prefix(1)).uppercased()).font(.system(size: size * 0.45, weight: .semibold)).foregroundStyle(.white))
+            .overlay(Text(String(name.prefix(1)).uppercased()).font(.selawik(size * 0.45, .semibold)).foregroundStyle(.white))
             .overlay(Circle().stroke(Color.white, lineWidth: 2))
             .frame(width: size, height: size)
     }
@@ -207,11 +244,12 @@ extension View {
 private struct PhoneHero: View {
     let status: SyncStatus
     let guardOn: Bool
+    let commitMinutes: Int
     let now: Date
 
     var body: some View {
         VStack(spacing: 0) {
-            MiniPhone(status: status, guardOn: guardOn, now: now)
+            MiniPhone(status: status, guardOn: guardOn, commitMinutes: commitMinutes, now: now)
                 .padding(.horizontal, 34)
                 .padding(.bottom, 10)
 
@@ -234,6 +272,7 @@ private struct PhoneHero: View {
 private struct MiniPhone: View {
     let status: SyncStatus
     let guardOn: Bool
+    let commitMinutes: Int
     let now: Date
 
     var body: some View {
@@ -248,7 +287,7 @@ private struct MiniPhone: View {
                         Palette.lcdMid.frame(height: 1)
                         Spacer().frame(height: 22)
                         Text("READY").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdMid)
-                        Text(formatElapsed(0)).font(lcdFont(52, bold: true)).foregroundStyle(Palette.lcdInk)
+                        Text(formatElapsed(commitMinutes * 60)).font(lcdFont(52, bold: true)).foregroundStyle(Palette.lcdInk)
                         Text("PRESS FOCUS").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdInk)
                         Spacer().frame(height: 28)
                         MiniLine(label: "TOTAL", value: formatFocusTotal(status.accountFocusMs))
@@ -329,7 +368,7 @@ private struct HeroButton: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(size: 30, weight: .semibold))
+                .font(.selawik(30, .semibold))
                 .tracking(1.2)
                 .foregroundStyle(Wii.cyan700)
                 .frame(maxWidth: .infinity)
@@ -362,10 +401,10 @@ private struct WiiButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                Text(text).font(.system(size: 15, weight: .semibold)).foregroundStyle(Wii.ink)
+                Text(text).font(.selawik(15, .semibold)).foregroundStyle(Wii.ink)
                 if let detail {
                     Text(detail)
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.selawik(12, .bold))
                         .foregroundStyle(warn ? Wii.danger : Wii.cyan700)
                 }
             }
@@ -399,9 +438,9 @@ private struct GroupsPanel: View {
         Button(action: onOpen) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Study groups").font(.system(size: 16, weight: .semibold)).foregroundStyle(Wii.ink)
+                    Text("Study groups").font(.selawik(16, .semibold)).foregroundStyle(Wii.ink)
                     Spacer()
-                    Text("Open ›").font(.system(size: 13, weight: .semibold)).foregroundStyle(Wii.cyan700)
+                    Text("Open ›").font(.selawik(13, .semibold)).foregroundStyle(Wii.cyan700)
                 }
                 .padding(.bottom, 6)
                 .overlay(alignment: .bottom) { Wii.lineSoft.frame(height: 2) }
@@ -409,23 +448,23 @@ private struct GroupsPanel: View {
                 ForEach(invites.prefix(2)) { invite in
                     HStack(spacing: 8) {
                         Circle().fill(Wii.cyan500).frame(width: 8, height: 8)
-                        Text(invite.groupName).font(.system(size: 14, weight: .semibold)).foregroundStyle(Wii.ink).lineLimit(1)
-                        Text("invite from \(invite.leader)").font(.system(size: 12)).foregroundStyle(Wii.inkMuted).lineLimit(1)
+                        Text(invite.groupName).font(.selawik(14, .semibold)).foregroundStyle(Wii.ink).lineLimit(1)
+                        Text("invite from \(invite.leader)").font(.selawik(12)).foregroundStyle(Wii.inkMuted).lineLimit(1)
                         Spacer(minLength: 0)
                     }
                 }
 
                 if groups == nil {
-                    Text("Loading…").font(.system(size: 13)).foregroundStyle(Wii.inkMuted)
+                    Text("Loading…").font(.selawik(13)).foregroundStyle(Wii.inkMuted)
                 } else if let groups, groups.isEmpty && invites.isEmpty {
-                    Text("No study groups yet. Tap to start one.").font(.system(size: 13)).foregroundStyle(Wii.inkMuted)
+                    Text("No study groups yet. Tap to start one.").font(.selawik(13)).foregroundStyle(Wii.inkMuted)
                 }
                 ForEach((groups ?? []).prefix(4)) { group in
                     HStack(spacing: 8) {
-                        Text(group.name).font(.system(size: 14)).foregroundStyle(Wii.ink).lineLimit(1)
+                        Text(group.name).font(.selawik(14)).foregroundStyle(Wii.ink).lineLimit(1)
                         if group.leaderId == uid {
                             Text("Leader")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.selawik(11, .semibold))
                                 .foregroundStyle(Wii.cyan700)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 2)
@@ -436,7 +475,7 @@ private struct GroupsPanel: View {
                     }
                 }
                 if let groups, groups.count > 4 {
-                    Text("+\(groups.count - 4) more").font(.system(size: 12)).foregroundStyle(Wii.inkMuted)
+                    Text("+\(groups.count - 4) more").font(.selawik(12)).foregroundStyle(Wii.inkMuted)
                 }
             }
             .padding(16)
@@ -445,6 +484,90 @@ private struct GroupsPanel: View {
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .overlay(RoundedRectangle(cornerRadius: 24).stroke(Wii.lineSoft, lineWidth: 2))
             .shadow(color: Color(red: 40 / 255, green: 60 / 255, blue: 80 / 255, opacity: 0.12), radius: 12, y: 6)
+        }
+        .buttonStyle(PressScale())
+    }
+}
+
+// MARK: - Commitment sheet
+
+/// Asked before every session: how long the user commits to. The session runs for exactly
+/// that long, and only earns points if the user stays for all of it.
+private struct CommitSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onStart: (Int) -> Void
+    @State private var minutes: Int
+
+    init(initialMinutes: Int, onStart: @escaping (Int) -> Void) {
+        self.onStart = onStart
+        _minutes = State(initialValue: initialMinutes)
+    }
+
+    var body: some View {
+        ZStack {
+            WiiBackdrop()
+            VStack(spacing: 18) {
+                HStack {
+                    Text("How long will you focus?").font(.selawik(20, .semibold)).foregroundStyle(Wii.ink)
+                    Spacer()
+                    Button("Cancel") { dismiss() }.font(.selawik(15, .semibold)).tint(Wii.cyan700)
+                }
+                Text("The session ends by itself when the time is up. You only earn points if you stay for all of it.")
+                    .font(.selawik(14))
+                    .foregroundStyle(Wii.inkMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(spacing: 8) {
+                    ForEach(Config.commitPresets, id: \.self) { preset in
+                        Button { minutes = preset } label: {
+                            Text("\(preset)")
+                                .font(.selawik(15, .semibold))
+                                .foregroundStyle(minutes == preset ? Wii.cyan700 : Wii.ink)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 38)
+                                .wiiPill(border: minutes == preset ? Wii.cyan500 : Wii.line)
+                        }
+                        .buttonStyle(PressScale())
+                    }
+                }
+
+                HStack(spacing: 18) {
+                    StepButton(symbol: "−") { minutes = max(Config.minCommitMinutes, minutes - step(down: true)) }
+                    VStack(spacing: 0) {
+                        Text("\(minutes)").font(.selawik(54, .light)).foregroundStyle(Wii.ink)
+                        Text(minutes == 1 ? "minute" : "minutes").font(.selawik(13, .semibold)).foregroundStyle(Wii.inkMuted)
+                    }
+                    .frame(minWidth: 110)
+                    StepButton(symbol: "+") { minutes = min(Config.maxCommitMinutes, minutes + step(down: false)) }
+                }
+
+                Text("+\(formatPoints(Config.earnings(seconds: minutes * 60).points)) points if you finish")
+                    .font(.selawik(14, .semibold))
+                    .foregroundStyle(Wii.cyan700)
+
+                HeroButton(text: "Start") { onStart(minutes) }
+            }
+            .padding(20)
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    /// Steps of 5 minutes, or 1 below 5 so short sessions can be picked too.
+    private func step(down: Bool) -> Int {
+        (down ? minutes <= 5 : minutes < 5) ? 1 : 5
+    }
+}
+
+private struct StepButton: View {
+    let symbol: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Text(symbol)
+                .font(.selawik(26, .semibold))
+                .foregroundStyle(Wii.cyan700)
+                .frame(width: 52, height: 52)
+                .wiiPill()
         }
         .buttonStyle(PressScale())
     }
@@ -459,10 +582,10 @@ private struct Dock: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(now, format: .dateTime.hour().minute())
-                .font(.system(size: 38, weight: .light))
+                .font(.selawik(38, .light))
                 .monospacedDigit()
             Text(now, format: .dateTime.weekday(.abbreviated).month(.defaultDigits).day().year(.twoDigits))
-                .font(.system(size: 13, weight: .semibold))
+                .font(.selawik(13, .semibold))
         }
         .foregroundStyle(Wii.dockTime)
         .frame(maxWidth: .infinity)
@@ -496,11 +619,11 @@ private struct ProfileSheet: View {
                     HStack(spacing: 12) {
                         Avatar(name: name, size: 48)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(name).font(.system(size: 20, weight: .semibold)).foregroundStyle(Wii.ink)
-                            Text(model.sessionStore.session?.user.email ?? "").font(.system(size: 13)).foregroundStyle(Wii.inkMuted)
+                            Text(name).font(.selawik(20, .semibold)).foregroundStyle(Wii.ink)
+                            Text(model.sessionStore.session?.user.email ?? "").font(.selawik(13)).foregroundStyle(Wii.inkMuted)
                         }
                         Spacer()
-                        Button("Done") { dismiss() }.font(.system(size: 15, weight: .semibold)).tint(Wii.cyan700)
+                        Button("Done") { dismiss() }.font(.selawik(15, .semibold)).tint(Wii.cyan700)
                     }
 
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
@@ -511,14 +634,14 @@ private struct ProfileSheet: View {
                     }
 
                     if !status.pointsValid {
-                        Text("Your points don't match your study time.").font(.system(size: 13, weight: .semibold)).foregroundStyle(Wii.danger)
+                        Text("Your points don't match your study time.").font(.selawik(13, .semibold)).foregroundStyle(Wii.danger)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Sync").font(.system(size: 13, weight: .semibold)).foregroundStyle(Wii.inkMuted)
-                        Text(syncLabel).font(.system(size: 14)).foregroundStyle(Wii.ink)
+                        Text("Sync").font(.selawik(13, .semibold)).foregroundStyle(Wii.inkMuted)
+                        Text(syncLabel).font(.selawik(14)).foregroundStyle(Wii.ink)
                         if let err = status.lastError {
-                            Text(err).font(.system(size: 13, weight: .semibold)).foregroundStyle(Wii.danger)
+                            Text(err).font(.selawik(13, .semibold)).foregroundStyle(Wii.danger)
                         }
                     }
 
@@ -557,8 +680,8 @@ private struct StatTile: View {
     let label: String
     var body: some View {
         VStack(spacing: 2) {
-            Text(value).font(.system(size: 22, weight: .semibold)).foregroundStyle(Wii.cyan700).lineLimit(1).minimumScaleFactor(0.6)
-            Text(label).font(.system(size: 13)).foregroundStyle(Wii.inkMuted)
+            Text(value).font(.selawik(22, .semibold)).foregroundStyle(Wii.cyan700).lineLimit(1).minimumScaleFactor(0.6)
+            Text(label).font(.selawik(13)).foregroundStyle(Wii.inkMuted)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)

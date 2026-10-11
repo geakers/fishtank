@@ -20,7 +20,8 @@ class SupabaseHttp(
     fun patch(path: String, body: JSONObject, bearer: String): JSONArray =
         JSONArray(request("PATCH", path, bearer, body, prefer = "return=representation").ifBlank { "[]" })
 
-    private fun request(
+    /** Any request, returning the raw body. Throws [SupabaseException] on an error status. */
+    fun request(
         method: String,
         path: String,
         bearer: String,
@@ -53,7 +54,8 @@ class SupabaseHttp(
                 val json = runCatching { JSONObject(text) }.getOrNull()
                 val message = listOf("msg", "error_description", "message", "hint")
                     .firstNotNullOfOrNull { key -> json?.optString(key)?.takeIf { it.isNotBlank() } }
-                throw SupabaseException(status, message ?: "Request failed ($status).")
+                val code = json?.optString("code")?.takeIf { it.isNotBlank() }
+                throw SupabaseException(status, message ?: "Request failed ($status).", code)
             }
             return text
         } finally {
@@ -62,4 +64,5 @@ class SupabaseHttp(
     }
 }
 
-class SupabaseException(val status: Int, message: String) : Exception(message)
+/** [code] is PostgREST's error code (e.g. PGRST202) when it sent one. */
+class SupabaseException(val status: Int, message: String, val code: String? = null) : Exception(message)
