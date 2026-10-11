@@ -1,8 +1,8 @@
 import SwiftUI
 
-private enum Screen { case home, whitelist }
+private enum Screen { case home, whitelist, groups }
 
-/// auth -> home -> whitelist, and a running session always takes over the app.
+/// auth -> home -> whitelist / study groups, and a running session always takes over the app.
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
@@ -19,8 +19,10 @@ struct RootView: View {
                     .defersSystemGestures(on: .all)
             } else if screen == .whitelist {
                 WhitelistScreen(onBack: { screen = .home })
+            } else if screen == .groups {
+                StudyGroupsScreen(onBack: { screen = .home })
             } else {
-                HomeScreen(onOpenWhitelist: { screen = .whitelist })
+                HomeScreen(onOpenWhitelist: { screen = .whitelist }, onOpenGroups: { screen = .groups })
             }
         }
         .animation(.easeInOut(duration: 0.2), value: model.sessions.state.phase)

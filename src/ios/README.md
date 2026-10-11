@@ -1,7 +1,7 @@
 # FocusFlip (iOS)
 
 iOS port of the Android FocusFlip app. Same Frutiger Aero flip-phone UI, the same
-45 / 15 session machine, and the same Supabase account (`profiles.minutes_studied` and `profiles.points`).
+count-up focus session as the desktop, and the same Supabase account (`profiles.minutes_studied` and `profiles.points`).
 
 > Status: **beta / test build**. Open `FocusFlip.xcodeproj` on a **Mac with Xcode 15+**.
 > Windows cannot compile or install an iOS app.
@@ -9,20 +9,21 @@ iOS port of the Android FocusFlip app. Same Frutiger Aero flip-phone UI, the sam
 ## Features (matched to Android)
 
 - **Register / log in** once. The session is stored on the device.
-- **Aero home screen**: LCD panel with TOTAL / TODAY / WHITELIST / GUARD / SYNC, plus **START LOCK** and **WHITELIST**.
+- **Home screen in the desktop's style**: the same Wii-white top bar (points pill, profile with stats, sync and log out), the flip phone on its stand where the desktop shows its tank, the big **Focus** button, **Study apps** (the whitelist) and **Focus Guard**, a study groups panel and the dock clock.
 - **Flip phone lock screen**: LCD + keypad (soft keys, CALL/END, D-pad + OK, 0-9 / * / # with DTMF tones on the media volume session).
-- **Break**: after 45 minutes, choose **Continue focus** or **Exit session**.
-- **Desktop sync**: a finished 45-minute focus block adds 45 to `profiles.minutes_studied`.
-- **UNLOCK** on the keypad ends the session and deducts 100 points (the balance may go negative).
+- **Count-up sessions**: like a desktop lock-in, a session has no set length. The LCD counts up from 00:00 and shows the points earned so far.
+- **Points, same rules as the desktop** (`src/desktop/profiles.js`): every focus block adds the time it actually ran to `profiles.minutes_studied` and earns points at the desktop's rate. Blocks are kept on the phone until they sync, and minutes and points are saved in one request. `Config.testPointPerSecond` mirrors the desktop's `TEST_POINT_PER_SECOND`; flip both together.
+- The red **END** key ends the session whenever you like. There is no penalty: the time focused is saved and earns points.
+- **Study groups**: the same groups as the desktop. Create a group, accept or decline invites, see who is in each group, and (as its leader) invite people by username. Needs `src/database/study-groups.sql` and `study-group-invites.sql` in the database.
 
 ## Keypad reference (lock screen)
 
 | Key | Action |
 |---|---|
 | Up / Down | Move the selection |
-| OK, CALL, left soft key | Open the selected app (focus) / choose an option (break) |
+| OK, CALL, left soft key | Open the selected app |
 | Left / Right, right soft key | Switch between the **Apps** page and the big **Clock** page |
-| END | Jump to the clock page |
+| END | End the session (asks first) |
 | 1-9 | Jump to list entry N |
 | `*` | Toggle the LCD backlight |
 | `#` | Show a motivational tip |
@@ -56,13 +57,13 @@ src/ios/
 ├── README.md
 ├── FocusFlip.xcodeproj
 └── FocusFlip/
-    ├── Config.swift              Supabase URL/key, 45/15 timers
+    ├── Config.swift              Supabase URL/key, points rules
     ├── Info.plist                URL schemes the whitelist can open
     ├── App/                      SwiftUI entry + AppModel (ServiceLocator)
     ├── Theme/                    Aero palette, LCD, buttons
-    ├── Data/                     Auth, session, sync, whitelist catalog
-    ├── Focus/                    45/15 machine, DTMF tones
-    └── UI/                       Auth, Home, Whitelist, FlipPhone
+    ├── Data/                     Auth, session, sync, study groups, whitelist catalog
+    ├── Focus/                    Count-up session, DTMF tones
+    └── UI/                       Auth, Home, Whitelist, Study groups, FlipPhone
 ```
 
 The cloud project is the same as Android: `https://aakaelrvybduqijgermo.supabase.co`.

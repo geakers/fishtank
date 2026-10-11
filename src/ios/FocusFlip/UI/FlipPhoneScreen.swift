@@ -19,7 +19,7 @@ private let quotes = [
 /**
  * The whole lock UI: top half is the LCD, bottom half is the keypad.
  * Up/Down choose an item, OK/Call opens it, Left/Right or the right soft key switch pages,
- * End jumps to the clock, 1-9 jump straight to that list entry, * toggles the backlight.
+ * End (the red key) ends the session, 1-9 jump straight to that list entry, * toggles the backlight.
  */
 struct FlipPhoneScreen: View {
     @EnvironmentObject private var model: AppModel
@@ -27,27 +27,28 @@ struct FlipPhoneScreen: View {
     @State private var selected = 0
     @State private var backlight = true
     @State private var toast: String?
-    @State private var confirmUnlock = false
+    @State private var confirmEnd = false
     @State private var now = Date()
 
     private var state: SessionState { model.sessions.state }
     private var apps: [CatalogApp] { model.whitelist.selectedApps }
 
-    private var itemCount: Int {
-        if state.phase == .breakTime { return 2 }
-        return page == .apps ? apps.count : 0
-    }
+    private var itemCount: Int { page == .apps ? apps.count : 0 }
 
     var body: some View {
         ZStack {
-            Palette.skyBrush.ignoresSafeArea()
-            AeroBubbles()
+            // The same Wii-white pinstripe backdrop as the home screen and the desktop.
+            WiiBackdrop()
+            // The phone fills the whole display, edge to edge. The display's own rounded
+            // corners are the phone's outline, the Dynamic Island sits where the earpiece
+            // would be, and the keypad stays clear of the home indicator.
             GeometryReader { geo in
-                let hinge: CGFloat = 16
+                let safe = windowSafeArea()
+                let hinge: CGFloat = 14
                 let lidH = (geo.size.height - hinge) / 2.08
-                let baseH = lidH * 1.08
+                let baseH = geo.size.height - hinge - lidH
                 VStack(spacing: 0) {
-                    Lid(backlight: backlight) {
+                    Lid(backlight: backlight, topInset: safe.top) {
                         LcdContent(
                             state: state,
                             apps: apps,
@@ -59,25 +60,18 @@ struct FlipPhoneScreen: View {
                     }
                     .frame(height: lidH)
                     Hinge().frame(height: hinge)
-                    Base(onKey: press, onUnlock: { confirmUnlock = true })
+                    Base(onKey: press, bottomInset: safe.bottom)
                         .frame(height: baseH)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
             }
+            .ignoresSafeArea()
 
             if model.sessions.showBounceBack {
                 BounceBackOverlay { model.sessions.dismissBounceBack() }
             }
         }
-        .ignoresSafeArea()
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { tick in
             now = tick
-            model.sessions.tick(now: tick)
-        }
-        .onChange(of: state.phase) { phase in
-            selected = (phase == .breakTime && !state.continueAfterBreak) ? 1 : 0
-            page = .apps
         }
         .onChange(of: toast) { value in
             guard value != nil else { return }
@@ -86,25 +80,16 @@ struct FlipPhoneScreen: View {
                 if toast == value { toast = nil }
             }
         }
-        .alert("Unlock?", isPresented: $confirmUnlock) {
-            Button("Unlock", role: .destructive) {
-                Task {
-                    await model.sync.spendUnlockPoints()
-                    model.sessions.stop()
-                }
-            }
-            Button("Cancel", role: .cancel) {}
+        .alert("End session?", isPresented: $confirmEnd) {
+            Button("End session") { model.sessions.stop() }
+            Button("Keep focusing", role: .cancel) {}
         } message: {
-            Text("This ends the session and deducts 100 points. Your balance can go below zero.")
+            let seconds = state.elapsedSeconds()
+            Text("You've focused for \(formatElapsed(seconds)). It's saved to your account and earns \(formatPoints(Config.earnings(seconds: seconds).points)) points.")
         }
     }
 
     private func activate() {
-        if state.phase == .breakTime {
-            model.sessions.setContinueAfterBreak(selected == 0)
-            toast = selected == 0 ? "Next block queued" : "Will exit after break"
-            return
-        }
         if page == .clock {
             page = .apps
             return
@@ -136,7 +121,8 @@ struct FlipPhoneScreen: View {
         case .ok, .softLeft, .call:
             activate()
         case .end:
-            if state.phase == .focus { page = .clock }
+            // The red END key ends the session, after a confirmation.
+            if state.phase == .focus { confirmEnd = true }
         case .digit(let char):
             switch char {
             case "*": backlight.toggle()
@@ -161,10 +147,7 @@ private struct LcdContent: View {
     let toast: String?
     let now: Date
 
-    private var remaining: UInt64 { state.remainingMs(now: now) }
-    private var progress: CGFloat {
-        state.phaseDurationMs > 0 ? 1 - CGFloat(remaining) / CGFloat(state.phaseDurationMs) : 0
-    }
+    private var elapsed: Int { state.elapsedSeconds(now: now) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -174,12 +157,10 @@ private struct LcdContent: View {
             Spacer().frame(height: 6)
 
             Group {
-                if state.phase == .breakTime {
-                    BreakPage(state: state, remaining: remaining, progress: progress, selected: selected)
-                } else if page == .clock {
-                    ClockPage(state: state, remaining: remaining, progress: progress)
+                if page == .clock {
+                    ClockPage(elapsed: elapsed)
                 } else {
-                    AppsPage(state: state, remaining: remaining, progress: progress, apps: apps, selected: selected)
+                    AppsPage(elapsed: elapsed, apps: apps, selected: selected)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -210,28 +191,30 @@ private struct LcdContent: View {
     }
 
     private var softLabels: (String, String) {
-        if state.phase == .breakTime { return ("Choose", "") }
         if page == .clock { return ("Apps", "Apps") }
         return ("Open", "Clock")
     }
 }
 
 private struct AppsPage: View {
-    let state: SessionState
-    let remaining: UInt64
-    let progress: CGFloat
+    let elapsed: Int
     let apps: [CatalogApp]
     let selected: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("FOCUS #\(state.cycle)").font(lcdFont(14, bold: true)).foregroundStyle(Palette.lcdInk)
+                Text("FOCUSING").font(lcdFont(14, bold: true)).foregroundStyle(Palette.lcdInk)
                 Spacer()
-                Text(formatCountdown(remaining)).font(lcdFont(20, bold: true)).foregroundStyle(Palette.lcdInk)
+                Text(formatElapsed(elapsed)).font(lcdFont(20, bold: true)).foregroundStyle(Palette.lcdInk)
             }
             Spacer().frame(height: 4)
-            LcdProgress(progress: progress)
+            // Sweeps across once a minute, so the screen shows the time moving.
+            LcdProgress(progress: CGFloat(elapsed % 60) / 60)
+            Spacer().frame(height: 4)
+            Text("+\(formatPoints(Config.earnings(seconds: elapsed).points)) PTS SO FAR")
+                .font(lcdFont(12, bold: true))
+                .foregroundStyle(Palette.lcdMid)
             Spacer().frame(height: 8)
             Text("ALLOWED APPS").font(lcdFont(11, bold: true)).foregroundStyle(Palette.lcdMid)
             Spacer().frame(height: 2)
@@ -260,49 +243,25 @@ private struct AppsPage: View {
 }
 
 private struct ClockPage: View {
-    let state: SessionState
-    let remaining: UInt64
-    let progress: CGFloat
+    let elapsed: Int
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            Text("FOCUS BLOCK \(state.cycle)").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdInk)
-            Text(formatCountdown(remaining)).font(lcdFont(54, bold: true)).foregroundStyle(Palette.lcdInk)
-            Text("REMAINING").font(lcdFont(12)).foregroundStyle(Palette.lcdInk)
+            Text("FOCUSED FOR").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdInk)
+            Text(formatElapsed(elapsed))
+                .font(lcdFont(54, bold: true))
+                .foregroundStyle(Palette.lcdInk)
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+            Text("+\(formatPoints(Config.earnings(seconds: elapsed).points)) PTS").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdMid)
             Spacer().frame(height: 10)
-            LcdProgress(progress: progress)
+            LcdProgress(progress: CGFloat(elapsed % 60) / 60)
             Spacer().frame(height: 10)
             Text("PHONE LOCKED").font(lcdFont(13, bold: true)).foregroundStyle(Palette.lcdInk)
             Spacer()
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-private struct BreakPage: View {
-    let state: SessionState
-    let remaining: UInt64
-    let progress: CGFloat
-    let selected: Int
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("BREAK").font(lcdFont(18, bold: true)).foregroundStyle(Palette.lcdInk)
-                Spacer()
-                Text(formatCountdown(remaining)).font(lcdFont(24, bold: true)).foregroundStyle(Palette.lcdInk)
-            }
-            Spacer().frame(height: 4)
-            LcdProgress(progress: progress)
-            Spacer().frame(height: 8)
-            Text("Phone unlocked. Stretch, drink water.").font(lcdFont(12)).foregroundStyle(Palette.lcdInk)
-            Spacer().frame(height: 10)
-            Text("AFTER THE BREAK:").font(lcdFont(11, bold: true)).foregroundStyle(Palette.lcdMid)
-            Spacer().frame(height: 2)
-            MenuRow(prefix: state.continueAfterBreak ? "(*)" : "( )", label: "Continue focus", highlighted: selected == 0)
-            MenuRow(prefix: state.continueAfterBreak ? "( )" : "(*)", label: "Exit session", highlighted: selected == 1)
-        }
     }
 }
 
@@ -330,17 +289,28 @@ private struct MenuRow: View {
 
 // MARK: - Shell
 
+/// The top half. Its outer edges are the display's, so only the corners at the hinge are rounded.
 private struct Lid<Content: View>: View {
     var backlight: Bool
+    /// The display's top safe area. On a phone with a Dynamic Island or notch, that is the earpiece.
+    var topInset: CGFloat
     @ViewBuilder var content: () -> Content
+
+    private var shape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 14, bottomTrailingRadius: 14, topTrailingRadius: 0)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(Palette.shellDark)
-                .frame(width: 70, height: 7)
-                .padding(.top, 6)
-                .padding(.bottom, 8)
+            if topInset > 24 {
+                Spacer().frame(height: topInset - 4)
+            } else {
+                Capsule()
+                    .fill(Palette.shellDark)
+                    .frame(width: 70, height: 7)
+                    .padding(.top, max(6, topInset))
+                    .padding(.bottom, 8)
+            }
             LcdPanel(backlight: backlight, fillHeight: true) {
                 content()
             }
@@ -350,20 +320,12 @@ private struct Lid<Content: View>: View {
                 .foregroundStyle(Palette.shellMid)
                 .padding(.top, 6)
         }
-        .padding(10)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Palette.pearlBrush)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 34, bottomLeadingRadius: 10, bottomTrailingRadius: 10, topTrailingRadius: 34))
-        .overlay(
-            UnevenRoundedRectangle(topLeadingRadius: 34, bottomLeadingRadius: 10, bottomTrailingRadius: 10, topTrailingRadius: 34)
-                .stroke(Color.white, lineWidth: 1.5)
-        )
-        .overlay(alignment: .top) {
-            LinearGradient(colors: [Color.white.opacity(0.9), .clear], startPoint: .top, endPoint: .bottom)
-                .frame(height: 28)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 34, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 34))
-                .allowsHitTesting(false)
-        }
+        .clipShape(shape)
+        .overlay(shape.stroke(Color.white, lineWidth: 1.5))
     }
 }
 
@@ -375,9 +337,15 @@ private struct Hinge: View {
     }
 }
 
+/// The bottom half, running down to the display's bottom edge.
 private struct Base: View {
     var onKey: (Key) -> Void
-    var onUnlock: () -> Void
+    /// The display's bottom safe area (the home indicator), kept clear of keys.
+    var bottomInset: CGFloat
+
+    private var shape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(topLeadingRadius: 14, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 14)
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -410,28 +378,14 @@ private struct Base: View {
                 }
                 .frame(maxHeight: .infinity)
             }
-
-            HStack {
-                Circle().fill(Palette.shellDark).frame(width: 6, height: 6)
-                Spacer()
-                Text("UNLOCK")
-                    .font(lcdFont(9, bold: true))
-                    .foregroundStyle(Palette.endRed)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Palette.endRed, lineWidth: 1))
-                    .onTapGesture(perform: onUnlock)
-            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, max(14, bottomInset + 6))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Palette.pearlBrush)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 10, bottomLeadingRadius: 40, bottomTrailingRadius: 40, topTrailingRadius: 10))
-        .overlay(
-            UnevenRoundedRectangle(topLeadingRadius: 10, bottomLeadingRadius: 40, bottomTrailingRadius: 40, topTrailingRadius: 10)
-                .stroke(Color.white, lineWidth: 1.5)
-        )
+        .clipShape(shape)
+        .overlay(shape.stroke(Color.white, lineWidth: 1.5))
     }
 }
 
@@ -561,7 +515,7 @@ private struct BounceBackOverlay: View {
 
     var body: some View {
         ZStack {
-            Palette.shellDark.ignoresSafeArea()
+            WiiBackdrop()
             Text("FOCUSFLIP\n\nPHONE LOCKED\n\nThis app is not on\nyour whitelist.\n\n[ TAP TO RETURN ]")
                 .font(lcdFont(20, bold: true))
                 .foregroundStyle(Palette.lcdInk)
@@ -576,6 +530,15 @@ private struct BounceBackOverlay: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
     }
+}
+
+/// The key window's safe area. Read from the window because the phone ignores the
+/// safe area, which would make its own GeometryProxy report zero insets.
+@MainActor
+private func windowSafeArea() -> UIEdgeInsets {
+    UIApplication.shared.connectedScenes
+        .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+        .first?.safeAreaInsets ?? .zero
 }
 
 private extension Array {

@@ -7,6 +7,7 @@ final class AppModel: ObservableObject {
     let sessionStore: SessionStore
     let auth: AuthRepository
     let sync: SyncRepository
+    let groups: GroupsRepository
     let whitelist: WhitelistStore
     let sessions: SessionManager
     let tones = TonePlayer()
@@ -18,7 +19,8 @@ final class AppModel: ObservableObject {
         let store = SessionStore()
         sessionStore = store
         auth = AuthRepository(http: http, store: store)
-        sync = SyncRepository(http: http, sessions: store)
+        sync = SyncRepository(http: http, auth: auth)
+        groups = GroupsRepository(http: http, auth: auth)
         whitelist = WhitelistStore()
         sessions = SessionManager(sync: sync)
 
@@ -28,13 +30,15 @@ final class AppModel: ObservableObject {
         sessions.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
     }
 
+    func logOut() async {
+        await auth.logout()
+        sync.clearAccount()
+    }
+
     func bootstrap() async {
         _ = await auth.refreshSession()
         if sessionStore.session != nil {
             await sync.syncNow()
-        }
-        if sessions.state.phase != .idle {
-            sessions.startTimer()
         }
     }
 }

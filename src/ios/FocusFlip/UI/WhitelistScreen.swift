@@ -1,7 +1,9 @@
 import SwiftUI
 import UIKit
 
-/// Pick which catalog apps may be opened from the lock screen. Changes save immediately.
+/// Study apps: the apps that can be opened from the lock screen. Styled after the desktop's
+/// Study apps panel (src/frontend/views/components/StudyApps.tsx) on its home screen
+/// backdrop. Ticking an app saves straight away.
 struct WhitelistScreen: View {
     @EnvironmentObject private var model: AppModel
     let onBack: () -> Void
@@ -16,58 +18,127 @@ struct WhitelistScreen: View {
     }
 
     var body: some View {
-        AeroBackground {
-            VStack(alignment: .leading, spacing: 0) {
+        ZStack {
+            WiiBackdrop()
+            VStack(spacing: 14) {
                 HStack {
-                    RetroLink(text: "< BACK", action: onBack)
-                    Spacer()
-                    Text("\(model.whitelist.schemes.count) SELECTED")
-                        .font(lcdFont(13, bold: true))
-                        .foregroundStyle(Palette.onSky)
-                }
-                .padding(.bottom, 8)
-
-                LcdPanel {
-                    Text("WHITELIST").font(lcdFont(22, bold: true)).foregroundStyle(Palette.lcdInk)
-                    Text("Checked apps can be opened while locked.")
-                        .font(lcdFont(12))
-                        .foregroundStyle(Palette.lcdInk)
-                    Spacer().frame(height: 8)
-                    ZStack(alignment: .leading) {
-                        if query.isEmpty {
-                            Text("Search apps...")
-                                .font(lcdFont(14))
-                                .foregroundStyle(Palette.lcdMid)
-                        }
-                        TextField("", text: $query)
-                            .font(lcdFont(14, bold: true))
-                            .foregroundStyle(Palette.lcdInk)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                    Button(action: onBack) {
+                        Text("‹ Home")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Wii.ink)
+                            .padding(.horizontal, 16)
+                            .frame(height: 36)
+                            .wiiPill()
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Palette.lcdMid, lineWidth: 2))
+                    .buttonStyle(PressScale())
+                    Spacer()
+                    Text("\(model.whitelist.schemes.count) chosen")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Wii.cyan700)
+                        .padding(.horizontal, 12)
+                        .frame(height: 30)
+                        .background(Wii.cyan100)
+                        .clipShape(Capsule())
                 }
 
-                Spacer().frame(height: 12)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Study apps")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Wii.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 8)
+                        .overlay(alignment: .bottom) { Wii.lineSoft.frame(height: 2) }
 
-                ScrollView {
-                    LazyVStack(spacing: 6) {
-                        ForEach(visible) { app in
-                            let checked = model.whitelist.contains(app.scheme)
-                            AppRow(app: app, checked: checked) {
-                                model.whitelist.set(app.scheme, allowed: !checked)
+                    Text("Tick the apps you study with. During a Focus session they open from the flip phone's keypad; everything else stays locked.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Wii.inkMuted)
+
+                    SearchField(text: $query)
+
+                    ScrollView {
+                        LazyVStack(spacing: 6) {
+                            ForEach(visible) { app in
+                                let checked = model.whitelist.contains(app.scheme)
+                                AppRow(app: app, checked: checked) {
+                                    model.whitelist.set(app.scheme, allowed: !checked)
+                                }
+                            }
+                            if visible.isEmpty {
+                                Text("No apps match.")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Wii.inkMuted)
+                                    .padding(.top, 8)
                             }
                         }
                     }
+                    .scrollDismissesKeyboard(.immediately)
+
+                    Text("iPhone apps can't be listed, so these are the apps FocusFlip knows how to open. To keep you in FocusFlip, turn on Guided Access under Settings > Accessibility.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Wii.inkMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 10)
+                        .overlay(alignment: .top) { Wii.lineSoft.frame(height: 2) }
+
+                    HStack {
+                        Spacer()
+                        Button(action: onBack) {
+                            Text("Done")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .shadow(color: Color(red: 0, green: 0.31, blue: 0.47, opacity: 0.35), radius: 0.5, y: 1)
+                                .padding(.horizontal, 28)
+                                .frame(height: 42)
+                                .background(
+                                    LinearGradient(
+                                        stops: [
+                                            .init(color: Color(hex: 0x8FE2FF), location: 0), .init(color: Wii.cyan500, location: 0.5),
+                                            .init(color: Color(hex: 0x13A7E0), location: 0.51), .init(color: Color(hex: 0x4CC8F2), location: 1),
+                                        ],
+                                        startPoint: .top, endPoint: .bottom
+                                    )
+                                )
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(Wii.cyan700, lineWidth: 2))
+                        }
+                        .buttonStyle(PressScale())
+                    }
                 }
+                .padding(16)
+                .background(Wii.tile)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Wii.lineSoft, lineWidth: 2))
+                .shadow(color: Color(red: 40 / 255, green: 60 / 255, blue: 80 / 255, opacity: 0.16), radius: 12, y: 8)
             }
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
     }
 }
 
+/// The desktop's text box: white, grey border, cyan ring while typing.
+private struct SearchField: View {
+    @Binding var text: String
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        TextField("Search apps", text: $text)
+            .font(.system(size: 15))
+            .foregroundStyle(Wii.ink)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .focused($focused)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(focused ? Wii.cyan500 : Wii.line, lineWidth: 2))
+            .background(RoundedRectangle(cornerRadius: 10).stroke(Wii.cyan500.opacity(focused ? 0.25 : 0), lineWidth: 6))
+    }
+}
+
+/// A row like the desktop's: white with a soft border, turning pale cyan once ticked.
 private struct AppRow: View {
     let app: CatalogApp
     let checked: Bool
@@ -76,38 +147,34 @@ private struct AppRow: View {
     var body: some View {
         Button(action: onToggle) {
             HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(checked ? Palette.lcdMid : Palette.silverDark)
-                        .frame(width: 36, height: 36)
-                    Text(String(app.label.prefix(1)))
-                        .font(lcdFont(16, bold: true))
-                        .foregroundStyle(.white)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(app.label)
-                        .font(lcdFont(15, bold: true))
-                        .foregroundStyle(checked ? Palette.lcdInk : Palette.onSky)
-                        .lineLimit(1)
-                    Text(app.scheme)
-                        .font(lcdFont(10))
-                        .foregroundStyle(checked ? Palette.lcdMid : Palette.onSkyMuted)
-                        .lineLimit(1)
-                }
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(checked ? Wii.cyan500 : Color.white)
+                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(checked ? Wii.cyan700 : Wii.line, lineWidth: 1.5))
+                    .overlay(
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .opacity(checked ? 1 : 0)
+                    )
+                    .frame(width: 20, height: 20)
+                Text(app.label)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Wii.ink)
+                    .lineLimit(1)
                 Spacer()
-                Text(checked ? "[X]" : "[ ]")
-                    .font(lcdFont(16, bold: true))
-                    .foregroundStyle(checked ? Palette.lcdInk : Palette.onSky)
+                Text(app.scheme)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Wii.inkMuted)
+                    .lineLimit(1)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(checked ? Palette.lcd : Palette.glass)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(checked ? Palette.lcdMid : Palette.glassBorder, lineWidth: 1)
-            )
+            .background(checked ? Wii.cyan100 : Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(checked ? Wii.cyan300 : Wii.lineSoft, lineWidth: 2))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityValue(checked ? "Chosen" : "Not chosen")
     }
 }

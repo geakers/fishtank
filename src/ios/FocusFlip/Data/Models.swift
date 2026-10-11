@@ -19,19 +19,15 @@ enum AuthResult {
 }
 
 enum Phase: String, Codable {
-    case idle, focus, breakTime
+    case idle, focus
 }
 
 struct SessionState: Equatable {
     var phase: Phase = .idle
-    var phaseStartedAt: TimeInterval = 0
-    var phaseEndsAt: TimeInterval = 0
-    var continueAfterBreak: Bool = true
-    var cycle: Int = 0
+    var startedAt: TimeInterval = 0
 
-    var phaseDurationMs: UInt64 { UInt64(max(0, (phaseEndsAt - phaseStartedAt) * 1000)) }
-    func remainingMs(now: Date = Date()) -> UInt64 {
-        UInt64(max(0, phaseEndsAt - now.timeIntervalSince1970) * 1000)
+    func elapsedSeconds(now: Date = Date()) -> Int {
+        phase == .idle ? 0 : Int(max(0, now.timeIntervalSince1970 - startedAt))
     }
 }
 
@@ -42,6 +38,12 @@ struct FocusRecord: Codable, Identifiable, Equatable {
     var plannedMinutes: Int
     var completed: Bool
     var synced: Bool = false
+
+    func markedSynced() -> FocusRecord {
+        var copy = self
+        copy.synced = true
+        return copy
+    }
 }
 
 struct SyncStatus: Equatable {
@@ -51,6 +53,10 @@ struct SyncStatus: Equatable {
     var todaySessions: Int = 0
     var accountFocusMs: UInt64 = 0
     var accountPoints: Double = 0
+    /// The username on the account's profile, once a sync has read it.
+    var username: String?
+    /// false when the points are more than the minutes studied can account for.
+    var pointsValid: Bool = true
     var isSyncing: Bool = false
     var lastError: String?
 }
@@ -59,4 +65,39 @@ struct CatalogApp: Identifiable, Hashable {
     var id: String { scheme }
     var label: String
     var scheme: String
+}
+
+/// A group study session (a row of study_groups). The code says group because session
+/// already means the login session and the focus timer, as on the desktop.
+struct StudyGroup: Decodable, Identifiable, Equatable {
+    var id: Int
+    var name: String
+    var leaderId: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, name
+        case leaderId = "leader_id"
+    }
+}
+
+/// Someone in a group, from group_roster. role is "leader" or "member".
+struct GroupMember: Decodable, Equatable {
+    var username: String
+    var role: String
+}
+
+/// An invite the logged-in user hasn't answered yet, from my_invites.
+struct GroupInvite: Decodable, Identifiable, Equatable {
+    var groupId: Int
+    var groupName: String
+    /// The leader's username.
+    var leader: String
+
+    var id: Int { groupId }
+
+    enum CodingKeys: String, CodingKey {
+        case groupId = "group_id"
+        case groupName = "group_name"
+        case leader
+    }
 }

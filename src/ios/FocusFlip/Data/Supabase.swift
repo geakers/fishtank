@@ -1,10 +1,16 @@
 import Foundation
 
 enum SupabaseError: LocalizedError {
-    case message(Int, String)
+    /// HTTP status, readable message and PostgREST's error code (e.g. PGRST202) when it sent one.
+    case message(Int, String, code: String? = nil)
     var errorDescription: String? {
         switch self {
-        case .message(_, let text): return text
+        case .message(_, let text, _): return text
+        }
+    }
+    var code: String? {
+        switch self {
+        case .message(_, _, let code): return code
         }
     }
 }
@@ -46,7 +52,7 @@ final class SupabaseClient {
                 ?? (json["error_description"] as? String)
                 ?? (json["message"] as? String)
                 ?? "Request failed (\(status))."
-            throw SupabaseError.message(status, friendly(message))
+            throw SupabaseError.message(status, friendly(message), code: json["code"] as? String)
         }
         return data
     }
@@ -60,9 +66,13 @@ final class SupabaseClient {
     }
 }
 
+@MainActor
 final class AuthRepository {
     private let http: SupabaseClient
     let store: SessionStore
+    /// The refresh in flight. Supabase refresh tokens work once, so two refreshes at the
+    /// same time would make the second fail and log the user out.
+    private var refreshing: Task<Bool, Never>?
 
     init(http: SupabaseClient, store: SessionStore) {
         self.http = http
@@ -99,7 +109,24 @@ final class AuthRepository {
         }
     }
 
+    /// The logged-in user's access token, renewed first if it is about to expire.
+    /// nil when nobody is logged in or the session has ended.
+    func accessToken() async -> String? {
+        guard await refreshSession() else { return nil }
+        return store.session?.accessToken
+    }
+
+    /// Renews the session when it is within 5 minutes of expiring. Returns false only
+    /// when nobody is logged in or Supabase ended the session; being offline keeps it.
     func refreshSession() async -> Bool {
+        if let refreshing { return await refreshing.value }
+        let task = Task { await renew() }
+        refreshing = task
+        defer { refreshing = nil }
+        return await task.value
+    }
+
+    private func renew() async -> Bool {
         guard let current = store.session else { return false }
         guard let refresh = current.refreshToken else {
             store.clear()
@@ -114,7 +141,7 @@ final class AuthRepository {
             )
             _ = try saveSession(data)
             return true
-        } catch let SupabaseError.message(status, _) where (400...499).contains(status) {
+        } catch let SupabaseError.message(status, _, _) where (400...499).contains(status) {
             store.clear()
             return false
         } catch {
@@ -126,7 +153,8 @@ final class AuthRepository {
         let token = store.session?.accessToken
         store.clear()
         if let token {
-            _ = try? await http.request(method: "POST", path: "/auth/v1/logout", bearer: token, body: [:])
+            // scope=local, as on the desktop: sessions on the user's other devices stay logged in.
+            _ = try? await http.request(method: "POST", path: "/auth/v1/logout?scope=local", bearer: token, body: [:])
         }
     }
 
@@ -157,21 +185,29 @@ final class AuthRepository {
     }
 }
 
+
+/// Keeps focus blocks on the device until they are added to the account, and mirrors the
+/// account's profile row (username, points, minutes studied) for the home screen.
+@MainActor
 final class SyncRepository: ObservableObject {
     @Published private(set) var status = SyncStatus()
 
     private let http: SupabaseClient
-    private let sessions: SessionStore
+    private let auth: AuthRepository
     private let defaults = UserDefaults.standard
     private let recordsKey = "focusflip_records"
     private let lastSyncKey = "focusflip_last_sync"
     private let accountMsKey = "focusflip_account_ms"
     private let accountPointsKey = "focusflip_account_points"
-    private let unlockCost = 100.0
+    private let usernameKey = "focusflip_username"
+    private let pointsValidKey = "focusflip_points_valid"
+    /// The sync running now. Each sync waits for the one before it, so two syncs never
+    /// add the same records to the account twice.
+    private var running: Task<Void, Never>?
 
-    init(http: SupabaseClient, sessions: SessionStore) {
+    init(http: SupabaseClient, auth: AuthRepository) {
         self.http = http
-        self.sessions = sessions
+        self.auth = auth
         status = buildStatus()
     }
 
@@ -184,93 +220,99 @@ final class SyncRepository: ObservableObject {
     }
 
     func syncNow() async {
-        await MainActor.run { status = buildStatus(isSyncing: true) }
+        let previous = running
+        let task = Task {
+            await previous?.value
+            await performSync()
+        }
+        running = task
+        await task.value
+    }
+
+    /// Forgets the cached account so the next user doesn't see it. Unsynced records stay.
+    func clearAccount() {
+        for key in [accountMsKey, accountPointsKey, usernameKey, pointsValidKey, lastSyncKey] {
+            defaults.removeObject(forKey: key)
+        }
+        status = buildStatus()
+    }
+
+    private func performSync() async {
+        status = buildStatus(isSyncing: true)
         do {
-            guard let token = sessions.session?.accessToken, let uid = sessions.session?.user.id else {
+            guard let token = await auth.accessToken(), let uid = auth.store.session?.user.id else {
                 throw SupabaseError.message(401, "Not logged in.")
             }
-            let profile = try await fetchProfile(uid: uid, token: token)
+            var profile = try await fetchProfile(uid: uid, token: token)
             let pending = load().filter { !$0.synced }
-            let added = pending.reduce(0) { $0 + studiedMinutes($1) }
-            let nextMinutes = added > 0
-                ? try await writeMinutesStudied(uid: uid, token: token, value: profile.minutes + added)
-                : profile.minutes
-            defaults.set(nextMinutes * 60_000, forKey: accountMsKey)
-            defaults.set(profile.points, forKey: accountPointsKey)
+            // Every session counts for the time it actually ran.
+            let earned = pending.map { Config.earnings(seconds: Int(max(0, $0.endedAt - $0.startedAt))) }
+            let addedMinutes = earned.reduce(0) { $0 + $1.minutes }
+            let pointsDelta = earned.reduce(0) { $0 + $1.points }
+
+            if addedMinutes > 0 || pointsDelta != 0 {
+                // One PATCH, so minutes and points are saved together or not at all.
+                // Rounded so repeated additions don't pick up floating point noise.
+                profile = try await writeProfile(uid: uid, token: token, minutes: profile.minutes + addedMinutes,
+                                                 points: ((profile.points + pointsDelta) * 10_000).rounded() / 10_000)
+            }
             if !pending.isEmpty {
                 let ids = Set(pending.map(\.id))
-                save(load().map { ids.contains($0.id) ? FocusRecord(id: $0.id, startedAt: $0.startedAt, endedAt: $0.endedAt, plannedMinutes: $0.plannedMinutes, completed: $0.completed, synced: true) : $0 })
+                save(load().map { ids.contains($0.id) ? $0.markedSynced() : $0 })
             }
+            defaults.set(profile.minutes * 60_000, forKey: accountMsKey)
+            defaults.set(profile.points, forKey: accountPointsKey)
+            if let username = profile.username { defaults.set(username, forKey: usernameKey) }
+            // Same check as verifyPoints on the desktop: points can't outrun study time.
+            defaults.set(profile.points <= Double(profile.minutes) * Config.pointsPerMinute + 0.01, forKey: pointsValidKey)
             defaults.set(Date().timeIntervalSince1970, forKey: lastSyncKey)
-            await MainActor.run { status = buildStatus() }
+            status = buildStatus()
         } catch {
-            await MainActor.run { status = buildStatus(error: error.localizedDescription) }
+            status = buildStatus(error: error.localizedDescription)
         }
     }
 
-    func spendUnlockPoints() async {
-        let cached = defaults.double(forKey: accountPointsKey)
-        let current: Double
-        if let token = sessions.session?.accessToken, let uid = sessions.session?.user.id {
-            current = (try? await fetchProfile(uid: uid, token: token).points) ?? cached
-            let next = current - unlockCost
-            _ = try? await writePoints(uid: uid, token: token, value: next)
-            defaults.set(next, forKey: accountPointsKey)
-        } else {
-            defaults.set(cached - unlockCost, forKey: accountPointsKey)
-        }
-        await MainActor.run { status = buildStatus() }
-    }
-
-    private func fetchProfile(uid: String, token: String) async throws -> (minutes: Int, points: Double) {
-        let q = uid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? uid
-        let data = try await http.request(method: "GET", path: "/rest/v1/profiles?uid=eq.\(q)&select=minutes_studied,points&limit=1", bearer: token)
+    private func fetchProfile(uid: String, token: String) async throws -> Profile {
+        let data = try await http.request(
+            method: "GET",
+            path: "/rest/v1/profiles?uid=eq.\(encoded(uid))&select=username,minutes_studied,points&limit=1",
+            bearer: token
+        )
         let rows = (try JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
-        let cachedMinutes = defaults.integer(forKey: accountMsKey) / 60_000
-        let cachedPoints = defaults.double(forKey: accountPointsKey)
-        guard let first = rows.first else { return (cachedMinutes, cachedPoints) }
-        return (intField(first, "minutes_studied", cachedMinutes), doubleField(first, "points", cachedPoints))
+        guard let row = rows.first else { throw SupabaseError.message(404, "No profile found.") }
+        return profile(row)
     }
 
-    private func writeMinutesStudied(uid: String, token: String, value: Int) async throws -> Int {
-        let q = uid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? uid
+    private func writeProfile(uid: String, token: String, minutes: Int, points: Double) async throws -> Profile {
         let data = try await http.request(
             method: "PATCH",
-            path: "/rest/v1/profiles?uid=eq.\(q)",
+            path: "/rest/v1/profiles?uid=eq.\(encoded(uid))&select=username,minutes_studied,points",
             bearer: token,
-            body: ["minutes_studied": value],
+            body: ["minutes_studied": minutes, "points": points],
             prefer: "return=representation"
         )
         let rows = (try JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
-        if let first = rows.first { return intField(first, "minutes_studied", value) }
-        return value
+        // No row back means row level security refused the change.
+        guard let row = rows.first else { throw SupabaseError.message(403, "No profile was updated.") }
+        return profile(row)
     }
 
-    private func writePoints(uid: String, token: String, value: Double) async throws -> Double {
-        let q = uid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? uid
-        let data = try await http.request(
-            method: "PATCH",
-            path: "/rest/v1/profiles?uid=eq.\(q)",
-            bearer: token,
-            body: ["points": value],
-            prefer: "return=representation"
+    private struct Profile {
+        var username: String?
+        var minutes: Int
+        var points: Double
+    }
+
+    private func profile(_ row: [String: Any]) -> Profile {
+        Profile(
+            username: row["username"] as? String,
+            minutes: (row["minutes_studied"] as? NSNumber)?.intValue ?? 0,
+            points: (row["points"] as? NSNumber)?.doubleValue ?? 0
         )
-        let rows = (try JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
-        if let first = rows.first { return doubleField(first, "points", value) }
-        return value
     }
 
-    private func intField(_ row: [String: Any], _ key: String, _ fallback: Int) -> Int {
-        (row[key] as? NSNumber)?.intValue ?? fallback
-    }
-
-    private func doubleField(_ row: [String: Any], _ key: String, _ fallback: Double) -> Double {
-        (row[key] as? NSNumber)?.doubleValue ?? fallback
-    }
-
-    /// One finished 45-minute focus block = +45. Breaks and aborted sessions add nothing.
-    private func studiedMinutes(_ record: FocusRecord) -> Int {
-        record.completed ? max(0, record.plannedMinutes) : 0
+    private func encoded(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? value
     }
 
     private func load() -> [FocusRecord] {
@@ -294,8 +336,10 @@ final class SyncRepository: ObservableObject {
             pendingCount: records.filter { !$0.synced }.count,
             todayFocusMinutes: today.reduce(0) { $0 + Int(max(0, $1.endedAt - $1.startedAt) / 60) },
             todaySessions: today.filter(\.completed).count,
-            accountFocusMs: UInt64(defaults.integer(forKey: accountMsKey)),
+            accountFocusMs: UInt64(max(0, defaults.integer(forKey: accountMsKey))),
             accountPoints: defaults.double(forKey: accountPointsKey),
+            username: defaults.string(forKey: usernameKey),
+            pointsValid: defaults.object(forKey: pointsValidKey) as? Bool ?? true,
             isSyncing: isSyncing,
             lastError: error
         )
