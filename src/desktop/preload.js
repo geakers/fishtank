@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('fishtank', {
   createGroup: (name) => ipcRenderer.invoke('create-group', name),
   listGroups: () => ipcRenderer.invoke('list-groups'),
   deleteGroup: (groupId) => ipcRenderer.invoke('delete-group', groupId),
+  leaveGroup: (groupId) => ipcRenderer.invoke('leave-group', groupId),
   addMember: (groupId, username) => ipcRenderer.invoke('add-member', groupId, username),
   groupRoster: (groupId) => ipcRenderer.invoke('group-roster', groupId),
   searchUsernames: (query) => ipcRenderer.invoke('search-usernames', query),

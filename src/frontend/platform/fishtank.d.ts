@@ -152,6 +152,9 @@ declare global {
     // Deletes the group, its members and its invites. Rejects unless the
     // logged-in user leads the group.
     deleteGroup(groupId: number): Promise<void>;
+    // Takes the logged-in user out of the group. Rejects if they lead it or
+    // aren't in it.
+    leaveGroup(groupId: number): Promise<void>;
     // Adds the user with this username to the group. Rejects unless the
     // logged-in user leads the group, the username exists and isn't the leader.
     addMember(groupId: number, username: string): Promise<void>;
