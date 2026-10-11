@@ -9,6 +9,7 @@ import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
 import { StudyApps } from '../components/StudyApps';
 import { StudyGroups } from '../components/StudyGroups';
+import { StudySkills } from '../components/StudySkills';
 import { Toast } from '../components/Toast';
 
 export interface HomeScreenProps {
@@ -17,6 +18,10 @@ export interface HomeScreenProps {
 
 // Layout, after the Wii menu:
 //   top bar - brand on the left; points and profile menu on the right
+//   main    - three columns. Left: Groups | Notes tabs switching between the study groups
+//             and study notes panels. Middle: the user's tank on its cabinet. Right: the
+//             Study Skills panel (Claude), then the Focus button (study mode) with
+//             Study apps and Strict lock-in under it (stats live in the profile menu)
 //   main    - the user's tank on its cabinet on the left; on the right, Groups | Notes tabs
 //             switching between the study groups and study notes panels, then the Focus button
 //             (study mode) with Study apps and Strict lock-in under it (stats live in the
@@ -73,19 +78,7 @@ export function HomeScreen({ app }: HomeScreenProps) {
       </header>
 
       <main className="home__main">
-        <section className="home__tank-panel" aria-label="Your aquarium">
-          <Aquarium fish={app.tank} fishSize={96} className="home__tank" />
-          {app.tank.length === 0 ? (
-            <div className="home__tank-empty">
-              <p>Your tank is empty.</p>
-              <AeroButton onClick={openShop}>Visit the Fish Shop</AeroButton>
-            </div>
-          ) : null}
-          {/* The same cabinet as in focus mode; it runs on down behind the dock. */}
-          <div className="tank-stand home__stand" aria-hidden="true" />
-        </section>
-
-        <aside className="home__side">
+        <aside className="home__left">
           <div className="home__side-panel">
             <div className="segmented home__tabs" role="tablist" aria-label="Study groups and notes">
               {SIDE_TABS.map((tab) => (
@@ -119,6 +112,22 @@ export function HomeScreen({ app }: HomeScreenProps) {
               onUpload={() => setComposer({ groupId: null })}
             />
           </div>
+        </aside>
+
+        <section className="home__tank-panel" aria-label="Your aquarium">
+          <Aquarium fish={app.tank} fishSize={96} className="home__tank" />
+          {app.tank.length === 0 ? (
+            <div className="home__tank-empty">
+              <p>Your tank is empty.</p>
+              <AeroButton onClick={openShop}>Visit the Fish Shop</AeroButton>
+            </div>
+          ) : null}
+          {/* The same cabinet as in focus mode; it runs on down behind the dock. */}
+          <div className="tank-stand home__stand" aria-hidden="true" />
+        </section>
+
+        <aside className="home__side">
+          <StudySkills className="home__panel home__skills" />
           <div className="home__focus">
             <AeroButton variant="hero" onClick={() => setCommitting('study')}>
               Focus

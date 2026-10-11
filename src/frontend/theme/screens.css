@@ -42,9 +42,10 @@
   right: var(--aero-space-6);
 }
 
+/* Groups and notes | the tank | Study Skills and the Focus buttons. */
 .home__main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: 280px minmax(0, 1fr) 280px;
   gap: var(--aero-space-8);
   min-height: 0;
   padding: var(--aero-space-6) var(--aero-space-8) 0;
@@ -95,6 +96,15 @@
   margin-top: var(--aero-space-2);
 }
 
+/* The left column: the Groups | Notes tabs and their panels. */
+.home__left {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: var(--aero-space-6);
+}
+
+/* The right column: Study Skills above the Focus buttons. */
 .home__side {
   display: flex;
   flex-direction: column;
@@ -105,7 +115,7 @@
   padding-bottom: 56px;
 }
 
-/* Fills the column above the Focus button. */
+/* Fills its column (above the Focus button, on the right). */
 .home__panel {
   flex: 1;
   min-height: 0;
@@ -122,6 +132,182 @@
 
 .home__tabs {
   align-self: center;
+}
+
+/* ---------- Study Skills panel ---------- */
+
+.skills {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-3);
+}
+
+.skills__back {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--aero-line);
+  border-radius: 50%;
+  background: var(--aero-gradient-button);
+  color: var(--aero-ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.skills__back:hover {
+  border-color: var(--aero-cyan-500);
+}
+
+.skills__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skills__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--aero-space-2);
+  width: 100%;
+  padding: var(--aero-space-3);
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-white);
+  color: var(--aero-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.skills__option:hover {
+  border-color: var(--aero-cyan-300);
+  background: var(--aero-cyan-100);
+}
+
+.skills__chevron {
+  color: var(--aero-ink-muted);
+  font-size: var(--aero-text-lg);
+  line-height: 1;
+}
+
+/* The text box, the Ask button and the answer, which scrolls. */
+.skills__runner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--aero-space-2);
+  min-height: 0;
+}
+
+/* The "Study group" label over its drop-down. */
+.skills__group {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skills__group .aero-select {
+  width: 100%;
+  border-radius: var(--aero-radius-sm);
+}
+
+/* The list of the user's notes to tick, which scrolls. */
+.skills__notes {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--aero-space-1);
+  min-height: 0;
+}
+
+.skills__note-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-1);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.skills__note {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  padding: 6px var(--aero-space-2);
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-white);
+  font-size: var(--aero-text-sm);
+  cursor: pointer;
+}
+
+.skills__note:has(input:checked) {
+  border-color: var(--aero-cyan-300);
+  background: var(--aero-cyan-100);
+}
+
+.skills__note input {
+  flex-shrink: 0;
+  accent-color: var(--aero-cyan-500);
+}
+
+.skills__note-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skills__runner > .aero-button {
+  flex-shrink: 0;
+}
+
+/* Shown in place of the form while Claude is working. */
+.skills__working {
+  margin: auto;
+  text-align: center;
+}
+
+.skills__again {
+  flex-shrink: 0;
+  min-height: 32px;
+  font-size: var(--aero-text-sm);
+}
+
+.skills__answer .ok-text {
+  margin-bottom: var(--aero-space-2);
+}
+
+.skills__input {
+  flex-shrink: 0;
+  height: 84px;
+  resize: none;
+  line-height: 1.4;
+}
+
+.skills__answer {
+  flex: 1;
+  min-height: 0;
+  padding: var(--aero-space-2) var(--aero-space-3);
+  overflow-y: auto;
+  border: 2px solid var(--aero-line-soft);
+  border-radius: var(--aero-radius-sm);
+  background: var(--aero-white);
+  font-size: var(--aero-text-sm);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
 }
 
 /* The panel of the tab that isn't showing (it stays mounted). */
@@ -1850,21 +2036,57 @@
 
 /* ---------- Narrow windows ---------- */
 
+/* Too narrow for three columns: Study Skills goes, and the Focus buttons move under
+   the groups panel and the tank. */
+@media (max-width: 1040px) {
+  .home__main {
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .home__side {
+    grid-column: 1 / -1;
+    padding-bottom: var(--aero-space-4);
+  }
+  .home__skills {
+    display: none;
+  }
+  .home__left {
+    padding-bottom: 0;
+  }
+  .home__focus {
+    flex-direction: row;
+    justify-content: center;
+  }
+  .aero-button--hero {
+    min-width: 200px;
+    min-height: 56px;
+    font-size: var(--aero-text-lg);
+  }
+  /* The Focus buttons sit under the tank here, so the cabinet can't reach
+     the dock. */
+  .home .home__stand {
+    height: 6vh;
+    min-height: 40px;
+    margin-bottom: 0;
+  }
+}
+
 @media (max-width: 860px) {
   .home__main {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
     overflow-y: auto;
   }
+  .home__left,
   .home__panel,
   .home__side-panel {
     display: none;
   }
-  /* The Focus button stacks under the tank here, so the cabinet can't reach
-     the dock. */
-  .home .home__stand {
-    height: 10vh;
-    min-height: 56px;
-    margin-bottom: 0;
+  .home__side {
+    grid-column: auto;
+  }
+  .home__focus {
+    flex-direction: column;
   }
   .topbar {
     flex-wrap: wrap;

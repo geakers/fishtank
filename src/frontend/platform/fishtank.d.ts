@@ -194,6 +194,15 @@ declare global {
     deleteNote(noteId: string): Promise<void>;
     // Opens a note's file in the default browser or viewer.
     openNoteFile(storagePath: string): Promise<void>;
+    // Runs a study skill with what its form collected: { prompt, groupId } for
+    // 'group-study-plan', { noteIds } (the user's own notes) for
+    // 'critique-notes', text for 'ask-question'. Resolves with Claude's
+    // reply, plus the path of the PDF when the skill made one (it is saved to
+    // Downloads and opened).
+    runStudySkill(
+      skillId: string,
+      input: string | { prompt: string; groupId: number } | { noteIds: string[] },
+    ): Promise<{ text: string; pdfPath?: string }>;
     // Resolves with the logged-in user's fish, oldest first.
     listFish(): Promise<FishtankOwnedFish[]>;
     // Buys a fish: takes the price off the user's saved points and adds the
