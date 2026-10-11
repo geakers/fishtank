@@ -8,7 +8,7 @@ let token = 'dud-access-token';
 // groups.js picks up getAccessToken when it loads, so swap it out first.
 mock.method(session, 'getAccessToken', async () => token);
 const {
-  createGroup, listGroups, deleteGroup, addMember, groupRoster, searchUsernames,
+  createGroup, listGroups, deleteGroup, leaveGroup, addMember, groupRoster, searchUsernames,
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 } = require('../src/desktop/groups');
 
@@ -90,6 +90,36 @@ test('deleteGroup says so when the group was not deleted', async (t) => {
   mockSupabase({ '/rest/v1/study_groups': () => Response.json([]) });
 
   await assert.rejects(deleteGroup(1), /Only the group leader can delete a study group/);
+});
+
+test('leaveGroup calls leave_group with the group', async (t) => {
+  reset(t);
+  const requests = mockSupabase({ '/rest/v1/rpc/leave_group': () => new Response(null, { status: 204 }) });
+
+  await leaveGroup(1);
+
+  assert.equal(requests[0].method, 'POST');
+  assert.deepEqual(requests[0].body, { gid: 1 });
+});
+
+test("leaveGroup passes on Supabase's reason for refusing", async (t) => {
+  reset(t);
+  mockSupabase({
+    '/rest/v1/rpc/leave_group': () =>
+      Response.json({ code: 'P0001', message: "you lead this group, so you can't leave it" }, { status: 400 }),
+  });
+
+  await assert.rejects(leaveGroup(1), { message: "you lead this group, so you can't leave it" });
+});
+
+test("leaveGroup says so when the leave SQL hasn't been run", async (t) => {
+  reset(t);
+  mockSupabase({
+    '/rest/v1/rpc/leave_group': () =>
+      Response.json({ code: 'PGRST202', message: 'Could not find the function public.leave_group' }, { status: 404 }),
+  });
+
+  await assert.rejects(leaveGroup(1), /Leaving groups isn't set up in the database yet/);
 });
 
 test('deleteGroup refuses anything but a group id without asking Supabase', async (t) => {

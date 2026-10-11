@@ -46,6 +46,18 @@ async function deleteGroup(groupId) {
   if (!deleted?.length) throw new Error('Only the group leader can delete a study group');
 }
 
+// Takes the logged-in user out of a group they're a member of. Supabase
+// answers PGRST202 for a function it doesn't have, which means the leave SQL
+// hasn't been run yet.
+async function leaveGroup(groupId) {
+  try {
+    await rpc('leave_group', { gid: groupId });
+  } catch (err) {
+    if (err.code === 'PGRST202') throw new Error("Leaving groups isn't set up in the database yet");
+    throw err;
+  }
+}
+
 // Adds the user with this username to the group. Only the group's leader can.
 async function addMember(groupId, username) {
   await rpc('add_member', { gid: groupId, member_username: username });
@@ -93,6 +105,6 @@ async function groupInvites(groupId) {
 }
 
 module.exports = {
-  createGroup, listGroups, deleteGroup, addMember, groupRoster, searchUsernames,
+  createGroup, listGroups, deleteGroup, leaveGroup, addMember, groupRoster, searchUsernames,
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 };
