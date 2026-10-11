@@ -6,6 +6,8 @@ import { GlassPanel } from './GlassPanel';
 export interface NoteComposerProps {
   // The study groups the note can be shared with.
   groups: FishtankGroup[];
+  // The group "Share with" starts on, or null (the default) for "Just me".
+  initialGroupId?: number | null;
   // Resolves with an error message, or null when the note was uploaded.
   onSubmit: (title: string, body: string, groupId: number | null, files: File[]) => Promise<string | null>;
   onCancel: () => void;
@@ -13,10 +15,10 @@ export interface NoteComposerProps {
 
 // Modal form for uploading a study note: PDFs and screenshots and/or typed
 // notes, just for you or shared with a study group.
-export function NoteComposer({ groups, onSubmit, onCancel }: NoteComposerProps) {
+export function NoteComposer({ groups, initialGroupId = null, onSubmit, onCancel }: NoteComposerProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [groupId, setGroupId] = useState<number | null>(null);
+  const [groupId, setGroupId] = useState<number | null>(initialGroupId);
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);

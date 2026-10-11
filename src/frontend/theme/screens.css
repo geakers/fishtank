@@ -343,6 +343,13 @@
   gap: var(--aero-space-2);
 }
 
+/* A group's study notes, under its people. The groups panel already scrolls,
+   so the list doesn't scroll on its own here. */
+.groups__notes .notes-panel__list {
+  flex: none;
+  overflow: visible;
+}
+
 .home__focus {
   display: flex;
   flex-direction: column;

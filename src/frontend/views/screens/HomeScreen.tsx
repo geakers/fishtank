@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
+import { NoteComposer } from '../components/NoteComposer';
 import { NotesPanel } from '../components/NotesPanel';
 import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
@@ -31,11 +32,20 @@ export function HomeScreen({ app }: HomeScreenProps) {
   const openShop = () => app.setScreen('store');
   const [choosingApps, setChoosingApps] = useState(false);
   const [sideTab, setSideTab] = useState<SideTab>('groups');
+  // The note composer, open with the group "Share with" starts on (null = just me).
+  const [composer, setComposer] = useState<{ groupId: number | null } | null>(null);
 
   const openSideTab = (tab: SideTab) => {
     setSideTab(tab);
     // Picks up groups just made or joined in the Groups tab for "Share with".
     if (tab === 'notes') void app.refreshNotes();
+  };
+
+  // "Upload to this group" inside a study group. Refreshes first so a group
+  // made a moment ago is in the composer's "Share with" list.
+  const uploadToGroup = async (group: FishtankGroup) => {
+    await app.refreshNotes();
+    setComposer({ groupId: group.id });
   };
 
   return (
@@ -90,8 +100,22 @@ export function HomeScreen({ app }: HomeScreenProps) {
               ))}
             </div>
             {/* Both stay mounted so switching tabs keeps an open group or a half-typed search. */}
-            <StudyGroups account={app.account} className={`home__panel ${sideTab === 'groups' ? '' : 'is-hidden'}`} />
-            <NotesPanel app={app} className={`home__panel ${sideTab === 'notes' ? '' : 'is-hidden'}`} />
+            <StudyGroups
+              account={app.account}
+              className={`home__panel ${sideTab === 'groups' ? '' : 'is-hidden'}`}
+              notes={{
+                items: app.notes,
+                onShow: () => void app.refreshNotes(),
+                onUpload: (group) => void uploadToGroup(group),
+                onOpenFile: (path) => void app.openNoteFile(path),
+                onDelete: (note) => void app.deleteNote(note),
+              }}
+            />
+            <NotesPanel
+              app={app}
+              className={`home__panel ${sideTab === 'notes' ? '' : 'is-hidden'}`}
+              onUpload={() => setComposer({ groupId: null })}
+            />
           </div>
           <div className="home__focus">
             <AeroButton variant="hero" onClick={() => app.enterLockIn('study')}>
@@ -117,6 +141,14 @@ export function HomeScreen({ app }: HomeScreenProps) {
       </footer>
 
       {choosingApps ? <StudyApps onClose={() => setChoosingApps(false)} /> : null}
+      {composer ? (
+        <NoteComposer
+          groups={app.groups}
+          initialGroupId={composer.groupId}
+          onSubmit={app.uploadNote}
+          onCancel={() => setComposer(null)}
+        />
+      ) : null}
       <Toast notice={app.toast} onDismiss={app.dismissToast} />
     </div>
   );
