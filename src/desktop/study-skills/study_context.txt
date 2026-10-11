@@ -1,0 +1,411 @@
+STUDY & NOTE-TAKING REFERENCE CONTEXT
+=====================================
+Purpose: Source material for reviewing a student's notes and study habits.
+Each entry = paraphrased key points from one article, with its URL.
+When giving feedback, cite the entry ID (e.g., [N1]) and URL. If something
+isn't covered here, say so rather than inventing a source.
+
+INDEX
+-----
+NOTE-TAKING
+  [N1] UNC Learning Center - Effective Note-Taking in Class
+  [N2] Adobe - 10 Note-Taking Methods
+  [N3] UNC Learning Center - Taking Notes While Reading
+  [N4] Goodnotes - Best Note-Taking Methods for College Students
+STUDY HABITS
+  [S1] PMC8108503 (NOT AVAILABLE - see entry)
+  [S2] UNC Learning Center - Studying 101: Study Smarter Not Harder
+  [S3] Vault - 4 Tips for Establishing Good Study Habits
+USING AI FOR STUDYING
+  [A1] UNC Learning Center - Generative AI for Academic Study
+  [A2] Stanford CTL - AI and Your Learning: A Guide for Students
+GROUP STUDY
+  [G1] UNC Learning Center - Group Study
+  [G2] Linn et al. 2013 - Developing Effective Study Groups (Am J Pharm Educ)
+STUDY APPS
+  [P1] Shovel - 25 Best Study Apps for College Students (2026)
+  [P2] St. John's University - 5 Free Digital Apps
+FLASHCARDS
+  [F1] U of T Scarborough - Flashcards
+  [F2] Scholarly - Ultimate Guide to Flash Card Making
+
+=====================================================================
+NOTE-TAKING
+=====================================================================
+
+[N1] Effective Note-Taking in Class - UNC Learning Center
+URL: https://learningcenter.unc.edu/tips-and-tools/effective-note-taking-in-class/
+Why it matters
+- Taking notes in class aids focus, listening, comprehension, and retention.
+- Clear, concise notes save time later; messy or overly wordy notes cost time.
+Before class
+- Preview assigned reading and check the syllabus to anticipate main ideas.
+- Skim the previous session's notes for context.
+- Label each page with course and date; keep each course's notes together,
+  in chronological order.
+During class
+- For conceptual material, capture main points, not every word.
+- For factual material, near-verbatim notes can help short-answer recall,
+  but only if reviewed within ~24 hours.
+- Write down questions and confusing points to follow up on.
+- Jot keywords, names, dates to define later.
+- Use bullets, phrases, abbreviations, symbols - not full sentences.
+- Use one consistent format day to day.
+- Online lectures: watch through first, then rewind to fill gaps; note
+  timestamps of parts to revisit.
+Spotting what's important
+- Intros and conclusions often summarize main points.
+- Signal phrases ("there are three main...", "in summary..."), repetition,
+  and emphasis/gestures flag key content.
+Formats: Cornell, outline, flowchart/concept map, charting, sentence method.
+Handwritten vs. digital
+- Handwritten: easier diagrams, fewer distractions, may help conceptual
+  learning.
+- Digital: faster, higher volume, easy to edit/search/share, may help with
+  factual content.
+After class
+- Revisit notes within a day or two: clarify, define terms, fill gaps,
+  reorganize, note open questions.
+- Summarize in your own words, write questions, chunk into categories.
+- Turn notes into a study guide and self-test.
+- Use office hours and academic coaching when stuck.
+
+---------------------------------------------------------------------
+[N2] Note-Taking Methods: 10 Styles for Students - Adobe Acrobat
+URL: https://www.adobe.com/acrobat/resources/note-taking-methods.html
+Benefits claimed: focus, retention, organization, critical thinking via
+rephrasing. Useful during lectures, while reading, and in group discussions.
+Methods
+1. Cornell - notes / cues / summary sections; good for review & retention.
+2. Outline - bullets + indentation for hierarchy; suits linear thinkers.
+3. Charting - table of categories (columns) x items (rows); good for
+   comparisons and data-heavy content (stats, timelines).
+4. Boxing - each topic in its own box; visual, easy to scan.
+5. Flow - non-linear; ideas placed anywhere and linked with arrows; good
+   for brainstorming and seeing relationships.
+6. Mapping - central topic with branches for subtopics/details.
+7. Sentence - one key point per line, numbered if needed; fast for
+   quick-paced lectures.
+8. Progressive summarization - highlight on first pass, distill further on
+   later passes, end with a condensed summary.
+9. AI-assisted - tools that summarize or let you query documents.
+10. Hybrid - a primary method plus elements of others.
+Choosing a method
+- By goal: retention -> Cornell/outline; understanding -> mapping/flow;
+  organization -> digital or hybrid.
+- (The article also matches methods to "visual/auditory/kinesthetic"
+  learner types; note that this framing is popular but not strongly
+  supported by research.)
+
+---------------------------------------------------------------------
+[N3] Taking Notes While Reading - UNC Learning Center
+URL: https://learningcenter.unc.edu/tips-and-tools/taking-notes-while-reading/
+Core idea
+- Copying large amounts of text and over-highlighting are passive and
+  don't engage the brain; they cost time without much learning.
+Strategies
+- Notes from memory: read a short chunk (a paragraph to a page), pause,
+  write what you remember, then check the text to fill in details. Slower
+  but improves comprehension.
+- Mark the text: underline/circle key terms; annotate margins with symbols
+  and own-words summaries (or on a separate sheet for digital texts).
+- Cornell layout: right 2/3 notes, left 1/3 keywords/questions, bottom
+  strip for a page summary.
+- Apps: Evernote, OneNote (free for UNC students) for synced, organized
+  notes.
+- Graphic organizers / concept maps: tables, flowcharts, timelines, Venn
+  diagrams - good for science/history and visual material.
+- Turn headings into questions before reading, then answer them as you go.
+Tips
+- Write in your own words; avoid over-highlighting.
+- Wait until the end of a page/section before writing.
+- Keep notes brief and focused on main ideas.
+- Preview the chapter's structure first.
+
+---------------------------------------------------------------------
+[N4] The Best Note-Taking Methods for College Students - Goodnotes
+URL: https://www.goodnotes.com/blog/note-taking-methods
+Seven methods, each with a best use:
+1. Outline - nested bullets, ~1 sentence each. Best for fast live capture
+   (lectures). Weak for diagram-heavy subjects.
+2. Cornell (Walter Pauk, Cornell, 1950s) - main column, cue/question
+   column, summary at bottom. Writing the summary aids understanding;
+   takes more setup effort.
+3. Boxing - each subtopic in a labeled box. Best for revision summaries;
+   too slow for live lectures.
+4. Charting - rows = items, columns = shared properties. Great for
+   comparisons; poor for narrative/linear content.
+5. Mapping - topic branches into subtopics. Good when points need
+   explanation and to show relationships; can run out of space.
+6. Zettelkasten - one idea per card, linked by tags, built up over time
+   into a personal knowledge base. Not for live lecture capture.
+7. Mind mapping - central idea with free-flowing branches. Good for
+   brainstorming and revision; not for recording lectures live.
+Rule of thumb: outline/Cornell for live capture; boxing/charting for
+revision; Zettelkasten/mind maps for building ideas over time.
+
+=====================================================================
+STUDY HABITS
+=====================================================================
+
+[S1] PMC8108503 - NOT AVAILABLE
+URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC8108503/
+Could not be retrieved (site blocked automated access). Do not cite this
+entry for any claim until its content has been added.
+
+---------------------------------------------------------------------
+[S2] Studying 101: Study Smarter Not Harder - UNC Learning Center
+URL: https://learningcenter.unc.edu/tips-and-tools/studying-101-study-smarter-not-harder/
+Reading is not studying
+- Rereading, highlighting, and rote memorization are weakly linked to
+  learning; rereading leads to fast forgetting.
+- Active studying: build a topic study guide with questions and full
+  answers; make your own quiz; explain aloud as if teaching; make examples
+  from your own life; draw concept maps; work problems and explain each
+  step; analyze in terms of question -> evidence -> conclusion.
+- Organize materials by topic (use syllabus subtopics) before reviewing.
+Study Cycle (Frank Christ): preview -> attend class -> review -> study ->
+  check understanding. Skipping steps (e.g., skipping reading because it's
+  covered in class) loses repetition and spacing.
+Spacing
+- Distributed practice: short sessions on each class across days/weeks
+  beats marathon sessions, for the same or less total time.
+- Also reduces procrastination. Review flashcards for memorized material
+  periodically through the day.
+Intensity
+- Short, focused 30-45 minute sessions with active methods (e.g.,
+  self-testing), then a break.
+Environment
+- Silence isn't best for everyone; find your noise level. Active studying
+  is often spoken aloud.
+- Keep several study spots; switch when one stops working; notice when
+  and where you focus best.
+Problems
+- In technical courses, working problems matters more than reading.
+  Record worked examples from class, annotate steps, explain why they work.
+Multitasking
+- Hurts learning and increases time needed. Phone off, block sites,
+  timed social-media breaks as rewards.
+Teach it / self-quiz
+- Explain in your own words with examples; quiz yourself; focus on the
+  questions you miss; answer aloud.
+Calendar control
+- Weekly planning session: list goals per class, compare with available
+  hours, triage readings (fully read the main source; skim supplements),
+  schedule tasks, plan tomorrow before bed.
+Downtime
+- Use light weeks to get ahead; touch every class every week (ideally
+  daily, ~30 min each).
+
+---------------------------------------------------------------------
+[S3] 4 Tips for Establishing Good Study Habits - Vault (Kaitlin McManus, 2019)
+URL: https://vault.com/blogs/admit-one-vaults-mba-law-school-and-college-blog/4-tips-for-establishing-good-study-habits
+(Personal, anecdotal blog post; author learned these after high school
+habits stopped working in college.)
+1. Set aside time - find when you focus best, block it as study time, and
+   hold yourself to it.
+2. Get organized - keep to the syllabus yourself; one carry-around folder
+   for current materials plus one folder per class at home; keep a
+   calendar and visible due dates.
+3. Do the reading - and annotate/understand it; it underpins discussion,
+   papers, and exams, and is easy to skip because it's rarely checked.
+4. Study group only if helpful - keep it to ~3-4 people; try a one-off
+   session first; drop it if it becomes social time or members come
+   unprepared.
+
+=====================================================================
+USING AI FOR STUDYING
+=====================================================================
+
+[A1] Generative AI for Academic Study - UNC Learning Center
+URL: https://learningcenter.unc.edu/tips-and-tools/generative-ai-for-academic-study/
+First: check each syllabus; instructors' AI policies differ. Authorized
+use generally means AI helps you think, not thinks for you.
+Good uses
+- Explain concepts and how they connect; apply them to problems; compare
+  and contrast; generate metaphors. Refine prompts (be specific, assign a
+  persona).
+- Generate practice exams, quizzes, study guides, flashcards, timelines.
+  Self-testing is one of the best exam-prep methods.
+- STEM: step-by-step solutions and practice problems. Checking AI output
+  for errors is itself good metacognitive practice.
+- Summaries: before reading (orientation) or after (check key points), but
+  still read the full text; cross-check with other sources.
+- Planning: build daily/weekly study schedules.
+Pitfalls
+- Can short-circuit active learning; check mastery without AI.
+- Hallucinations, including fabricated citations/quotes - verify sources.
+- Bias inherited from training data.
+- Cost and privacy: UNC offers PromptLab (free, data-protected access to
+  multiple models) and Microsoft Copilot via UNC's Microsoft license.
+  Check privacy terms of other tools. Energy use concerns.
+- Weak at precise computation; check calculations. Many near-identical
+  generated practice problems can create a "fluency illusion."
+
+---------------------------------------------------------------------
+[A2] AI and Your Learning: A Guide for Students - Stanford CTL
+URL: https://ctl.stanford.edu/aimes/ai-learning-guide-students
+Policy
+- Review each course's AI policy. Stanford's guidance treats AI help like
+  help from another person; using AI to substantially complete work is
+  prohibited. Default: assume not allowed unless stated; disclose use.
+  "When in doubt, ask and document."
+How AI works / limits
+- Generates statistically plausible text from patterns, not knowledge ->
+  can hallucinate, carry training-data bias, misattribute or invent
+  citations. Not a substitute for human support (tutors, coaches,
+  advisors, counselors).
+Learning principle
+- Learning comes from what the student actively does and thinks.
+- Deep strategies (compare/contrast, explain in own words, self-quiz)
+  beat shallow ones (highlighting, rereading) - Dunlosky et al. 2013.
+- Key question: does a given AI use deepen engagement or remove a chance
+  to engage (e.g., AI previewing a reading for you)?
+Questions to ask yourself
+- Am I allowed? How must I document/disclose?
+- How will I check accuracy and bias, and attribute sources?
+- Does this use take away or add to deep engagement? Other factors
+  (environment, privacy)?
+
+=====================================================================
+GROUP STUDY
+=====================================================================
+
+[G1] Group Study - UNC Learning Center
+URL: https://learningcenter.unc.edu/tips-and-tools/group-study/
+Why: accountability, more active strategies, support, community.
+Who: 2-5 committed, prepared members; a facilitator or rotating "leader of
+  the week" handles scheduling and keeps focus.
+When: weekly, all semester (not just before exams); 60-90 min sessions.
+Where: discussion-friendly but not loud; whiteboard and outlets; not overly
+  comfy seating.
+Setup: recruit 2-3 people; fix a recurring time (When2Meet/Doodle); book a
+  room; ground rules (all questions welcome, take turns, no phones, come
+  prepared, no judging, no competition); everyone knows prep tasks.
+Session
+- Prepare: agree on content and who presents which problems; favor
+  conceptual questions over only application problems.
+- Structure with SMART goals: review the week, compare notes, take turns
+  teaching, bring questions, build concept maps/outlines/study guides,
+  brainstorm likely exam questions.
+- Mix problem types rather than blocking; vary modes (see/hear/do); write
+  out solution steps.
+- End with recall-based self-testing and a reflection on what to change.
+
+---------------------------------------------------------------------
+[G2] Developing Effective Study Groups in the Quest for the "Holy Grail":
+     Critical Thinking - Linn, Lord, Whong & Phillips, Am J Pharm Educ, 2013
+URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC3806964/
+(Letter to the editor / opinion piece in pharmacy education, not an
+empirical study; authors note little published data on the topic.)
+- Problem-solving study groups build critical thinking, listening, and
+  persuasion skills that are hard to develop alone.
+- Size ~4-6; members committed and responsible to each other; avoid a
+  dominating member; maybe avoid close friends; agreed ground rules with
+  consequences.
+- Set explicit learning outcomes per meeting; assign each member a
+  sub-problem/case to prepare and lead.
+- Learn core knowledge individually first; nobody comes just to listen.
+- Leader facilitates rather than lectures, doesn't give answers too fast,
+  keeps time; take unresolved roadblocks back to the instructor.
+- Introduce new information after a conclusion to force reassessment;
+  role-play.
+- Basic core knowledge may be better learned individually; groups shine
+  for practicing critical thinking/problem solving.
+
+=====================================================================
+STUDY APPS
+=====================================================================
+
+[P1] The 25 Best Study Apps for College Students (2026) - Shovel
+URL: https://shovelapp.io/the-25-best-study-apps-for-college-students/
+(Published by Shovel, which ranks its own app first - treat as biased.)
+First check: do you have enough study time at all? (Their calculator uses
+  ~2+ hrs/credit/week as a baseline.)
+Planners: Shovel (schedules work blocks, warns of time shortfalls), Notion
+  (flexible workspace, templates), Todoist (to-do list, natural-language
+  input), MyStudyLife (tracks classes/deadlines but doesn't plan time).
+Notes: GoodNotes (iPad handwriting, PDF annotation, searchable
+  handwriting), Obsidian (Markdown, linked notes, local files), OneNote
+  (free, infinite canvas, synced audio), Evernote (web clipping, scanning),
+  Notability (audio synced to handwriting, AI quizzes/flashcards).
+AI: Perplexity (cited web answers), ChatGPT (explanations, practice
+  questions), Grammarly (writing/tone), NotebookLM / "Gemini Notebook"
+  (grounded summaries of your sources, audio overviews), Gamma (AI slides).
+Memory & focus: Anki (spaced-repetition flashcards), Quizlet (flashcards,
+  premade sets, quizzes), Forest (focus timer - virtual tree dies if you
+  leave), Focusmate (virtual co-working via webcam), Cold Turkey (hard
+  website/app blocker).
+Life/other: Splitwise (shared expenses), YNAB (budgeting), Google
+  Drive/Docs (collaboration), Mathway (step-by-step math), Tide (Pomodoro
+  + ambient sound).
+Advice: avoid tool overload - pick one app per category (planner, notes,
+  memorization, research); consistency matters more than tools.
+
+---------------------------------------------------------------------
+[P2] 5 Free Digital Apps Every College Student Should Have - St. John's
+     University (Madison Coombs, 2025)
+URL: https://www.stjohns.edu/news-media/johnnies-blog/5-free-digital-apps-every-college-student-should-have
+(Student blog; personal recommendations.)
+1. GoodNotes - digital notebooks per subject, PDF annotation, sync,
+   planner templates. Free tier with paid extras.
+2. FocusPomo - Pomodoro timer (25 min work / 5 min break). iOS, free.
+3. Quizlet - custom and premade flashcards, quiz modes and games.
+4. GroupMe - class/study-group/club chats in one place.
+5. Canva - templates for presentations and posters.
+
+=====================================================================
+FLASHCARDS
+=====================================================================
+
+[F1] Flashcards - University of Toronto Scarborough Learning Strategies
+URL: https://www.utsc.utoronto.ca/learningstrategies/flashcards
+Why: combines retrieval practice with options for visuals, concrete
+  examples, spacing, and chunking.
+Making cards
+- Less information per card.
+- Use both directions (term -> definition and definition -> term).
+- Add images or mnemonics.
+- Shuffle within a course to mix topics.
+- Formats: handwritten cue cards (optional hint in a corner you can cover),
+  PowerPoint (odd slides = fronts, even = backs), Excel (hide answer
+  column, color-code by confidence), Quizlet (premade sets may not match
+  your course).
+Using cards
+- Work with 5-10 cards at a time; spend more time on weak cards; separate
+  known ones.
+- Start at least 2 weeks before a test.
+- Cumulative method: learn card 1 until comfortable, add card 2 and
+  recycle card 1, add card 3 and recycle 1-2, and so on - earlier cards
+  get the most repetitions.
+- Say front and back aloud; guess before checking.
+
+---------------------------------------------------------------------
+[F2] The Ultimate Guide to Flash Card Making - Scholarly (2023)
+URL: https://scholarly.so/blog/the-ultimate-guide-to-flash-card-making
+(Published by a company selling an AI flashcard tool.)
+Best practices: keep cards concise; add visuals; group by topic; review on
+  a regular schedule; shuffle to avoid relying on order.
+Digital pros: quick to make, accessible anywhere, spaced-repetition
+  algorithms, multimedia, progress tracking.
+Digital cons: device distractions, limited customization in some apps,
+  device dependence, setup time, switching between platforms.
+Tools mentioned: Anki, Quizlet, Brainscape, Cram, Knowt, StudyStack,
+  SuperMemo (also repurposing Notion/Evernote/Trello).
+AI-generated cards: save time, but extraction accuracy is a concern - cards
+  may include irrelevant or misleading content; privacy matters.
+
+=====================================================================
+CROSS-SOURCE THEMES (useful for reviews)
+=====================================================================
+- Active > passive: self-testing, explaining aloud, and own-words
+  summaries beat rereading, copying, and heavy highlighting.
+  [N3][S2][A2][F1]
+- Review notes within ~1-2 days and turn them into questions/self-tests.
+  [N1][S2]
+- Spaced, short, focused sessions beat cramming. [S2][F1][G1]
+- Consistent note structure; choose format by content type. [N1][N2][N4]
+- AI should support thinking, not replace it; verify its output and
+  follow course policy. [A1][A2]
+- Study groups work best small, prepared, structured, and regular.
+  [G1][G2][S3]

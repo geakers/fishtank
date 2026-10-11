@@ -15,6 +15,7 @@ const {
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 } = require('./groups');
 const { listNotes, submitNote, deleteNote, noteFileUrl } = require('./notes');
+const { runStudySkill } = require('./study-skills');
 const { listFish, buyFish, setFishInTank, setAvatarFish } = require('./fish');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
 const { listRunningApps, getAllowedApps, setAllowedApps, startStudy, stopStudy } = require('./study-mode');
@@ -142,6 +143,8 @@ app.whenReady().then(() => {
   ipcMain.handle('delete-note', (event, noteId) => deleteNote(noteId));
   // Opens the file in the default browser or viewer through a 5-minute link.
   ipcMain.handle('open-note-file', async (event, storagePath) => shell.openExternal(await noteFileUrl(storagePath)));
+
+  ipcMain.handle('run-study-skill', (event, skillId, input) => runStudySkill(skillId, input));
 
   ipcMain.handle('list-fish', () => listFish());
   ipcMain.handle('buy-fish', (event, fishId, price) => buyFish(fishId, price));

@@ -143,4 +143,12 @@ async function noteFileUrl(storagePath) {
   return `${NEXT_PUBLIC_SUPABASE_URL}/storage/v1${signedURL}`;
 }
 
-module.exports = { FILE_TYPES, MAX_FILE_BYTES, MAX_FILES, listNotes, submitNote, deleteNote, noteFileUrl };
+// Downloads one of a note's files and returns its bytes. Works for the same
+// people as noteFileUrl.
+async function downloadNoteFile(storagePath) {
+  const res = await fetch(await noteFileUrl(storagePath));
+  if (!res.ok) throw new Error(`Couldn't download a note file (${res.status})`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+module.exports = { FILE_TYPES, MAX_FILE_BYTES, MAX_FILES, listNotes, submitNote, deleteNote, noteFileUrl, downloadNoteFile };
