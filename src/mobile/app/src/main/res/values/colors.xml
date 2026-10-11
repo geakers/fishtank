@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sky_top">#FFBFEBFF</color>
+    <color name="sky_mid">#FF63C3F0</color>
+    <color name="grass_bottom">#FF3FA34D</color>
+    <color name="lcd_aqua">#FFD2F5FF</color>
+    <color name="lcd_ink">#FF053A5C</color>
+    <color name="shell_dark">#FF0A3557</color>
+</resources>
