@@ -196,7 +196,8 @@
 .groups__form-actions .aero-button,
 .groups__invite-actions .aero-button,
 .groups__person .aero-button,
-.groups__add-person {
+.groups__add-person,
+.groups__delete {
   min-height: 30px;
   padding: 0 var(--aero-space-3);
   font-size: var(--aero-text-sm);
@@ -335,6 +336,39 @@
 
 .groups__add-person {
   align-self: flex-start;
+}
+
+/* The leader's Add and Delete buttons, at either end of one row. */
+.groups__leader-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--aero-space-2);
+}
+
+.aero-button.groups__delete {
+  color: var(--aero-danger);
+}
+
+.aero-button.groups__delete:hover:not(:disabled) {
+  border-color: var(--aero-danger);
+}
+
+/* The "delete this group?" pop-up. */
+.groups__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aero-space-3);
+  width: min(420px, 100%);
+}
+
+.groups__confirm .panel-title {
+  overflow-wrap: anywhere;
+}
+
+.aero-button.groups__delete-confirm {
+  border-color: #b8343a;
+  background: linear-gradient(180deg, #f58a8d 0%, var(--aero-danger) 50%, #d23a40 51%, #e9666a 100%);
 }
 
 .groups__invite-search {

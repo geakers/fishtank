@@ -33,6 +33,19 @@ function listGroups() {
   return request('/rest/v1/study_groups?select=id,name,leader_id&order=name');
 }
 
+// Deletes the group along with its members and invites. Only the group's
+// leader can; row level security hides the group from anyone else's delete,
+// so nothing coming back means nothing was deleted.
+async function deleteGroup(groupId) {
+  if (!Number.isInteger(groupId)) throw new Error('A study group is required');
+
+  const deleted = await request(`/rest/v1/study_groups?id=eq.${groupId}&select=id`, {
+    method: 'DELETE',
+    headers: { Prefer: 'return=representation' },
+  });
+  if (!deleted?.length) throw new Error('Only the group leader can delete a study group');
+}
+
 // Adds the user with this username to the group. Only the group's leader can.
 async function addMember(groupId, username) {
   await rpc('add_member', { gid: groupId, member_username: username });
@@ -80,6 +93,6 @@ async function groupInvites(groupId) {
 }
 
 module.exports = {
-  createGroup, listGroups, addMember, groupRoster, searchUsernames,
+  createGroup, listGroups, deleteGroup, addMember, groupRoster, searchUsernames,
   inviteMember, listInvites, acceptInvite, declineInvite, groupInvites,
 };

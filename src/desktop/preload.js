@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('fishtank', {
   getCurrentUser: () => ipcRenderer.invoke('get-current-user'),
   createGroup: (name) => ipcRenderer.invoke('create-group', name),
   listGroups: () => ipcRenderer.invoke('list-groups'),
+  deleteGroup: (groupId) => ipcRenderer.invoke('delete-group', groupId),
   addMember: (groupId, username) => ipcRenderer.invoke('add-member', groupId, username),
   groupRoster: (groupId) => ipcRenderer.invoke('group-roster', groupId),
   searchUsernames: (query) => ipcRenderer.invoke('search-usernames', query),
