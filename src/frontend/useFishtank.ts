@@ -1,19 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { EMPTY_STATS, FISH, type Fish } from './data';
 
-export const START_POINTS = 100;
+export const START_POINTS = 100_000;
 export const NOTE_REWARD = 25;
 export const BONUS_REWARD = 50;
 export const MIN_NOTE_LENGTH = 20;
 export const MAX_NAME_LENGTH = 24;
+// TEMPORARY: what the P key gives (see useFishtank).
+const CHEAT_POINTS = 1000;
 
 export type Screen = 'home' | 'store' | 'lockIn';
 export interface Toast {
   tone: 'success' | 'error' | 'info';
   text: string;
 }
+// 'study' keeps the user to their study apps; 'strict' locks the screen to
+// Fishtank (kiosk mode).
+export type LockMode = 'study' | 'strict';
 export interface Session {
+  mode: LockMode;
   startedAt: number;
+  // Study mode only: whether notifications were silenced. Missing outside
+  // Electron.
+  notificationsSilenced?: boolean;
   endedAt?: number;
   // What the finished session earned, as reported by the desktop app. Missing
   // outside Electron.
@@ -24,7 +33,7 @@ const GUEST_NAME = 'Aquarist';
 const NO_BRIDGE = 'Accounts need the desktop app.';
 
 // Electron prefixes IPC errors with "Error invoking remote method ...".
-function errorText(err: unknown): string {
+export function errorText(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
   return message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 }
@@ -35,6 +44,8 @@ export function useFishtank() {
   const [screen, setScreen] = useState<Screen>('home');
   const [points, setPoints] = useState(START_POINTS);
   const [ownedIds, setOwnedIds] = useState<string[]>([]);
+  // The owned fish currently swimming in the tank.
+  const [tankIds, setTankIds] = useState<string[]>([]);
   const [name, setName] = useState(GUEST_NAME);
   const [account, setAccount] = useState<FishtankUser | null>(null);
   const [avatarId, setAvatarId] = useState<string | null>(null);
@@ -42,8 +53,11 @@ export function useFishtank() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [lockError, setLockError] = useState<string | null>(null);
+  // The mode the lock-in screen is in, kept so "Try again" retries the same one.
+  const [lockMode, setLockMode] = useState<LockMode>('study');
 
   const owned = FISH.filter((f) => ownedIds.includes(f.id));
+  const tank = owned.filter((f) => tankIds.includes(f.id));
   const avatar = owned.find((f) => f.id === avatarId) ?? null;
   const notify = (tone: Toast['tone'], text: string) => setToast({ tone, text });
   const dismissToast = useCallback(() => setToast(null), []);
@@ -57,7 +71,14 @@ export function useFishtank() {
     if (points < fish.price || ownedIds.includes(fish.id)) return;
     setPoints(points - fish.price);
     setOwnedIds([...ownedIds, fish.id]);
+    setTankIds([...tankIds, fish.id]);
     notify('success', `${fish.name} joined your tank!`);
+  };
+
+  // Puts an owned fish in the tank or takes it out.
+  const setInTank = (fish: Fish, inTank: boolean) => {
+    if (!ownedIds.includes(fish.id)) return;
+    setTankIds((ids) => (inTank ? [...ids.filter((id) => id !== fish.id), fish.id] : ids.filter((id) => id !== fish.id)));
   };
 
   // Returns an error message, or null when the note was accepted.
@@ -77,13 +98,18 @@ export function useFishtank() {
     return true;
   };
 
-  const resetProgress = () => {
-    setPoints(START_POINTS);
-    setOwnedIds([]);
-    setAvatarId(null);
-    setStats(EMPTY_STATS);
-    notify('info', 'Progress reset. Fresh tank!');
-  };
+  // TEMPORARY: press P for free points while testing. Remove before release.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'p' && e.key !== 'P') return;
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Don't fire while typing a name, note or password.
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]')) return;
+      setPoints((p) => p + CHEAT_POINTS);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const grantBonus = () => {
     earn(BONUS_REWARD);
@@ -164,22 +190,31 @@ export function useFishtank() {
 
   // --- Lock-in ---
 
-  const startLock = async () => {
+  const startLock = async (mode: LockMode = lockMode) => {
     setLockError(null);
     try {
       // Outside Electron there is nothing to lock.
       const bridge = window.fishtank;
-      if (bridge && !(await bridge.lockDown(true))) throw new Error('lockdown failed');
-      setSession({ startedAt: Date.now() });
+      if (mode === 'strict') {
+        if (bridge && !(await bridge.lockDown(true))) throw new Error('lockdown failed');
+        setSession({ mode, startedAt: Date.now() });
+      } else {
+        const study = await bridge?.startStudy();
+        setSession({ mode, startedAt: Date.now(), notificationsSilenced: study?.notificationsSilenced });
+      }
     } catch {
       setLockError("Couldn't enter focus mode. Please try again.");
     }
   };
 
-  const enterLockIn = () => {
+  const enterLockIn = (mode: LockMode) => {
+    setLockMode(mode);
     setScreen('lockIn');
-    void startLock();
+    void startLock(mode);
   };
+
+  // Say which app study mode just sent to the back.
+  useEffect(() => window.fishtank?.onStudyAppBlocked((appName) => notify('info', `${appName} isn't one of your study apps.`)), []);
 
   const endLock = async () => {
     let reward: FishtankSessionResult | undefined;
@@ -216,10 +251,10 @@ export function useFishtank() {
   };
 
   return {
-    screen, setScreen, points, owned, name, avatar, stats, toast, dismissToast,
+    screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
     account, logIn, createAccount, logOut,
-    buy, shareNote, rename, setAvatarId, resetProgress, grantBonus,
-    session, lockError, enterLockIn, startLock, endLock, leaveLockIn,
+    buy, setInTank, shareNote, rename, setAvatarId, grantBonus,
+    session, lockMode, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
 }
 

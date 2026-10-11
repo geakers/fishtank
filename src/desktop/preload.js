@@ -2,6 +2,15 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('fishtank', {
   lockDown: (enabled) => ipcRenderer.invoke('lock-down', enabled),
+  startStudy: () => ipcRenderer.invoke('start-study'),
+  listRunningApps: () => ipcRenderer.invoke('list-running-apps'),
+  getAllowedApps: () => ipcRenderer.invoke('get-allowed-apps'),
+  setAllowedApps: (apps) => ipcRenderer.invoke('set-allowed-apps', apps),
+  onStudyAppBlocked: (callback) => {
+    const listener = (event, appName) => callback(appName);
+    ipcRenderer.on('study-app-blocked', listener);
+    return () => ipcRenderer.removeListener('study-app-blocked', listener);
+  },
   endSession: () => ipcRenderer.invoke('end-session'),
   createAccount: (account) => ipcRenderer.invoke('create-account', account),
   getProfile: (uid) => ipcRenderer.invoke('get-profile', uid),
@@ -10,4 +19,14 @@ contextBridge.exposeInMainWorld('fishtank', {
   logIn: (credentials) => ipcRenderer.invoke('log-in', credentials),
   logOut: () => ipcRenderer.invoke('log-out'),
   getCurrentUser: () => ipcRenderer.invoke('get-current-user'),
+  createGroup: (name) => ipcRenderer.invoke('create-group', name),
+  listGroups: () => ipcRenderer.invoke('list-groups'),
+  addMember: (groupId, username) => ipcRenderer.invoke('add-member', groupId, username),
+  groupRoster: (groupId) => ipcRenderer.invoke('group-roster', groupId),
+  searchUsernames: (query) => ipcRenderer.invoke('search-usernames', query),
+  inviteMember: (groupId, username) => ipcRenderer.invoke('invite-member', groupId, username),
+  listInvites: () => ipcRenderer.invoke('list-invites'),
+  acceptInvite: (groupId) => ipcRenderer.invoke('accept-invite', groupId),
+  declineInvite: (groupId) => ipcRenderer.invoke('decline-invite', groupId),
+  groupInvites: (groupId) => ipcRenderer.invoke('group-invites', groupId),
 });

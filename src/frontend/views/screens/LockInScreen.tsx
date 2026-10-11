@@ -3,13 +3,16 @@ import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
 import { GlassPanel } from '../components/GlassPanel';
+import { Toast } from '../components/Toast';
 import { formatClock, formatDuration, formatPoints } from '../format';
 
 export interface LockInScreenProps {
   app: App;
 }
 
-// Focus mode: the user's fish tank on a stand, with the timer above it.
+// Focus mode: the user's fish tank on a stand, with the timer above it. In
+// strict mode the window is locked to this screen; in study mode the user can
+// switch to their study apps and come back.
 export function LockInScreen({ app }: LockInScreenProps) {
   const { session, lockError } = app;
   const [now, setNow] = useState(Date.now());
@@ -31,9 +34,9 @@ export function LockInScreen({ app }: LockInScreenProps) {
         {/* Kept in the layout when hidden so the tank doesn't jump. */}
         <div className={`lockin__timer ${running ? '' : 'is-hidden'}`}>{formatClock(elapsed)}</div>
         <div className="lockin__tank-wrap">
-          <Aquarium fish={app.owned} fishSize={130} className="lockin__tank" />
-          {running && app.owned.length === 0 ? (
-            <p className="lockin__empty">Your tank is empty. Share notes to earn points and adopt fish!</p>
+          <Aquarium fish={app.tank} fishSize={130} className="lockin__tank" breakable={running} />
+          {running && app.tank.length === 0 ? (
+            <p className="lockin__empty">Your tank is empty. Adopt fish in the Fish Shop!</p>
           ) : null}
         </div>
         <div className="tank-stand" aria-hidden="true" />
@@ -42,6 +45,9 @@ export function LockInScreen({ app }: LockInScreenProps) {
       {running ? (
         <div className="lockin__controls">
           {lockError ? <p className="error-text error-text--on-water">{lockError}</p> : null}
+          {session.mode === 'study' && session.notificationsSilenced === false ? (
+            <p className="lockin__note muted">Notifications are still on</p>
+          ) : null}
           <AeroButton variant="glass" onClick={() => void app.endLock()}>
             End session
           </AeroButton>
@@ -78,6 +84,8 @@ export function LockInScreen({ app }: LockInScreenProps) {
           <AeroButton onClick={app.leaveLockIn}>Back home</AeroButton>
         </GlassPanel>
       ) : null}
+
+      <Toast notice={app.toast} onDismiss={app.dismissToast} />
     </div>
   );
 }

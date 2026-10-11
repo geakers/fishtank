@@ -360,6 +360,40 @@ p {
   animation: fish-fin-scull 0.9s ease-in-out infinite alternate;
 }
 
+.fish-sprite__sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fish-sparkle 1.8s ease-in-out infinite;
+}
+
+.fish-sprite__blink {
+  animation: fish-blink 1.2s steps(1) infinite;
+}
+
+.fish-sprite__ties {
+  transform-box: fill-box;
+  transform-origin: right center;
+  animation: fish-fin-scull 0.6s ease-in-out infinite alternate;
+}
+
+.fish-sprite__arm,
+.fish-sprite__leg,
+.fish-sprite__spark {
+  transform-box: view-box;
+}
+
+.fish-sprite__spark {
+  animation: dude-stroke 24s linear infinite;
+}
+
+.fish-sprite__arm {
+  animation: dude-stroke 1.6s linear infinite;
+}
+
+.fish-sprite__leg {
+  animation: dude-kick 0.45s ease-in-out infinite alternate;
+}
+
 .fish-sprite__bell {
   transform-box: fill-box;
   transform-origin: center top;
@@ -384,6 +418,40 @@ p {
   }
 }
 
+@keyframes fish-sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+@keyframes fish-blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* A full turn; used by the swimmer's arms and the spark. */
+@keyframes dude-stroke {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dude-kick {
+  from {
+    transform: rotate(-9deg);
+  }
+  to {
+    transform: rotate(9deg);
+  }
+}
+
 @keyframes jelly-pulse {
   0%,
   100% {
@@ -397,8 +465,17 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .fish-sprite__tail,
   .fish-sprite__pectoral,
-  .fish-sprite__bell {
+  .fish-sprite__bell,
+  .fish-sprite__ties,
+  .fish-sprite__blink,
+  .fish-sprite__arm,
+  .fish-sprite__leg,
+  .fish-sprite__spark {
     animation: none;
+  }
+  .fish-sprite__sparkle {
+    animation: none;
+    opacity: 0.8;
   }
 }
 

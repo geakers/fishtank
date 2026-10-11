@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
-import { NoteComposer } from '../components/NoteComposer';
 import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
-import { StatsBoard } from '../components/StatsBoard';
+import { StudyApps } from '../components/StudyApps';
+import { StudyGroups } from '../components/StudyGroups';
 import { Toast } from '../components/Toast';
 
 export interface HomeScreenProps {
@@ -14,11 +14,12 @@ export interface HomeScreenProps {
 
 // Layout, after the Wii menu:
 //   top bar - brand on the left; points and profile menu on the right
-//   main    - the user's tank on the left; stats and the lock-in button on the right
-//   dock    - round "Share a note" and "Fish Shop" buttons with a clock between them
+//   main    - the user's tank on its cabinet on the left; the study groups panel, the Focus button (study mode) and the
+//             Strict lock-in button on the right (stats live in the profile menu)
+//   dock    - a clock in the middle and a round "Fish Shop" button on the right
 export function HomeScreen({ app }: HomeScreenProps) {
-  const [composerOpen, setComposerOpen] = useState(false);
   const openShop = () => app.setScreen('store');
+  const [choosingApps, setChoosingApps] = useState(false);
 
   return (
     <div className="screen home">
@@ -30,13 +31,13 @@ export function HomeScreen({ app }: HomeScreenProps) {
             displayName={app.name}
             avatarFish={app.avatar}
             ownedFish={app.owned}
+            stats={app.stats}
             account={app.account}
             onLogIn={app.logIn}
             onCreateAccount={app.createAccount}
             onLogOut={() => void app.logOut()}
             onRename={app.rename}
             onSetAvatar={app.setAvatarId}
-            onResetProgress={app.resetProgress}
             onGrantBonus={import.meta.env.DEV ? app.grantBonus : undefined}
           />
         </div>
@@ -44,39 +45,43 @@ export function HomeScreen({ app }: HomeScreenProps) {
 
       <main className="home__main">
         <section className="home__tank-panel" aria-label="Your aquarium">
-          <Aquarium fish={app.owned} fishSize={96} className="home__tank" />
-          {app.owned.length === 0 ? (
+          <Aquarium fish={app.tank} fishSize={96} className="home__tank" />
+          {app.tank.length === 0 ? (
             <div className="home__tank-empty">
               <p>Your tank is empty.</p>
-              <p className="muted">Earn points by sharing notes, then adopt your first fish.</p>
               <AeroButton onClick={openShop}>Visit the Fish Shop</AeroButton>
             </div>
           ) : null}
+          {/* The same cabinet as in focus mode; it runs on down behind the dock. */}
+          <div className="tank-stand home__stand" aria-hidden="true" />
         </section>
 
         <aside className="home__side">
-          <StatsBoard stats={app.stats} fishOwned={app.owned.length} />
-          <div className="home__lockin">
-            <AeroButton variant="hero" onClick={() => app.enterLockIn()}>
-              Lock In
+          <StudyGroups account={app.account} className="home__panel" />
+          <div className="home__focus">
+            <AeroButton variant="hero" onClick={() => app.enterLockIn('study')}>
+              Focus
             </AeroButton>
-            <p className="home__lockin-hint">Enter focus mode with your aquarium</p>
+            <div className="home__focus-more">
+              <AeroButton variant="glass" onClick={() => setChoosingApps(true)}>
+                Study apps
+              </AeroButton>
+              <AeroButton variant="glass" onClick={() => app.enterLockIn('strict')}>
+                Strict lock-in
+              </AeroButton>
+            </div>
           </div>
         </aside>
       </main>
 
       <footer className="dock">
-        <button type="button" className="dock__pod dock__pod--left" onClick={() => setComposerOpen(true)}>
-          Share a note
-        </button>
         <DockClock />
         <button type="button" className="dock__pod dock__pod--right" onClick={openShop}>
           Fish Shop
         </button>
       </footer>
 
-      {composerOpen ? <NoteComposer onSubmit={app.shareNote} onCancel={() => setComposerOpen(false)} /> : null}
-
+      {choosingApps ? <StudyApps onClose={() => setChoosingApps(false)} /> : null}
       <Toast notice={app.toast} onDismiss={app.dismissToast} />
     </div>
   );
