@@ -25,17 +25,42 @@ enum Phase: String, Codable {
 struct SessionState: Equatable {
     var phase: Phase = .idle
     var startedAt: TimeInterval = 0
+    /// How long the user committed to focusing for. The session ends by itself once it has
+    /// run this long, and only a session that does earns points.
+    var commitMinutes: Int = 0
+
+    var endsAt: TimeInterval { startedAt + TimeInterval(commitMinutes * 60) }
 
     func elapsedSeconds(now: Date = Date()) -> Int {
         phase == .idle ? 0 : Int(max(0, now.timeIntervalSince1970 - startedAt))
     }
+
+    func remainingSeconds(now: Date = Date()) -> Int {
+        phase == .idle ? 0 : Int(max(0, (endsAt - now.timeIntervalSince1970).rounded(.up)))
+    }
+
+    /// 0 at the start of the session, 1 once the commitment is up.
+    func progress(now: Date = Date()) -> Double {
+        commitMinutes > 0 ? min(1, Double(elapsedSeconds(now: now)) / Double(commitMinutes * 60)) : 0
+    }
+}
+
+/// How the last session ended, for the message on the home screen.
+struct FinishedSession: Equatable, Identifiable {
+    var id: TimeInterval { startedAt }
+    var startedAt: TimeInterval
+    var completed: Bool
+    var commitMinutes: Int
+    var seconds: Int
 }
 
 struct FocusRecord: Codable, Identifiable, Equatable {
     var id: String
     var startedAt: TimeInterval
     var endedAt: TimeInterval
+    /// The minutes the user committed to.
     var plannedMinutes: Int
+    /// true when the session lasted the full commitment, which is what earns points.
     var completed: Bool
     var synced: Bool = false
 

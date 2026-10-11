@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { App } from '../../useFishtank';
+import type { App, LockMode } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
+import { CommitPicker } from '../components/CommitPicker';
 import { NoteComposer } from '../components/NoteComposer';
 import { NotesPanel } from '../components/NotesPanel';
 import { PointsBadge } from '../components/PointsBadge';
@@ -19,7 +20,7 @@ export interface HomeScreenProps {
 //   main    - the user's tank on its cabinet on the left; on the right, Groups | Notes tabs
 //             switching between the study groups and study notes panels, then the Focus button
 //             (study mode) with Study apps and Strict lock-in under it (stats live in the
-//             profile menu)
+//             profile menu). Both lock-ins ask how long to commit to first.
 //   dock    - a clock in the middle and a round "Fish Shop" button on the right
 type SideTab = 'groups' | 'notes';
 
@@ -31,6 +32,8 @@ const SIDE_TABS: { id: SideTab; label: string }[] = [
 export function HomeScreen({ app }: HomeScreenProps) {
   const openShop = () => app.setScreen('store');
   const [choosingApps, setChoosingApps] = useState(false);
+  // The lock-in waiting on the user to choose how long to commit to.
+  const [committing, setCommitting] = useState<LockMode | null>(null);
   const [sideTab, setSideTab] = useState<SideTab>('groups');
   // The note composer, open with the group "Share with" starts on (null = just me).
   const [composer, setComposer] = useState<{ groupId: number | null } | null>(null);
@@ -117,14 +120,14 @@ export function HomeScreen({ app }: HomeScreenProps) {
             />
           </div>
           <div className="home__focus">
-            <AeroButton variant="hero" onClick={() => app.enterLockIn('study')}>
+            <AeroButton variant="hero" onClick={() => setCommitting('study')}>
               Focus
             </AeroButton>
             <div className="home__focus-more">
               <AeroButton variant="glass" onClick={() => setChoosingApps(true)}>
                 Study apps
               </AeroButton>
-              <AeroButton variant="glass" onClick={() => app.enterLockIn('strict')}>
+              <AeroButton variant="glass" onClick={() => setCommitting('strict')}>
                 Strict lock-in
               </AeroButton>
             </div>
@@ -140,6 +143,17 @@ export function HomeScreen({ app }: HomeScreenProps) {
       </footer>
 
       {choosingApps ? <StudyApps onClose={() => setChoosingApps(false)} /> : null}
+      {committing ? (
+        <CommitPicker
+          mode={committing}
+          initialMinutes={app.lockMinutes}
+          onStart={(minutes) => {
+            setCommitting(null);
+            app.enterLockIn(committing, minutes);
+          }}
+          onClose={() => setCommitting(null)}
+        />
+      ) : null}
       {composer ? (
         <NoteComposer
           groups={app.groups}

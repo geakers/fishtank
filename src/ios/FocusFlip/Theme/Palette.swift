@@ -85,8 +85,25 @@ enum Wii {
     static let orb = RadialGradient(colors: [Color(hex: 0xD6F6FF), cyan500, cyan700], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 18)
 }
 
+/// The LCD's text, in Selawik like everything else. Its digits are all the same width, so
+/// running timers don't jitter.
 func lcdFont(_ size: CGFloat, bold: Bool = false) -> Font {
-    .system(size: size, weight: bold ? .bold : .regular, design: .monospaced)
+    .selawik(size, bold ? .bold : .regular)
+}
+
+extension Font {
+    /// Selawik (Fonts/), the open stand-in for Segoe UI that the desktop app uses, so the
+    /// phone has the same Frutiger Aero type. Sizes are fixed, like .system(size:).
+    static func selawik(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .custom(selawikName(weight), fixedSize: size)
+    }
+
+    private static func selawikName(_ weight: Font.Weight) -> String {
+        if [.ultraLight, .thin, .light].contains(weight) { return "Selawik-Light" }
+        if [.medium, .semibold].contains(weight) { return "Selawik-Semibold" }
+        if [.bold, .heavy, .black].contains(weight) { return "Selawik-Bold" }
+        return "Selawik-Regular"
+    }
 }
 
 extension Color {

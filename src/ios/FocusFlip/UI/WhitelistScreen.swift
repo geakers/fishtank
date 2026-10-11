@@ -24,7 +24,7 @@ struct WhitelistScreen: View {
                 HStack {
                     Button(action: onBack) {
                         Text("‹ Home")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.selawik(15, .semibold))
                             .foregroundStyle(Wii.ink)
                             .padding(.horizontal, 16)
                             .frame(height: 36)
@@ -33,7 +33,7 @@ struct WhitelistScreen: View {
                     .buttonStyle(PressScale())
                     Spacer()
                     Text("\(model.whitelist.schemes.count) chosen")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.selawik(13, .semibold))
                         .foregroundStyle(Wii.cyan700)
                         .padding(.horizontal, 12)
                         .frame(height: 30)
@@ -43,14 +43,14 @@ struct WhitelistScreen: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Study apps")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.selawik(18, .semibold))
                         .foregroundStyle(Wii.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.bottom, 8)
                         .overlay(alignment: .bottom) { Wii.lineSoft.frame(height: 2) }
 
                     Text("Tick the apps you study with. During a Focus session they open from the flip phone's keypad; everything else stays locked.")
-                        .font(.system(size: 13))
+                        .font(.selawik(13))
                         .foregroundStyle(Wii.inkMuted)
 
                     SearchField(text: $query)
@@ -65,7 +65,7 @@ struct WhitelistScreen: View {
                             }
                             if visible.isEmpty {
                                 Text("No apps match.")
-                                    .font(.system(size: 13))
+                                    .font(.selawik(13))
                                     .foregroundStyle(Wii.inkMuted)
                                     .padding(.top, 8)
                             }
@@ -74,7 +74,7 @@ struct WhitelistScreen: View {
                     .scrollDismissesKeyboard(.immediately)
 
                     Text("iPhone apps can't be listed, so these are the apps FocusFlip knows how to open. To keep you in FocusFlip, turn on Guided Access under Settings > Accessibility.")
-                        .font(.system(size: 12))
+                        .font(.selawik(12))
                         .foregroundStyle(Wii.inkMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 10)
@@ -84,7 +84,7 @@ struct WhitelistScreen: View {
                         Spacer()
                         Button(action: onBack) {
                             Text("Done")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.selawik(16, .semibold))
                                 .foregroundStyle(.white)
                                 .shadow(color: Color(red: 0, green: 0.31, blue: 0.47, opacity: 0.35), radius: 0.5, y: 1)
                                 .padding(.horizontal, 28)
@@ -124,7 +124,7 @@ private struct SearchField: View {
 
     var body: some View {
         TextField("Search apps", text: $text)
-            .font(.system(size: 15))
+            .font(.selawik(15))
             .foregroundStyle(Wii.ink)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
@@ -158,12 +158,12 @@ private struct AppRow: View {
                     )
                     .frame(width: 20, height: 20)
                 Text(app.label)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.selawik(15, .semibold))
                     .foregroundStyle(Wii.ink)
                     .lineLimit(1)
                 Spacer()
                 Text(app.scheme)
-                    .font(.system(size: 12))
+                    .font(.selawik(12))
                     .foregroundStyle(Wii.inkMuted)
                     .lineLimit(1)
             }

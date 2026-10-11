@@ -10,6 +10,37 @@ const POINTS_PER_MINUTE = TEST_POINT_PER_SECOND ? 60 : 1 / 60;
 // Slack allowed in verifyPoints for the rounding applied when points are saved.
 const POINTS_TOLERANCE = 0.01;
 
+// How long a user can commit to focusing for, in whole minutes.
+const MIN_COMMIT_MINUTES = 1;
+const MAX_COMMIT_MINUTES = 240;
+
+// A session ending this close to its commitment still counts as finished, so
+// the renderer's timer and this process's clock needn't agree to the second.
+const COMMIT_GRACE_SECONDS = 2;
+
+// Whether minutes is a commitment the user may make.
+function isValidCommitment(minutes) {
+  return Number.isInteger(minutes) && minutes >= MIN_COMMIT_MINUTES && minutes <= MAX_COMMIT_MINUTES;
+}
+
+// What a session that ran for seconds, against a commitment of
+// commitMinutes, adds to the account. Every session adds the minutes it ran
+// to minutes studied, but only one that lasted its full commitment earns
+// points, and then for exactly the time committed to.
+// Returns { completed, minutes, pointsEarned }.
+function sessionEarnings(seconds, commitMinutes) {
+  const committed = isValidCommitment(commitMinutes) ? commitMinutes * 60 : 0;
+  const completed = committed > 0 && seconds >= committed - COMMIT_GRACE_SECONDS;
+  const counted = completed ? committed : Math.max(0, Math.floor(seconds));
+
+  // In test mode every second earns a point, and a part minute counts as a
+  // whole one so the points never outrun what verifyPoints allows.
+  const minutes = TEST_POINT_PER_SECOND ? Math.ceil(counted / 60) : Math.floor(counted / 60);
+  if (!completed) return { completed, minutes, pointsEarned: 0 };
+  const pointsEarned = TEST_POINT_PER_SECOND ? counted : minutes * POINTS_PER_MINUTE;
+  return { completed, minutes, pointsEarned };
+}
+
 // Sends a request for the profiles row with the given uid and returns that
 // row, limited to the given columns. Returns null if no row matched, throwing
 // Supabase's error message if the request fails.
@@ -91,4 +122,16 @@ async function verifyPoints(uid) {
   };
 }
 
-module.exports = { TEST_POINT_PER_SECOND, POINTS_PER_MINUTE, getProfile, getPoints, setPoints, setMinutesStudied, verifyPoints };
+module.exports = {
+  TEST_POINT_PER_SECOND,
+  POINTS_PER_MINUTE,
+  MIN_COMMIT_MINUTES,
+  MAX_COMMIT_MINUTES,
+  isValidCommitment,
+  sessionEarnings,
+  getProfile,
+  getPoints,
+  setPoints,
+  setMinutesStudied,
+  verifyPoints,
+};
