@@ -14,8 +14,15 @@ export interface Toast {
   tone: 'success' | 'error' | 'info';
   text: string;
 }
+// 'study' keeps the user to their study apps; 'strict' locks the screen to
+// Fishtank (kiosk mode).
+export type LockMode = 'study' | 'strict';
 export interface Session {
+  mode: LockMode;
   startedAt: number;
+  // Study mode only: whether notifications were silenced. Missing outside
+  // Electron.
+  notificationsSilenced?: boolean;
   endedAt?: number;
   // What the finished session earned, as reported by the desktop app. Missing
   // outside Electron.
@@ -46,6 +53,8 @@ export function useFishtank() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [lockError, setLockError] = useState<string | null>(null);
+  // The mode the lock-in screen is in, kept so "Try again" retries the same one.
+  const [lockMode, setLockMode] = useState<LockMode>('study');
 
   const owned = FISH.filter((f) => ownedIds.includes(f.id));
   const tank = owned.filter((f) => tankIds.includes(f.id));
@@ -181,22 +190,31 @@ export function useFishtank() {
 
   // --- Lock-in ---
 
-  const startLock = async () => {
+  const startLock = async (mode: LockMode = lockMode) => {
     setLockError(null);
     try {
       // Outside Electron there is nothing to lock.
       const bridge = window.fishtank;
-      if (bridge && !(await bridge.lockDown(true))) throw new Error('lockdown failed');
-      setSession({ startedAt: Date.now() });
+      if (mode === 'strict') {
+        if (bridge && !(await bridge.lockDown(true))) throw new Error('lockdown failed');
+        setSession({ mode, startedAt: Date.now() });
+      } else {
+        const study = await bridge?.startStudy();
+        setSession({ mode, startedAt: Date.now(), notificationsSilenced: study?.notificationsSilenced });
+      }
     } catch {
       setLockError("Couldn't enter focus mode. Please try again.");
     }
   };
 
-  const enterLockIn = () => {
+  const enterLockIn = (mode: LockMode) => {
+    setLockMode(mode);
     setScreen('lockIn');
-    void startLock();
+    void startLock(mode);
   };
+
+  // Say which app study mode just sent to the back.
+  useEffect(() => window.fishtank?.onStudyAppBlocked((appName) => notify('info', `${appName} isn't one of your study apps.`)), []);
 
   const endLock = async () => {
     let reward: FishtankSessionResult | undefined;
@@ -236,7 +254,7 @@ export function useFishtank() {
     screen, setScreen, points, owned, tank, name, avatar, stats, toast, dismissToast,
     account, logIn, createAccount, logOut,
     buy, setInTank, shareNote, rename, setAvatarId, grantBonus,
-    session, lockError, enterLockIn, startLock, endLock, leaveLockIn,
+    session, lockMode, lockError, enterLockIn, startLock, endLock, leaveLockIn,
   };
 }
 

@@ -4,6 +4,7 @@ import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
 import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
+import { StudyApps } from '../components/StudyApps';
 import { StudyGroups } from '../components/StudyGroups';
 import { Toast } from '../components/Toast';
 
@@ -13,11 +14,12 @@ export interface HomeScreenProps {
 
 // Layout, after the Wii menu:
 //   top bar - brand on the left; points and profile menu on the right
-//   main    - the user's tank on its cabinet on the left; the study groups panel and the Focus button on
-//             the right (stats live in the profile menu)
+//   main    - the user's tank on its cabinet on the left; the study groups panel, the Focus button (study mode) and the
+//             Strict lock-in button on the right (stats live in the profile menu)
 //   dock    - a clock in the middle and a round "Fish Shop" button on the right
 export function HomeScreen({ app }: HomeScreenProps) {
   const openShop = () => app.setScreen('store');
+  const [choosingApps, setChoosingApps] = useState(false);
 
   return (
     <div className="screen home">
@@ -57,9 +59,17 @@ export function HomeScreen({ app }: HomeScreenProps) {
         <aside className="home__side">
           <StudyGroups account={app.account} className="home__panel" />
           <div className="home__focus">
-            <AeroButton variant="hero" onClick={() => app.enterLockIn()}>
+            <AeroButton variant="hero" onClick={() => app.enterLockIn('study')}>
               Focus
             </AeroButton>
+            <div className="home__focus-more">
+              <AeroButton variant="glass" onClick={() => setChoosingApps(true)}>
+                Study apps
+              </AeroButton>
+              <AeroButton variant="glass" onClick={() => app.enterLockIn('strict')}>
+                Strict lock-in
+              </AeroButton>
+            </div>
           </div>
         </aside>
       </main>
@@ -71,6 +81,7 @@ export function HomeScreen({ app }: HomeScreenProps) {
         </button>
       </footer>
 
+      {choosingApps ? <StudyApps onClose={() => setChoosingApps(false)} /> : null}
       <Toast notice={app.toast} onDismiss={app.dismissToast} />
     </div>
   );

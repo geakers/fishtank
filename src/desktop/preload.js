@@ -2,6 +2,15 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('fishtank', {
   lockDown: (enabled) => ipcRenderer.invoke('lock-down', enabled),
+  startStudy: () => ipcRenderer.invoke('start-study'),
+  listRunningApps: () => ipcRenderer.invoke('list-running-apps'),
+  getAllowedApps: () => ipcRenderer.invoke('get-allowed-apps'),
+  setAllowedApps: (apps) => ipcRenderer.invoke('set-allowed-apps', apps),
+  onStudyAppBlocked: (callback) => {
+    const listener = (event, appName) => callback(appName);
+    ipcRenderer.on('study-app-blocked', listener);
+    return () => ipcRenderer.removeListener('study-app-blocked', listener);
+  },
   endSession: () => ipcRenderer.invoke('end-session'),
   createAccount: (account) => ipcRenderer.invoke('create-account', account),
   getProfile: (uid) => ipcRenderer.invoke('get-profile', uid),
