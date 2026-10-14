@@ -176,6 +176,18 @@ p {
   border-color: var(--aero-cyan-500);
 }
 
+/* Green gel pill, so "Put in tank" stays distinct from the cyan Adopt button. */
+.aero-button--grass {
+  border-color: var(--aero-grass-700);
+  background: var(--aero-gradient-button-grass);
+  text-shadow: 0 1px 1px rgba(20, 70, 10, 0.4);
+}
+
+.aero-button--grass:hover:not(:disabled),
+.aero-button--grass:focus-visible {
+  box-shadow: var(--aero-shadow-soft), var(--aero-glow-grass);
+}
+
 /* The big "Start"-style lock-in button. */
 .aero-button--hero {
   min-width: 260px;
@@ -467,23 +479,10 @@ p {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .fish-sprite__tail,
-  .fish-sprite__pectoral,
-  .fish-sprite__bell,
-  .fish-sprite__ties,
-  .fish-sprite__blink,
-  .fish-sprite__arm,
-  .fish-sprite__leg,
-  .fish-sprite__spark,
-  .fish-sprite__wheel {
-    animation: none;
-  }
-  .fish-sprite__sparkle {
-    animation: none;
-    opacity: 0.8;
-  }
-}
+/* Windows turns prefers-reduced-motion on when "Animation effects" is off.
+   These motions are the fish themselves (a spinning mark, a swimming person,
+   a beating tail), so they keep playing. Decorative UI motion is handled
+   with the other reduced-motion rule below. */
 
 /* ---------- Points badge ---------- */
 
@@ -578,6 +577,10 @@ p {
   background: rgba(230, 236, 240, 0.7);
   backdrop-filter: blur(6px);
   animation: fade-in var(--aero-duration-med) var(--aero-ease);
+}
+
+.modal-backdrop--front {
+  z-index: 45;
 }
 
 .modal {

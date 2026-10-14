@@ -29,9 +29,8 @@
 /* ---------- Home ---------- */
 
 .home {
-  --dock-height: 128px;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
 }
 
 /* Points and profile float in the top right corner, over the side column,
@@ -42,13 +41,14 @@
   right: var(--aero-space-6);
 }
 
-/* Groups and notes | the tank | Study Skills and the Focus buttons. */
+/* Groups and notes | the tank | Focus and the whitelist. */
 .home__main {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 280px;
+  grid-template-columns: 280px minmax(0, 1fr) 240px;
   gap: var(--aero-space-8);
   min-height: 0;
-  padding: var(--aero-space-6) var(--aero-space-8) 0;
+  height: 100%;
+  padding: var(--aero-space-4) var(--aero-space-8) var(--aero-space-4);
 }
 
 .home__tank-panel {
@@ -56,6 +56,23 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding-top: 8px;
+}
+
+.home__clock {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.home__clock-time {
+  color: var(--aero-cyan-700);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .home__tank {
@@ -63,14 +80,12 @@
   min-height: 0;
 }
 
-/* The focus-mode cabinet, a little wider than the tank. Its bottom sits
-   behind the dock, so only the top of it shows. Scoped to .home so it wins
-   over the focus-mode .tank-stand rule further down. */
+/* A short cabinet so the glass keeps the height the old dock used to take. */
 .home .home__stand {
   width: auto;
-  height: calc(12vh + var(--dock-height));
-  min-height: calc(64px + var(--dock-height));
-  margin: 0 -24px calc(-1 * var(--dock-height));
+  height: 28px;
+  min-height: 28px;
+  margin: 0 -24px 0;
 }
 
 .home__tank-empty {
@@ -104,15 +119,67 @@
   padding-bottom: var(--aero-space-6);
 }
 
-/* The right column: Study Skills above the Focus buttons. */
+/* The right column: Focus, Whitelist, and the whitelist switch. */
 .home__side {
   display: flex;
   flex-direction: column;
-  gap: var(--aero-space-8);
+  justify-content: center;
   min-height: 0;
   /* Clears the points and profile buttons above it. */
-  padding-top: 64px;
-  padding-bottom: 56px;
+  padding-top: 72px;
+  padding-bottom: 24px;
+}
+
+.home__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.home__actions .aero-button {
+  width: 100%;
+}
+
+.home__switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--aero-line);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-gradient-button);
+  box-shadow: var(--aero-shadow-raised), inset 0 1px 0 var(--aero-white);
+  color: var(--aero-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home__switch-state {
+  min-width: 36px;
+  color: var(--aero-ink-soft, #6b7c88);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.home__switch.is-on {
+  border-color: var(--aero-cyan-500);
+  box-shadow: var(--aero-shadow-raised), var(--aero-glow);
+}
+
+.home__switch.is-on .home__switch-state {
+  color: var(--aero-cyan-700);
+}
+
+.home__switch:focus-visible {
+  outline: none;
+  box-shadow: var(--aero-glow);
 }
 
 /* Fills its column (above the Focus button, on the right). */
@@ -757,81 +824,102 @@
   color: var(--aero-danger);
 }
 
-/* ---------- Dock (Wii menu bottom bar) ---------- */
+/* ---------- Fish Shop, tucked in the corner ---------- */
 
-.dock {
-  position: relative;
-  z-index: 4;
+.shop-peek {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 22px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: var(--dock-height);
-  border-top: 2px solid var(--aero-line);
-  background: linear-gradient(180deg, #f4f7f9 0%, #e3e9ed 100%);
-  box-shadow: 0 -4px 14px rgba(40, 60, 80, 0.08), inset 0 1px 0 var(--aero-white);
-}
-
-.dock__pod {
-  position: absolute;
-  /* Sits in the bar, centred on it, rather than hanging off its top edge. */
-  top: 50%;
-  translate: 0 -50%;
-  display: grid;
-  place-items: center;
-  width: 104px;
-  height: 104px;
-  padding: 0 var(--aero-space-4);
+  gap: 10px;
+  height: 58px;
+  padding: 0 20px 0 8px;
   border: 3px solid var(--aero-line);
-  border-radius: 50%;
+  border-right: none;
+  border-radius: 32px 0 0 32px;
   background: var(--aero-gradient-button);
-  box-shadow: var(--aero-shadow-raised), inset 0 2px 0 var(--aero-white);
+  box-shadow: var(--aero-shadow-raised), inset 0 1px 0 var(--aero-white);
   color: var(--aero-ink);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.2;
+  font: inherit;
+  font-weight: 700;
   cursor: pointer;
-  transition:
-    border-color var(--aero-duration-fast),
-    box-shadow var(--aero-duration-fast),
-    transform var(--aero-duration-fast) var(--aero-ease);
+  transform: translateX(calc(100% - 52px));
+  transition: transform 0.45s cubic-bezier(0.22, 0.8, 0.24, 1);
 }
 
-.dock__pod--right {
-  right: var(--aero-space-6);
-}
-
-.dock__pod:hover {
+.shop-peek:hover,
+.shop-peek:focus-visible {
+  transform: translateX(0);
   border-color: var(--aero-cyan-500);
-  box-shadow: var(--aero-shadow-raised), var(--aero-glow);
   color: var(--aero-cyan-700);
-}
-
-.dock__pod:active {
-  transform: scale(0.96);
-}
-
-.dock__pod:focus-visible {
   outline: none;
-  box-shadow: var(--aero-glow);
 }
 
-.dock__clock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #9ba5ae;
+.shop-peek__orb {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #fff 0 18%, #8ad8ff 46%, #1f9ed6 100%);
+  box-shadow: inset 0 -3px 5px rgba(0, 50, 90, 0.28), 0 0 0 2px rgba(255, 255, 255, 0.7);
 }
 
-.dock__time {
-  font-size: 56px;
-  font-weight: 300;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+.shop-peek__label {
+  white-space: nowrap;
 }
 
-.dock__date {
-  font-size: var(--aero-text-md);
-  font-weight: 600;
+.shop-peek__bubbles {
+  position: absolute;
+  left: 16px;
+  bottom: 48px;
+  width: 22px;
+  height: 48px;
+  pointer-events: none;
+}
+
+.shop-peek__bubbles i {
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  animation: shop-bubble 2.4s ease-in infinite;
+}
+
+.shop-peek__bubbles i:nth-child(1) {
+  left: 1px;
+}
+
+.shop-peek__bubbles i:nth-child(2) {
+  left: 12px;
+  width: 6px;
+  height: 6px;
+  animation-delay: 0.8s;
+}
+
+.shop-peek__bubbles i:nth-child(3) {
+  left: 6px;
+  width: 5px;
+  height: 5px;
+  animation-delay: 1.5s;
+}
+
+@keyframes shop-bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.5);
+  }
+  18% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-44px) scale(1);
+  }
 }
 
 /* ---------- Stats board ---------- */
@@ -1600,18 +1688,19 @@
 }
 
 
-/* Fish swim between the glass walls: right, turn around, back. */
+/* Fish swim between the glass walls: right, turn around, back.
+   Horizontal motion is a transform, not `left`, so the tank doesn't reflow
+   every frame. The path animation is a separate translate, in step with it. */
 .swimmer {
   position: absolute;
   left: 0;
   z-index: 2;
   width: var(--fish-w);
   cursor: pointer;
-  /* The path animation moves the fish up and down in step with the swim, so
-     together they trace its route (see PATHS in Aquarium.tsx). */
+  will-change: transform;
   animation:
     swim var(--swim-duration) linear var(--swim-delay) infinite,
-    var(--swim-path, none) var(--swim-duration) ease-in-out var(--swim-delay) infinite;
+    var(--swim-path, none) var(--swim-duration) linear var(--swim-delay) infinite;
 }
 
 /* A bubble a fish blows when clicked, centered on its mouth. */
@@ -1646,63 +1735,475 @@
 }
 
 .swimmer__bob {
+  position: relative;
   animation: bob var(--bob-duration) ease-in-out infinite alternate;
+}
+
+.swimmer.is-stunned {
+  animation-play-state: paused;
+}
+
+.swimmer.is-stunned .swimmer__bob {
+  animation: fish-flicker 0.14s steps(2, end) infinite;
+}
+
+.swimmer.is-flop {
+  opacity: 0;
+}
+
+.swimmer.is-sheen {
+  z-index: 6;
+}
+
+.dude-leap {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  translate: -50% -50%;
+}
+
+.dude-leap__flip {
+  transform: scaleX(var(--face, 1));
+}
+
+.dude-leap__body {
+  display: block;
+  overflow: visible;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dude-leap 1.35s linear both;
+}
+
+@keyframes dude-leap {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  14% {
+    transform: translate3d(4px, calc(var(--rise) * -0.28), 0) rotate(-10deg);
+  }
+  32% {
+    transform: translate3d(10px, calc(var(--rise) * -0.72), 0) rotate(-22deg);
+  }
+  48% {
+    transform: translate3d(14px, calc(var(--rise) * -1), 0) rotate(-8deg);
+  }
+  62% {
+    transform: translate3d(11px, calc(var(--rise) * -0.7), 0) rotate(8deg);
+  }
+  76% {
+    transform: translate3d(6px, calc(var(--rise) * -0.32), 0) rotate(16deg);
+  }
+  88% {
+    transform: translate3d(2px, calc(var(--rise) * -0.08), 0) rotate(6deg);
+  }
+  96% {
+    transform: translate3d(0, calc(var(--rise) * -0.015), 0) rotate(1deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+@keyframes fish-flicker {
+  0% {
+    filter: none;
+  }
+  100% {
+    filter: brightness(1.8) saturate(0.4);
+  }
+}
+
+.fish-react {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  translate: -50% -50%;
+}
+
+/* A wash of light across the glass, not a stack of separate stripes. */
+.fish-react--rainbow {
+  inset: 0;
+  overflow: hidden;
+  translate: none;
+  animation: fish-rainbow-fade 5.2s ease-in-out both;
+}
+
+.fish-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 220, 120, 0.35) 46%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 196, 70, 0.55) 54%,
+    transparent 65%
+  );
+  background-size: 240% 100%;
+  background-repeat: no-repeat;
+  animation: sprite-sheen 0.9s ease-in-out both;
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  mask-mode: alpha;
+}
+
+@keyframes sprite-sheen {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
+.tank-flash {
+  position: absolute;
+  inset: -30% -50%;
+  background: linear-gradient(
+    102deg,
+    transparent 46%,
+    rgba(255, 236, 170, 0.2) 48.5%,
+    rgba(255, 252, 240, 0.95) 50%,
+    rgba(255, 210, 90, 0.45) 51.5%,
+    transparent 54%
+  );
+  animation: tank-flash 0.95s ease-in-out both;
+}
+
+@keyframes tank-flash {
+  0% {
+    transform: translateX(-35%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(35%);
+    opacity: 0;
+  }
+}
+
+@keyframes fish-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+@keyframes fish-spark {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--spark-x), var(--spark-y)) scale(1.1);
+  }
+}
+
+.fish-react--ai {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  width: max-content;
+  max-width: 230px;
+}
+
+.fish-bit {
+  position: relative;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(8, 16, 24, 0.78);
+  color: #d8ffe8;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  animation: fish-bit-fade 2.8s ease-out both;
+}
+
+@keyframes fish-bit-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  12% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px);
+  }
+}
+
+.fish-bow {
+  position: absolute;
+  left: 50%;
+  top: -14%;
+  width: 146%;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side at center,
+    transparent 0 76%,
+    hsla(268, 46%, 76%, 0.22) 80%,
+    hsla(230, 52%, 72%, 0.5) 83%,
+    hsla(192, 48%, 70%, 0.55) 86%,
+    hsla(145, 40%, 66%, 0.52) 89%,
+    hsla(52, 58%, 68%, 0.58) 92%,
+    hsla(20, 64%, 64%, 0.52) 95%,
+    hsla(4, 58%, 64%, 0.4) 97.5%,
+    transparent 100%
+  );
+  filter: blur(9px);
+  mix-blend-mode: normal;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+}
+
+.fish-bow::before {
+  content: '';
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side at center,
+    transparent 0 90%,
+    hsla(8, 40%, 78%, 0.16) 92%,
+    hsla(48, 35%, 80%, 0.18) 94%,
+    hsla(200, 32%, 78%, 0.16) 96%,
+    hsla(255, 30%, 76%, 0.12) 98%,
+    transparent 100%
+  );
+  filter: blur(12px);
+}
+
+@keyframes fish-rainbow-fade {
+  0% {
+    opacity: 0;
+  }
+  28% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.fish-bolt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 22px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: linear-gradient(#fff, #7ad7ff 40%, transparent);
+  box-shadow: 0 0 8px #7ad7ff;
+  transform-origin: center bottom;
+  animation: fish-zap 0.28s steps(2, end) infinite;
+}
+
+@keyframes fish-zap {
+  0% {
+    opacity: 1;
+    transform: scaleY(0.4);
+  }
+  100% {
+    opacity: 0.15;
+    transform: scaleY(1.15);
+  }
+}
+
+.fish-chomp {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -4px;
+  background: #fff;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+  animation: fish-chomp 0.7s ease-out both;
+}
+
+@keyframes fish-chomp {
+  0% {
+    opacity: 0;
+    transform: translateX(0) scaleX(var(--chomp-flip, 1)) scale(0.5);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(var(--chomp-x)) scaleX(var(--chomp-flip, 1)) scale(1.15);
+  }
+}
+
+.fish-ring {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 36px;
+  height: 14px;
+  margin: -7px 0 0 -18px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: fish-ring 1.15s ease-out both;
+}
+
+.fish-ring--late {
+  animation-delay: 0.16s;
+}
+
+.fish-react--flash {
+  inset: 0;
+  overflow: hidden;
+  translate: none;
+}
+
+.dude-leap .fish-ring {
+  top: calc(50% + var(--splash, 0px));
+}
+
+.fish-ring--back {
+  animation-delay: 0.72s;
+}
+
+.fish-drop {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 7px;
+  height: 7px;
+  margin: -3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 6px rgba(190, 235, 255, 0.8);
+  animation: fish-drop 0.95s ease-in both;
+}
+
+@keyframes fish-ring {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.4, 0.5);
+  }
+  25% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(9, 3.4);
+  }
+}
+
+@keyframes fish-drop {
+  0% {
+    opacity: 0;
+    transform: translate(0, 8px) scale(0.5);
+  }
+  18% {
+    opacity: 1;
+  }
+  46% {
+    transform: translate(calc(var(--dx) * 0.55), calc(var(--dy) * -1));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), 22px) scale(0.8);
+  }
 }
 
 @keyframes swim {
   0% {
-    left: 0%;
-    transform: scaleX(1);
+    transform: translate3d(0, 0, 0) scaleX(1);
   }
+  /* step-end so the turn snaps. A linear blend of scaleX(1) and scaleX(-1)
+     passes through 0 and flattens the fish into a line. */
   48% {
-    left: calc(100% - var(--fish-w));
-    transform: scaleX(1);
+    transform: translate3d(calc(100cqw - 100%), 0, 0) scaleX(1);
+    animation-timing-function: step-end;
   }
   50% {
-    left: calc(100% - var(--fish-w));
-    transform: scaleX(-1);
+    transform: translate3d(calc(100cqw - 100%), 0, 0) scaleX(-1);
   }
   98% {
-    left: 0%;
-    transform: scaleX(-1);
+    transform: translate3d(0, 0, 0) scaleX(-1);
+    animation-timing-function: step-end;
   }
   100% {
-    left: 0%;
-    transform: scaleX(1);
+    transform: translate3d(0, 0, 0) scaleX(1);
   }
 }
 
 /* Routes. Each one runs over a full lap: 0-48% is the swim to the right and
    50-98% the swim back. Offsets are in cqh, the height of the water. */
 
-/* Rolling up and down the whole way. */
+/* A slow sine, sampled so linear playback doesn't hitch at each crest. */
 @keyframes path-wave {
-  0%, 100% { translate: 0 -7cqh; }
-  16% { translate: 0 7cqh; }
-  32% { translate: 0 -7cqh; }
-  48%, 50% { translate: 0 7cqh; }
-  66% { translate: 0 -7cqh; }
-  82% { translate: 0 7cqh; }
-  98% { translate: 0 -7cqh; }
+  0%, 100% { translate: 0 0; }
+  6% { translate: 0 3.5cqh; }
+  12% { translate: 0 6cqh; }
+  18% { translate: 0 7cqh; }
+  24% { translate: 0 6cqh; }
+  30% { translate: 0 3.5cqh; }
+  36% { translate: 0 0; }
+  42% { translate: 0 -3.5cqh; }
+  48%, 50% { translate: 0 -7cqh; }
+  56% { translate: 0 -6cqh; }
+  62% { translate: 0 -3.5cqh; }
+  68% { translate: 0 0; }
+  74% { translate: 0 3.5cqh; }
+  80% { translate: 0 6cqh; }
+  86% { translate: 0 7cqh; }
+  92% { translate: 0 3.5cqh; }
 }
 
 /* Out along the lane, up at the far wall, back along a higher line. */
 @keyframes path-loop {
   0%, 100% { translate: 0 -9cqh; }
-  8%, 40% { translate: 0 0; }
-  58%, 90% { translate: 0 -18cqh; }
+  8% { translate: 0 -4cqh; }
+  18%, 40% { translate: 0 0; }
+  48%, 50% { translate: 0 -6cqh; }
+  62% { translate: 0 -14cqh; }
+  74%, 90% { translate: 0 -18cqh; }
+  96% { translate: 0 -12cqh; }
 }
 
 /* Dips toward the reef on the way out, straight back. */
 @keyframes path-dive {
-  0%, 48%, 100% { translate: 0 0; }
+  0%, 100% { translate: 0 0; }
+  12% { translate: 0 8cqh; }
   24% { translate: 0 18cqh; }
+  36% { translate: 0 8cqh; }
+  48%, 98% { translate: 0 0; }
 }
 
 /* Straight out, arcs up over the middle on the way back. */
 @keyframes path-arc {
-  0%, 50%, 98%, 100% { translate: 0 0; }
+  0%, 50%, 100% { translate: 0 0; }
+  62% { translate: 0 -8cqh; }
   74% { translate: 0 -16cqh; }
+  86% { translate: 0 -8cqh; }
+  98% { translate: 0 0; }
 }
 
 /* Sharp diagonal legs. */
@@ -1836,7 +2337,26 @@
 }
 
 .commit__input {
+  margin-top: var(--aero-space-2);
   max-width: 140px;
+}
+
+.commit__whitelist {
+  display: flex;
+  align-items: center;
+  gap: var(--aero-space-2);
+  margin-top: var(--aero-space-4);
+}
+
+.commit__whitelist .home__switch {
+  flex: 1;
+}
+
+.commit__note {
+  margin: var(--aero-space-2) 0 0;
+  color: var(--aero-ink-soft, #5d7382);
+  font-size: var(--aero-text-sm);
+  line-height: 1.4;
 }
 
 /* ---------- Lock-in: the tank on a stand in a bright room ---------- */
@@ -2017,9 +2537,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .swimmer {
-    animation-duration: calc(var(--swim-duration) * 2);
-  }
   .aquarium__rays::before,
   .aquarium__rays::after,
   .aquarium__ceiling,
@@ -2028,16 +2545,14 @@
   .aquarium__plant,
   .aquarium__anemone,
   .aquarium__particles,
-  .store-card__sprite,
-  .swimmer__bob {
+  .store-card__sprite {
     animation: none;
   }
 }
 
 /* ---------- Narrow windows ---------- */
 
-/* Too narrow for three columns: Study Skills goes, and the Focus buttons move under
-   the groups panel and the tank. */
+/* Too narrow for three columns: the Focus buttons move under the tank. */
 @media (max-width: 1040px) {
   .home__main {
     grid-template-columns: 260px minmax(0, 1fr);
@@ -2045,28 +2560,31 @@
   }
   .home__side {
     grid-column: 1 / -1;
+    padding-top: 0;
     padding-bottom: var(--aero-space-4);
   }
-  .home__skills {
-    display: none;
+  .home__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+  .home__actions .aero-button,
+  .home__switch {
+    width: auto;
+    min-width: 160px;
   }
   .home__left {
     padding-bottom: 0;
-  }
-  .home__focus {
-    flex-direction: row;
-    justify-content: center;
   }
   .aero-button--hero {
     min-width: 200px;
     min-height: 56px;
     font-size: var(--aero-text-lg);
   }
-  /* The Focus buttons sit under the tank here, so the cabinet can't reach
-     the dock. */
   .home .home__stand {
-    height: 6vh;
-    min-height: 40px;
+    height: 28px;
+    min-height: 28px;
     margin-bottom: 0;
   }
 }
@@ -2085,16 +2603,20 @@
   .home__side {
     grid-column: auto;
   }
-  .home__focus {
+  .home__actions {
     flex-direction: column;
+    align-items: stretch;
+  }
+  .home__actions .aero-button,
+  .home__switch {
+    width: 100%;
   }
   .topbar {
     flex-wrap: wrap;
   }
   /* One column, so the top bar goes back above the tank. */
   .home {
-    --dock-height: 104px;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .home .topbar {
     position: relative;
@@ -2105,11 +2627,5 @@
   }
   .home__side {
     padding-top: 0;
-  }
-  .dock__pod {
-    right: var(--aero-space-4);
-    width: 84px;
-    height: 84px;
-    font-size: 13px;
   }
 }

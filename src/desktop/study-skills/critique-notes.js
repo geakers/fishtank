@@ -57,8 +57,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // reference marks NOT AVAILABLE are left out, so they can never be cited.
 function contextSources(context) {
   const sources = {};
+  // Git on Windows checks the reference out with CRLF. The entry pattern
+  // matches LF only, so drop the CR first.
+  const text = context.replace(/\r\n/g, '\n');
   const entry = /^\[([A-Z]\d+)\] (.+)\n(?:.*\n)??URL: (\S+)/gm;
-  for (const [, id, title, url] of context.matchAll(entry)) {
+  for (const [, id, title, url] of text.matchAll(entry)) {
     if (!/NOT AVAILABLE/.test(title)) sources[id] = { title: title.trim().replace(/:$/, ''), url };
   }
   return sources;

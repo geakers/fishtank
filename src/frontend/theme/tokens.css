@@ -17,6 +17,7 @@
   --aero-cyan-700: #0d97cf;
   --aero-grass-400: #8bdc4a;
   --aero-grass-600: #4aa52a;
+  --aero-grass-700: #2f7a16;
   --aero-danger: #e2484d;
 
   /* Water */
@@ -40,6 +41,7 @@
   --aero-gradient-tile: linear-gradient(180deg, #ffffff 0%, #f6f8fa 60%, #edf1f4 100%);
   --aero-gradient-button: linear-gradient(180deg, #ffffff 0%, #f3f6f8 50%, #e6ebef 51%, #f2f5f7 100%);
   --aero-gradient-button-cyan: linear-gradient(180deg, #8fe2ff 0%, #34beed 50%, #13a7e0 51%, #4cc8f2 100%);
+  --aero-gradient-button-grass: linear-gradient(180deg, #c6f28a 0%, #6dce3c 50%, #3d9a1e 51%, #8bdc4a 100%);
   --aero-gradient-water: linear-gradient(180deg, var(--aero-water-top) 0%, var(--aero-water-mid) 45%, var(--aero-water-deep) 100%);
   --aero-gradient-metal: linear-gradient(180deg, var(--aero-metal-light) 0%, var(--aero-metal-mid) 48%, var(--aero-metal-dark) 52%, var(--aero-metal-mid) 100%);
   --aero-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.1) 100%);
@@ -56,6 +58,7 @@
   --aero-shadow-raised: 0 8px 24px rgba(40, 60, 80, 0.16);
   --aero-shadow-inset-gloss: inset 0 1px 0 rgba(255, 255, 255, 0.95);
   --aero-glow: 0 0 0 3px rgba(52, 190, 237, 0.35), 0 0 16px rgba(52, 190, 237, 0.45);
+  --aero-glow-grass: 0 0 0 3px rgba(74, 165, 42, 0.35), 0 0 16px rgba(74, 165, 42, 0.45);
 
   /* Spacing */
   --aero-space-1: 4px;

@@ -6,6 +6,9 @@ import { GlassPanel } from './GlassPanel';
 export interface CommitPickerProps {
   mode: LockMode;
   initialMinutes: number;
+  whitelistOn: boolean;
+  onWhitelistChange: (on: boolean) => void;
+  onEditWhitelist: () => void;
   onStart: (minutes: number) => void;
   onClose: () => void;
 }
@@ -13,7 +16,7 @@ export interface CommitPickerProps {
 // Asked before every focus session: how long the user commits to. The session
 // runs for exactly that long, and only earns points if the user stays for all
 // of it.
-export function CommitPicker({ mode, initialMinutes, onStart, onClose }: CommitPickerProps) {
+export function CommitPicker({ mode, initialMinutes, whitelistOn, onWhitelistChange, onEditWhitelist, onStart, onClose }: CommitPickerProps) {
   // Kept as typed so the box can be cleared while typing a new number.
   const [text, setText] = useState(String(initialMinutes));
   const minutes = Number(text);
@@ -69,6 +72,27 @@ export function CommitPicker({ mode, initialMinutes, onStart, onClose }: CommitP
             value={text}
             onChange={(event) => setText(event.target.value)}
           />
+
+          <div className="commit__whitelist">
+            <button
+              type="button"
+              className={`home__switch${whitelistOn ? ' is-on' : ''}`}
+              aria-pressed={whitelistOn}
+              onClick={() => onWhitelistChange(!whitelistOn)}
+            >
+              <span>Whitelist</span>
+              <span className="home__switch-state">{whitelistOn ? 'On' : 'Off'}</span>
+            </button>
+            <AeroButton variant="glass" onClick={onEditWhitelist}>
+              Edit list
+            </AeroButton>
+          </div>
+          <p className="commit__note">
+            {whitelistOn
+              ? 'On: only the apps on your whitelist can stay open.'
+              : 'Off: you can’t open any other software during Focus.'}{' '}
+            The Windows key, Alt+Tab, trackpad swipes that switch apps or desktops, and the other switching shortcuts stay blocked until Focus ends.
+          </p>
 
           <div className="form-actions">
             <AeroButton variant="glass" onClick={onClose}>

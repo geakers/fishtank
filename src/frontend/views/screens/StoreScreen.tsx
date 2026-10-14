@@ -140,7 +140,7 @@ function StoreCard({ fish, owned, inTank, balance, onBuy, onSetInTank, onDraw }:
             Take out of tank
           </AeroButton>
         ) : (
-          <AeroButton onClick={() => onSetInTank(true)}>Put in tank</AeroButton>
+          <AeroButton variant="grass" onClick={() => onSetInTank(true)}>Put in tank</AeroButton>
         )
       ) : balance < fish.price ? (
         <AeroButton variant="glass" disabled>

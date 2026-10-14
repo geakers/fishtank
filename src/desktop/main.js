@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const path = require('node:path');
 const { createAccount } = require('../database/accounts');
 const {
@@ -19,6 +19,7 @@ const { runStudySkill } = require('./study-skills');
 const { listFish, buyFish, setFishInTank, setAvatarFish } = require('./fish');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
 const { listRunningApps, getAllowedApps, setAllowedApps, startStudy, stopStudy } = require('./study-mode');
+const windows = process.platform === 'win32' ? require('./win-session') : null;
 
 // When the running session (strict lockdown or study mode) started (ms since
 // epoch), or null.
@@ -29,7 +30,28 @@ let sessionCommitMinutes = null;
 // Puts the given window into kiosk mode (enabled = true) or takes it back out
 // (enabled = false). Returns the window's actual kiosk state afterwards.
 function lockDown(win, enabled) {
-  win.setKiosk(enabled);
+  const on = Boolean(enabled);
+  try {
+    win.setKiosk(on);
+  } catch {
+    // Some Windows sessions reject kiosk. Fullscreen and the focus watcher
+    // below still keep the session on top.
+  }
+  if (windows) {
+    win.setFullScreen(on);
+    win.setAlwaysOnTop(on, 'screen-saver');
+    win.setClosable(!on);
+    win.setMinimizable(!on);
+    windows.watchStrict(win, on);
+    if (on) void windows.setKeyLock(true);
+    if (on) {
+      win.show();
+      win.focus();
+    }
+    // The watcher is what actually holds the session on Windows, where kiosk
+    // still lets Alt+Tab and the Windows key through.
+    return on || win.isKiosk();
+  }
   return win.isKiosk();
 }
 
@@ -50,6 +72,9 @@ function beginSession(commitMinutes) {
 async function endSession(win) {
   const locked = lockDown(win, false);
   await stopStudy();
+  // Study mode releases its own hook. This also releases one taken by strict
+  // lock-in, which does not go through study mode.
+  if (windows) await windows.setKeyLock(false);
   const seconds = sessionStartedAt === null ? 0 : Math.floor((Date.now() - sessionStartedAt) / 1000);
   const commitMinutes = sessionCommitMinutes;
   sessionStartedAt = null;
@@ -99,6 +124,8 @@ async function redeemCode(code) {
 // reload. Otherwise the built frontend in dist/frontend is loaded.
 const devServerUrl = process.env.FISHTANK_DEV_SERVER_URL;
 
+const windowIcon = path.join(__dirname, '..', '..', 'launcher', 'fishtank.ico');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -106,10 +133,13 @@ function createWindow() {
     minWidth: 760,
     minHeight: 560,
     backgroundColor: '#6fcdf7',
+    icon: windowIcon,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+  win.setMenuBarVisibility(false);
 
   // Closing the window ends study mode, so notifications don't stay silenced.
   win.on('closed', () => void stopStudy());
@@ -120,6 +150,9 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '..', '..', 'dist', 'frontend', 'index.html'));
   }
 }
+
+Menu.setApplicationMenu(null);
+if (process.platform === 'win32') app.setAppUserModelId('Fishtank');
 
 app.whenReady().then(() => {
   ipcMain.handle('lock-down', (event, enabled, commitMinutes) => {
@@ -132,12 +165,16 @@ app.whenReady().then(() => {
     }
     return locked;
   });
-  ipcMain.handle('start-study', (event, commitMinutes) => {
+  ipcMain.handle('start-study', (event, commitMinutes, enforceWhitelist = true) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     beginSession(commitMinutes);
-    return startStudy(win, (appName) => {
-      if (!win.isDestroyed()) win.webContents.send('study-app-blocked', appName);
-    });
+    return startStudy(
+      win,
+      (appName) => {
+        if (!win.isDestroyed()) win.webContents.send('study-app-blocked', appName);
+      },
+      enforceWhitelist !== false,
+    );
   });
   ipcMain.handle('list-running-apps', () => listRunningApps());
   ipcMain.handle('get-allowed-apps', () => getAllowedApps());
@@ -193,7 +230,18 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('before-quit', () => void stopStudy());
+// Quitting has to finish restoring Do Not Disturb before the helper process
+// is stopped. preventDefault makes Electron wait for the second app.quit().
+let quitting = false;
+app.on('before-quit', (event) => {
+  if (quitting) return;
+  event.preventDefault();
+  quitting = true;
+  stopStudy().finally(() => {
+    if (windows) windows.shutdownWindowsSession();
+    app.quit();
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

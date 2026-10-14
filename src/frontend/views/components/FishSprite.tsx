@@ -32,7 +32,6 @@ export function FishSprite({ fish, size = 96, className = '' }: FishSpriteProps)
         <Jelly look={look} id={id} />
       ) : look.body === 'human' ? (
         <Dude look={look} />
-
       ) : (
         <SideFish look={look} id={id} />
       )}

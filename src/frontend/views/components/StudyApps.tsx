@@ -62,18 +62,18 @@ export function StudyApps({ onClose }: StudyAppsProps) {
   );
 
   return (
-    <div className="modal-backdrop" onPointerDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="modal-backdrop modal-backdrop--front" onPointerDown={(event) => event.target === event.currentTarget && onClose()}>
       <GlassPanel variant="raised" className="modal study-apps" role="dialog" aria-labelledby="study-apps-title">
         <div className="modal__header">
           <h2 id="study-apps-title" className="panel-title">
-            Study apps
+            Whitelist
           </h2>
         </div>
 
-        {!bridge ? <p className="muted">Study mode needs the desktop app.</p> : null}
+        {!bridge ? <p className="muted">The whitelist needs the desktop app.</p> : null}
         {bridge ? (
           <p className="muted">
-            Tick the apps you study with. During a Focus session, switching to any other app brings Fishtank back to the front.
+            Tick the apps you study with. While the whitelist is on, switching to any other app during Focus brings Fishtank back to the front.
           </p>
         ) : null}
         {bridge && allowed !== null && apps.length === 0 ? <p className="muted">Open an app to see it here.</p> : null}
@@ -94,10 +94,17 @@ export function StudyApps({ onClose }: StudyAppsProps) {
         </ul>
         {error ? <p className="error-text">{error}</p> : null}
 
-        {bridge ? (
+        {bridge?.platform === 'darwin' ? (
           <p className="study-apps__section muted">
             To silence notifications too, make two shortcuts in the Shortcuts app that turn a Focus on and off, named “{FOCUS_ON}” and
             “{FOCUS_OFF}”. Fishtank runs them when a Focus session starts and ends.
+          </p>
+        ) : null}
+        {bridge?.platform === 'win32' ? (
+          <p className="study-apps__section muted">
+            On Windows, a Focus session turns on Do Not Disturb and blocks the Windows key, Alt+Tab, three- and four-finger trackpad
+            swipes, and the other shortcuts that switch apps. An app that isn’t ticked is sent back if it still gets in front. Do Not Disturb and those keys are restored when the
+            session ends. Do Not Disturb is left on if it was already on.
           </p>
         ) : null}
 

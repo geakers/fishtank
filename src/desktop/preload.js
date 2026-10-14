@@ -1,8 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('fishtank', {
+  platform: process.platform,
   lockDown: (enabled, commitMinutes) => ipcRenderer.invoke('lock-down', enabled, commitMinutes),
-  startStudy: (commitMinutes) => ipcRenderer.invoke('start-study', commitMinutes),
+  startStudy: (commitMinutes, enforceWhitelist) => ipcRenderer.invoke('start-study', commitMinutes, enforceWhitelist),
   listRunningApps: () => ipcRenderer.invoke('list-running-apps'),
   getAllowedApps: () => ipcRenderer.invoke('get-allowed-apps'),
   setAllowedApps: (apps) => ipcRenderer.invoke('set-allowed-apps', apps),

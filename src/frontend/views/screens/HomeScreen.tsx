@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { App, LockMode } from '../../useFishtank';
+import type { App } from '../../useFishtank';
 import { AeroButton } from '../components/AeroButton';
 import { Aquarium } from '../components/Aquarium';
 import { CommitPicker } from '../components/CommitPicker';
@@ -9,24 +9,17 @@ import { PointsBadge } from '../components/PointsBadge';
 import { ProfileMenu } from '../components/ProfileMenu';
 import { StudyApps } from '../components/StudyApps';
 import { StudyGroups } from '../components/StudyGroups';
-import { StudySkills } from '../components/StudySkills';
 import { Toast } from '../components/Toast';
 
 export interface HomeScreenProps {
   app: App;
 }
 
-// Layout, after the Wii menu:
-//   top bar - brand on the left; points and profile menu on the right
-//   main    - three columns. Left: Groups | Notes tabs switching between the study groups
-//             and study notes panels. Middle: the user's tank on its cabinet. Right: the
-//             Study Skills panel (Claude), then the Focus button (study mode) with
-//             Study apps and Strict lock-in under it (stats live in the profile menu)
-//   main    - the user's tank on its cabinet on the left; on the right, Groups | Notes tabs
-//             switching between the study groups and study notes panels, then the Focus button
-//             (study mode) with Study apps and Strict lock-in under it (stats live in the
-//             profile menu). Both lock-ins ask how long to commit to first.
-//   dock    - a clock in the middle and a round "Fish Shop" button on the right
+// Layout:
+//   top bar - points and profile, floating at the top right
+//   main    - three columns. Left: Groups | Notes. Middle: a quiet clock just
+//             above the tank, then the tank on a short cabinet. Right: Focus.
+//   corner  - Fish Shop peeks out of the bottom right and slides out on hover
 type SideTab = 'groups' | 'notes';
 
 const SIDE_TABS: { id: SideTab; label: string }[] = [
@@ -34,14 +27,32 @@ const SIDE_TABS: { id: SideTab; label: string }[] = [
   { id: 'notes', label: 'Notes' },
 ];
 
+const WHITELIST_KEY = 'fishtank-whitelist';
+
+function readWhitelist(): boolean {
+  try {
+    return localStorage.getItem(WHITELIST_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
 export function HomeScreen({ app }: HomeScreenProps) {
   const openShop = () => app.setScreen('store');
   const [choosingApps, setChoosingApps] = useState(false);
-  // The lock-in waiting on the user to choose how long to commit to.
-  const [committing, setCommitting] = useState<LockMode | null>(null);
+  const [committing, setCommitting] = useState(false);
+  const [whitelistOn, setWhitelistOn] = useState(readWhitelist);
   const [sideTab, setSideTab] = useState<SideTab>('groups');
   // The note composer, open with the group "Share with" starts on (null = just me).
   const [composer, setComposer] = useState<{ groupId: number | null } | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WHITELIST_KEY, whitelistOn ? 'on' : 'off');
+    } catch {
+      // A private window can refuse storage; the switch still works this visit.
+    }
+  }, [whitelistOn]);
 
   const openSideTab = (tab: SideTab) => {
     setSideTab(tab);
@@ -115,6 +126,7 @@ export function HomeScreen({ app }: HomeScreenProps) {
         </aside>
 
         <section className="home__tank-panel" aria-label="Your aquarium">
+          <TankClock />
           <Aquarium fish={app.tank} fishSize={96} className="home__tank" />
           {app.tank.length === 0 ? (
             <div className="home__tank-empty">
@@ -122,47 +134,38 @@ export function HomeScreen({ app }: HomeScreenProps) {
               <AeroButton onClick={openShop}>Visit the Fish Shop</AeroButton>
             </div>
           ) : null}
-          {/* The same cabinet as in focus mode; it runs on down behind the dock. */}
           <div className="tank-stand home__stand" aria-hidden="true" />
         </section>
 
         <aside className="home__side">
-          <StudySkills className="home__panel home__skills" />
-          <div className="home__focus">
-            <AeroButton variant="hero" onClick={() => setCommitting('study')}>
+          <div className="home__actions">
+            <AeroButton variant="hero" onClick={() => setCommitting(true)}>
               Focus
             </AeroButton>
-            <div className="home__focus-more">
-              <AeroButton variant="glass" onClick={() => setChoosingApps(true)}>
-                Study apps
-              </AeroButton>
-              <AeroButton variant="glass" onClick={() => setCommitting('strict')}>
-                Strict lock-in
-              </AeroButton>
-            </div>
           </div>
         </aside>
       </main>
 
-      <footer className="dock">
-        <DockClock />
-        <button type="button" className="dock__pod dock__pod--right" onClick={openShop}>
-          Fish Shop
-        </button>
-      </footer>
+      <ShopPeek onClick={openShop} />
 
-      {choosingApps ? <StudyApps onClose={() => setChoosingApps(false)} /> : null}
       {committing ? (
         <CommitPicker
-          mode={committing}
+          mode="study"
           initialMinutes={app.lockMinutes}
+          whitelistOn={whitelistOn}
+          onWhitelistChange={setWhitelistOn}
+          onEditWhitelist={() => setChoosingApps(true)}
           onStart={(minutes) => {
-            setCommitting(null);
-            app.enterLockIn(committing, minutes);
+            setCommitting(false);
+            app.enterLockIn('study', minutes, whitelistOn);
           }}
-          onClose={() => setCommitting(null)}
+          onClose={() => {
+            if (choosingApps) return;
+            setCommitting(false);
+          }}
         />
       ) : null}
+      {choosingApps ? <StudyApps onClose={() => setChoosingApps(false)} /> : null}
       {composer ? (
         <NoteComposer
           groups={app.groups}
@@ -176,17 +179,32 @@ export function HomeScreen({ app }: HomeScreenProps) {
   );
 }
 
-// Big grey time and date in the middle of the dock, like the Wii menu.
-function DockClock() {
+// The time sits in its own band above the lid, in the same cyan as the rest of the room.
+function TankClock() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 10_000);
+    const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
   return (
-    <div className="dock__clock">
-      <span className="dock__time">{now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-      <span className="dock__date">{now.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric', year: '2-digit' })}</span>
+    <div className="home__clock">
+      <span className="home__clock-time">{now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
     </div>
+  );
+}
+
+// Tucked into the bottom-right corner. Bubbles give it away; hovering slides
+// the label out so it can be clicked.
+function ShopPeek({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="shop-peek" onClick={onClick}>
+      <span className="shop-peek__bubbles" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+      <span className="shop-peek__orb" aria-hidden="true" />
+      <span className="shop-peek__label">Fish Shop</span>
+    </button>
   );
 }

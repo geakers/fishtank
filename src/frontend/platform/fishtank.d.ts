@@ -114,16 +114,18 @@ declare global {
   }
 
   interface FishtankBridge {
+    // 'darwin', 'win32', or 'linux'. Study-mode app blocking runs on the first two.
+    platform: string;
     // Turns kiosk lockdown (strict mode) on/off. Turning it on starts a
     // session the user commits commitMinutes to. Resolves with the window's
     // actual kiosk state.
     lockDown(enabled: boolean, commitMinutes?: number): Promise<boolean>;
-    // Starts study mode for a session the user commits commitMinutes to:
-    // grows the window to fill the screen, silences
-    // notifications and keeps apps that aren't on the user's list from staying
-    // in front. notificationsSilenced is false when the user hasn't made the
-    // Focus shortcuts.
-    startStudy(commitMinutes: number): Promise<{ notificationsSilenced: boolean }>;
+    // Starts a Focus session the user commits commitMinutes to. The window
+    // fills the screen and notifications are silenced. When enforceWhitelist
+    // is false, no other software may stay in front. When it is true, only
+    // the whitelist may. notificationsSilenced is false when macOS is missing
+    // the Focus shortcuts, or Windows couldn't turn on Do Not Disturb.
+    startStudy(commitMinutes: number, enforceWhitelist?: boolean): Promise<{ notificationsSilenced: boolean }>;
     // Resolves with the apps that are open right now, other than Fishtank.
     listRunningApps(): Promise<FishtankStudyApp[]>;
     // The apps the user may use in study mode. setAllowedApps resolves with

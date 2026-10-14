@@ -360,7 +360,7 @@ export function useFishtank() {
 
   // --- Lock-in ---
 
-  const startLock = async (mode: LockMode = lockMode, commitMinutes: number = lockMinutes) => {
+  const startLock = async (mode: LockMode = lockMode, commitMinutes: number = lockMinutes, enforceWhitelist = true) => {
     setLockError(null);
     try {
       // Outside Electron there is nothing to lock.
@@ -369,7 +369,7 @@ export function useFishtank() {
         if (bridge && !(await bridge.lockDown(true, commitMinutes))) throw new Error('lockdown failed');
         setSession({ mode, commitMinutes, startedAt: Date.now() });
       } else {
-        const study = await bridge?.startStudy(commitMinutes);
+        const study = await bridge?.startStudy(commitMinutes, enforceWhitelist);
         setSession({ mode, commitMinutes, startedAt: Date.now(), notificationsSilenced: study?.notificationsSilenced });
       }
     } catch {
@@ -377,15 +377,15 @@ export function useFishtank() {
     }
   };
 
-  const enterLockIn = (mode: LockMode, commitMinutes: number) => {
+  const enterLockIn = (mode: LockMode, commitMinutes: number, enforceWhitelist = true) => {
     setLockMode(mode);
     setLockMinutes(commitMinutes);
     setScreen('lockIn');
-    void startLock(mode, commitMinutes);
+    void startLock(mode, commitMinutes, enforceWhitelist);
   };
 
   // Say which app study mode just sent to the back.
-  useEffect(() => window.fishtank?.onStudyAppBlocked((appName) => notify('info', `${appName} isn't one of your study apps.`)), []);
+  useEffect(() => window.fishtank?.onStudyAppBlocked((appName) => notify('info', `${appName} can't stay open during Focus.`)), []);
 
   const endLock = async () => {
     if (ending.current) return;

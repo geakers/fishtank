@@ -2,16 +2,20 @@ const { execFile } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { promisify } = require('node:util');
-const { app } = require('electron');
+const { app, screen } = require('electron');
 
 const run = promisify(execFile);
+const windows = process.platform === 'win32' ? require('./win-session') : null;
 
-// Study mode: the softer kind of lock-in. The window isn't locked; instead
-// notifications are silenced and only the apps on the user's list may be in
-// front. Bringing any other app forward puts Fishtank back on top.
+// Study mode: Focus. The window fills whichever display it is on, with no
+// title bar and (on Windows) no taskbar. Notifications are silenced. On
+// Windows the Windows key, Alt+Tab, three- and four-finger trackpad swipes,
+// and the other app-switching shortcuts are swallowed until the session ends. Only the apps on the user's list may stay
+// in front; anything else brings Fishtank back.
 //
-// macOS only: other systems have no lsappinfo or shortcuts, so there study
-// mode runs the timer and nothing else.
+// macOS uses lsappinfo plus two Shortcuts that switch a Focus on and off.
+// Windows uses the foreground window, a keyboard hook and Do Not Disturb.
+// Elsewhere, study mode runs the timer and nothing else.
 
 // How often to check which app is in front.
 const CHECK_MS = 1000;
@@ -29,15 +33,23 @@ const ALWAYS_ALLOWED = [
   'com.apple.ScreenSaver.Engine',
   'com.apple.UserNotificationCenter',
   'com.apple.coreservices.uiagent',
+  // Windows: lock screen, UAC and the touch keyboard. Not distractions.
+  'lockapp',
+  'logonui',
+  'consent',
+  'credentialuibroker',
+  'textinputhost',
 ];
 
 // The running session's timer, or null when study mode is off.
 let watcher = null;
 // Whether this session switched the Focus on, and so has to switch it off.
 let silenced = false;
-// The window this session made as big as the screen allows, to put back to
-// its old size afterwards, or null if it was already that big.
-let maximized = null;
+// Whether this session is holding the Windows key and Alt+Tab lock.
+let keysLocked = false;
+// Where the window was before this session filled the display, so it can be
+// put back. Null when study mode isn't covering the screen.
+let screenCover = null;
 
 // --- Reading lsappinfo ---
 
@@ -74,6 +86,7 @@ function parseAppList(text) {
 // Returns { id, name, pid } for the app in front, or null if that can't be
 // found out.
 async function frontApp() {
+  if (windows) return windows.foregroundApp();
   try {
     const { stdout: asn } = await run('lsappinfo', ['front']);
     if (!asn.trim()) return null;
@@ -87,6 +100,7 @@ async function frontApp() {
 // Returns [{ id, name }] for the apps that are open right now, other than
 // Fishtank, for the user to pick their study apps from.
 async function listRunningApps() {
+  if (windows) return windows.runningApps(process.pid);
   try {
     const { stdout } = await run('lsappinfo', ['list']);
     return parseAppList(stdout);
@@ -131,10 +145,13 @@ function setAllowedApps(apps) {
 
 // Whether the given front app may stay in front during study mode.
 function isAllowed(front, allowedApps) {
+  const id = typeof front.id === 'string' ? front.id : '';
+  const idLower = id.toLowerCase();
   return (
     front.pid === process.pid ||
-    ALWAYS_ALLOWED.includes(front.id) ||
-    allowedApps.some((allowed) => allowed.id === front.id)
+    ALWAYS_ALLOWED.includes(id) ||
+    ALWAYS_ALLOWED.includes(idLower) ||
+    allowedApps.some((allowed) => allowed.id === id || allowed.id.toLowerCase() === idLower)
   );
 }
 
@@ -155,19 +172,135 @@ async function runFocusShortcut(name) {
   }
 }
 
+// --- Filling the display ---
+
+// The monitor the window is mostly on, including the taskbar strip.
+// bounds are in DIP, so this follows that screen's resolution and scale,
+// and a window on a second monitor stays on that monitor.
+function displayBounds(win) {
+  return screen.getDisplayMatching(win.getBounds()).bounds;
+}
+
+// True when the window already fills the monitor, within a pixel or two.
+// The taskbar is much taller than that, so a work-area window does not pass.
+function coversDisplay(win, next) {
+  const current = win.getBounds();
+  return (
+    Math.abs(current.x - next.x) <= 2 &&
+    Math.abs(current.y - next.y) <= 2 &&
+    Math.abs(current.width - next.width) <= 2 &&
+    Math.abs(current.height - next.height) <= 2
+  );
+}
+
+// Hides the title bar and stretches over the taskbar on the current display.
+function fillDisplay(win) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    if (process.platform === 'win32') {
+      const next = displayBounds(win);
+      // Fullscreen can stop at the work area and leave the taskbar showing.
+      // Leave fullscreen before resizing, or Windows ignores the new bounds.
+      if (!coversDisplay(win, next)) {
+        if (win.isFullScreen()) win.setFullScreen(false);
+        win.setBounds(next);
+      }
+      if (win.isFocused()) win.setAlwaysOnTop(true, 'screen-saver');
+    }
+    if (!win.isFullScreen()) win.setFullScreen(true);
+  } catch {
+    // A session that can't take the whole display still runs the timer.
+  }
+}
+
+function onCoverFocus() {
+  if (!screenCover || screenCover.win.isDestroyed()) return;
+  const win = screenCover.win;
+  if (process.platform === 'win32' && win.isFullScreen() && coversDisplay(win, displayBounds(win))) {
+    win.setAlwaysOnTop(true, 'screen-saver');
+    return;
+  }
+  fillDisplay(win);
+}
+
+function onCoverBlur() {
+  // An allowed study app has to be able to come forward. The taskbar may
+  // show while that app is in front; Focus covers it again when it returns.
+  if (!screenCover || screenCover.win.isDestroyed() || process.platform !== 'win32') return;
+  screenCover.win.setAlwaysOnTop(false);
+}
+
+function onDisplayMetrics() {
+  if (!screenCover || screenCover.win.isDestroyed()) return;
+  fillDisplay(screenCover.win);
+}
+
+function watchCover(win) {
+  win.on('focus', onCoverFocus);
+  win.on('blur', onCoverBlur);
+  screen.on('display-metrics-changed', onDisplayMetrics);
+}
+
+function unwatchCover(win) {
+  if (win && !win.isDestroyed()) {
+    win.removeListener('focus', onCoverFocus);
+    win.removeListener('blur', onCoverBlur);
+  }
+  screen.removeListener('display-metrics-changed', onDisplayMetrics);
+}
+
+function enterScreenCover(win) {
+  if (!win || win.isDestroyed()) return;
+  screenCover = {
+    win,
+    wasMaximized: win.isMaximized(),
+    wasFullScreen: win.isFullScreen(),
+    bounds: win.getNormalBounds(),
+  };
+  fillDisplay(win);
+  watchCover(win);
+  // Windows sometimes applies the work area a moment after fullscreen.
+  setTimeout(() => {
+    if (!screenCover || screenCover.win !== win || win.isDestroyed()) return;
+    fillDisplay(win);
+  }, 200);
+}
+
+function leaveScreenCover() {
+  const saved = screenCover;
+  screenCover = null;
+  if (!saved) return;
+  unwatchCover(saved.win);
+  const win = saved.win;
+  if (!win || win.isDestroyed()) return;
+  if (process.platform === 'win32') win.setAlwaysOnTop(false);
+  if (saved.wasFullScreen) return;
+  let restored = false;
+  const restore = () => {
+    if (restored || win.isDestroyed()) return;
+    restored = true;
+    if (saved.wasMaximized) win.maximize();
+    else win.setBounds(saved.bounds);
+  };
+  if (win.isFullScreen()) {
+    win.once('leave-full-screen', restore);
+    win.setFullScreen(false);
+    // macOS leaves fullscreen asynchronously; other platforms can restore now.
+    if (process.platform !== 'darwin') restore();
+  } else {
+    restore();
+  }
+}
+
 // --- Starting and stopping ---
 
-// Starts study mode for the given window, growing it to fill the screen (short
-// of full screen). onBlocked is called with the name of each app that gets
-// sent to the back. Resolves with { notificationsSilenced }, which is false
-// when the Focus shortcut is missing.
-async function startStudy(win, onBlocked) {
+// Starts study mode for the given window. When enforceWhitelist is false,
+// no other software may stay in front. When it is true, only the saved
+// whitelist may. onBlocked is called with the name of each app sent back.
+async function startStudy(win, onBlocked, enforceWhitelist = true) {
   await stopStudy();
-
-  if (!win.isMaximized()) {
-    win.maximize();
-    maximized = win;
-  }
+  enterScreenCover(win);
+  if (windows) keysLocked = await windows.setKeyLock(true);
 
   let checking = false;
   watcher = setInterval(async () => {
@@ -178,31 +311,51 @@ async function startStudy(win, onBlocked) {
       const front = await frontApp();
       // Fishtank may have come to the front while that was being looked up.
       if (!watcher || win.isDestroyed() || win.isFocused()) return;
-      if (!front || isAllowed(front, getAllowedApps())) return;
-      if (win.isMinimized()) win.restore();
-      win.show();
-      app.focus({ steal: true });
-      win.focus();
+      const allowed = enforceWhitelist ? getAllowedApps() : [];
+      if (!front || isAllowed(front, allowed)) return;
+      if (windows) windows.stealFocus(win);
+      else {
+        if (win.isMinimized()) win.restore();
+        win.show();
+        app.focus({ steal: true });
+        win.focus();
+      }
       onBlocked(front.name);
     } finally {
       checking = false;
     }
   }, CHECK_MS);
 
-  silenced = await runFocusShortcut(FOCUS_SHORTCUTS.on);
+  silenced = windows ? await windows.setDoNotDisturb(true) : await runFocusShortcut(FOCUS_SHORTCUTS.on);
   return { notificationsSilenced: silenced };
 }
 
-// Stops study mode: puts the window back to its old size and lets
+// Stops study mode: puts the window back how it was and lets
 // notifications through again. Safe to call when study mode isn't running.
+// Overlapping calls share one run, so quitting can't restore notifications
+// twice or tear the helper down halfway through.
+let stopping = null;
+
 async function stopStudy() {
+  if (stopping) return stopping;
+  stopping = finishStudy().finally(() => {
+    stopping = null;
+  });
+  return stopping;
+}
+
+async function finishStudy() {
   clearInterval(watcher);
   watcher = null;
-  if (maximized && !maximized.isDestroyed()) maximized.unmaximize();
-  maximized = null;
+  leaveScreenCover();
+  if (windows && keysLocked) {
+    keysLocked = false;
+    await windows.setKeyLock(false);
+  }
   if (!silenced) return;
   silenced = false;
-  await runFocusShortcut(FOCUS_SHORTCUTS.off);
+  if (windows) await windows.setDoNotDisturb(false);
+  else await runFocusShortcut(FOCUS_SHORTCUTS.off);
 }
 
 module.exports = {

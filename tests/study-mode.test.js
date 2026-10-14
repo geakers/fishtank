@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { parseApp, parseAppList, isAllowed } = require('../src/desktop/study-mode');
+const { presentWindowsApps } = require('../src/desktop/win-session');
 
 // What `lsappinfo info -only name,bundleid,pid` prints for the app in front.
 const FRONT = `"Safari" ASN:0x0-0x1b01b: (in front)
@@ -48,6 +49,21 @@ test('parseAppList keeps only ordinary apps, sorted by name', () => {
   ]);
 });
 
+test('presentWindowsApps drops system windows and keeps one row per app', () => {
+  assert.deepEqual(
+    presentWindowsApps([
+      { id: 'TextInputHost', name: 'Windows Input Experience' },
+      { id: 'EXCEL', name: 'Microsoft Excel' },
+      { id: 'excel', name: 'Microsoft Excel' },
+      { id: 'chrome', name: 'Google Chrome' },
+    ]),
+    [
+      { id: 'chrome', name: 'Google Chrome' },
+      { id: 'excel', name: 'Microsoft Excel' },
+    ],
+  );
+});
+
 test('isAllowed lets through study apps, system screens and Fishtank itself', () => {
   const allowed = [{ id: 'com.apple.Notes', name: 'Notes' }];
 
@@ -55,4 +71,7 @@ test('isAllowed lets through study apps, system screens and Fishtank itself', ()
   assert.equal(isAllowed({ id: 'com.apple.loginwindow', name: 'loginwindow', pid: 603 }, allowed), true);
   assert.equal(isAllowed({ id: 'com.github.Electron', name: 'Electron', pid: process.pid }, allowed), true);
   assert.equal(isAllowed({ id: 'com.apple.Safari', name: 'Safari', pid: 812 }, allowed), false);
+  assert.equal(isAllowed({ id: 'LockApp', name: 'LockApp', pid: 4 }, allowed), true);
+  assert.equal(isAllowed({ id: 'chrome', name: 'Google Chrome', pid: 90 }, [{ id: 'chrome', name: 'Google Chrome' }]), true);
+  assert.equal(isAllowed({ id: 'EXCEL', name: 'Microsoft Excel', pid: 91 }, [{ id: 'chrome', name: 'Google Chrome' }]), false);
 });

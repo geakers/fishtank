@@ -3,7 +3,8 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 export interface AeroButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   children: ReactNode;
   // 'hero' is the big lock-in button; 'glass' is a subtle translucent button.
-  variant?: 'primary' | 'secondary' | 'glass' | 'hero';
+  // 'grass' is the green action, used so it doesn't read as the cyan primary.
+  variant?: 'primary' | 'secondary' | 'glass' | 'hero' | 'grass';
   type?: 'button' | 'submit';
 }
 

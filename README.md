@@ -61,8 +61,8 @@ The phone apps build separately: see `src/mobile/README.md` and `src/ios/README.
 
 | Mode | How it holds you | Platforms |
 | --- | --- | --- |
-| Study mode | Brings F-Lock back to the front whenever an app you didn't allow takes over. It can also turn on a Focus through two Shortcuts (`Fishtank Focus On` / `Off`) to silence notifications. | macOS |
-| Strict lock-in | Kiosk mode: nothing else can be used until the session ends. | All desktops |
+| Study mode | Brings F-Lock back to the front whenever an app you didn't allow takes over. macOS can also turn on a Focus through two Shortcuts (`Fishtank Focus On` / `Off`). Windows turns on Do Not Disturb for the session. | macOS, Windows |
+| Strict lock-in | Kiosk mode: nothing else can be used until the session ends. On Windows, Alt+Tab and the Windows key are pulled back to the session. | All desktops |
 | Android | Full-screen flip-phone lock screen in 45-minute blocks, opening only your allowed apps. | Android |
 | iOS | Screen Time (FamilyControls) blocks every app you didn't allow. Needs a paid Apple Developer account, so it's switched off in the build for now. | iOS |
 
@@ -85,4 +85,4 @@ Supabase is set up by running the SQL in `src/database` by hand in the SQL edito
 - **Some settings aren't saved.** Display-name edits and session stats such as streaks are lost when the app closes.
 - **Notes don't earn anything.** They aren't reviewed and don't earn points yet.
 - **Test coverage is partial.** The tests cover the desktop's main process, not the UI or the SQL.
-- **Assymetric OS Functionality.** The app runs noticeably better on MacOS and iOS with more errors on Windows and Android devices. 
+- **Phone apps lag the desktop.** Android and iOS still have rougher edges than the desktop app. Desktop study mode runs on macOS and Windows. 
