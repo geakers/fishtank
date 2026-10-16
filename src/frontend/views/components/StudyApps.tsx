@@ -47,7 +47,10 @@ export function StudyApps({ onClose }: StudyAppsProps) {
 
   const toggle = async (app: FishtankStudyApp, allow: boolean) => {
     if (!bridge || !allowed) return;
-    const next = allow ? [...allowed, app] : allowed.filter((a) => a.id !== app.id);
+    const source = running.find((item) => item.id === app.id) ?? app;
+    const next = allow
+      ? [...allowed.filter((item) => item.id !== source.id), { id: source.id, name: source.name, path: source.path }]
+      : allowed.filter((item) => item.id !== app.id);
     try {
       setAllowed(await bridge.setAllowedApps(next));
       setError(null);
@@ -66,14 +69,14 @@ export function StudyApps({ onClose }: StudyAppsProps) {
       <GlassPanel variant="raised" className="modal study-apps" role="dialog" aria-labelledby="study-apps-title">
         <div className="modal__header">
           <h2 id="study-apps-title" className="panel-title">
-            Whitelist
+            Study apps
           </h2>
         </div>
 
-        {!bridge ? <p className="muted">The whitelist needs the desktop app.</p> : null}
+        {!bridge ? <p className="muted">Study apps need the desktop app.</p> : null}
         {bridge ? (
           <p className="muted">
-            Tick the apps you study with. While the whitelist is on, switching to any other app during Focus brings Fishtank back to the front.
+            Tick the apps you study with. During Focus, any other app is sent back. The bubble on the screen edge brings a study app forward, at its own window size.
           </p>
         ) : null}
         {bridge && allowed !== null && apps.length === 0 ? <p className="muted">Open an app to see it here.</p> : null}

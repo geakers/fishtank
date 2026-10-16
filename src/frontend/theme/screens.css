@@ -41,7 +41,7 @@
   right: var(--aero-space-6);
 }
 
-/* Groups and notes | the tank | Focus and the whitelist. */
+/* Groups and notes | the tank | Focus and the study apps. */
 .home__main {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr) 240px;
@@ -119,7 +119,7 @@
   padding-bottom: var(--aero-space-6);
 }
 
-/* The right column: Focus, Whitelist, and the whitelist switch. */
+/* The right column: Focus, study apps, and the study-apps switch. */
 .home__side {
   display: flex;
   flex-direction: column;
@@ -2341,14 +2341,14 @@
   max-width: 140px;
 }
 
-.commit__whitelist {
+.commit__study-apps {
   display: flex;
   align-items: center;
   gap: var(--aero-space-2);
   margin-top: var(--aero-space-4);
 }
 
-.commit__whitelist .home__switch {
+.commit__study-apps .home__switch {
   flex: 1;
 }
 
@@ -2628,4 +2628,144 @@
   .home__side {
     padding-top: 0;
   }
+}
+
+/* The Focus bubble is its own transparent window on the screen edge. */
+body.is-study-bubble,
+body.is-study-bubble #root {
+  background: transparent !important;
+  box-shadow: none;
+}
+
+.study-bubble {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.study-bubble__hit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.study-bubble__dot {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: var(--aero-radius-pill);
+  background: var(--aero-bubble), var(--aero-gradient-button-cyan);
+  outline: none;
+  cursor: pointer;
+  animation: study-bubble-glow 2.6s ease-in-out infinite;
+}
+
+.study-bubble__dot::before {
+  content: "";
+  position: absolute;
+  inset: -28px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(52, 190, 237, 0.5) 0%, rgba(52, 190, 237, 0.16) 46%, transparent 70%);
+  animation: study-bubble-halo 2.6s ease-in-out infinite;
+}
+
+.study-bubble__dot:focus,
+.study-bubble__dot:focus-visible {
+  outline: none;
+}
+
+@keyframes study-bubble-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 5px rgba(52, 190, 237, 0.28),
+      0 0 16px 4px rgba(52, 190, 237, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 0 12px rgba(52, 190, 237, 0.12),
+      0 0 28px 8px rgba(52, 190, 237, 0.62);
+  }
+}
+
+@keyframes study-bubble-halo {
+  0%,
+  100% {
+    transform: scale(0.86);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-bubble__dot,
+  .study-bubble__dot::before {
+    animation: none;
+  }
+}
+
+.study-bubble__shine {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  width: 22px;
+  height: 14px;
+  border-radius: var(--aero-radius-pill);
+  background: rgba(255, 255, 255, 0.85);
+  transform: rotate(-18deg);
+}
+
+.study-bubble__panel {
+  width: 240px;
+  max-height: calc(100% - 72px);
+  overflow: auto;
+  padding: var(--aero-space-3);
+  border: 1px solid var(--aero-line);
+  border-radius: var(--aero-radius-lg);
+  background: var(--aero-gradient-tile);
+  box-shadow: var(--aero-shadow-raised), var(--aero-shadow-inset-gloss);
+}
+
+.study-bubble__title {
+  margin: 0 0 var(--aero-space-2);
+  color: var(--aero-ink-muted);
+  font-size: var(--aero-text-sm);
+}
+
+.study-bubble__app {
+  display: block;
+  width: 100%;
+  margin: 0 0 var(--aero-space-1);
+  padding: var(--aero-space-2) var(--aero-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--aero-radius-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.study-bubble__app:hover {
+  border-color: var(--aero-cyan-300);
+  background: var(--aero-cyan-100);
+}
+
+.study-bubble__empty {
+  margin: var(--aero-space-2) 0 0;
+  color: var(--aero-ink-muted);
+  font-size: var(--aero-text-sm);
 }

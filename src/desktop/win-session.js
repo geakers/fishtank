@@ -102,7 +102,7 @@ function startHelper() {
   waiter = null;
   child = spawn(
     'powershell.exe',
-    ['-NoProfile', '-NoLogo', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'win-session.ps1')],
+    ['-NoProfile', '-NoLogo', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'win-session.ps1'), String(process.pid)],
     { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true },
   );
   child.stdout.on('data', onData);
@@ -144,6 +144,92 @@ function parseAppLine(line) {
   return { id: parts[1], name: parts.slice(3).join('\t'), pid: Number.isFinite(pid) ? pid : null };
 }
 
+let user32 = null;
+
+function win32() {
+  if (user32) return user32;
+  const koffi = require('koffi');
+  const lib = koffi.load('user32.dll');
+  user32 = {
+    // Win32 BOOL is a 4-byte int. A restored window is only restored, never resized.
+    setForegroundWindow: lib.func('int __stdcall SetForegroundWindow(uintptr_t hWnd)'),
+    showWindow: lib.func('int __stdcall ShowWindow(uintptr_t hWnd, int nCmdShow)'),
+    isIconic: lib.func('int __stdcall IsIconic(uintptr_t hWnd)'),
+    getForegroundWindow: lib.func('uintptr_t __stdcall GetForegroundWindow()'),
+    bringWindowToTop: lib.func('int __stdcall BringWindowToTop(uintptr_t hWnd)'),
+  };
+  return user32;
+}
+
+function hwndValue(value) {
+  try {
+    return BigInt(value);
+  } catch {
+    return 0n;
+  }
+}
+
+// Raises hwnd. A minimized window is restored to the size it already had.
+// No keystrokes and no thread attach: those were closing Edge.
+function activateWindow(api, hwnd) {
+  if (api.isIconic(hwnd) !== 0) {
+    api.showWindow(hwnd, 9);
+    if (api.isIconic(hwnd) !== 0) api.showWindow(hwnd, 1);
+  }
+  api.bringWindowToTop(hwnd);
+  const raised = api.setForegroundWindow(hwnd) !== 0;
+  return raised || hwndValue(api.getForegroundWindow()) === hwndValue(hwnd);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Puts a running app's own window in front. A minimized window is restored
+// to the size it already had. The click that asked for this has to finish
+// first: attaching that click to the app can land on its close button.
+async function focusApp(appId, beforeActivate) {
+  const id = String(appId || '').trim().toLowerCase();
+  if (!id || /[\r\n\t]/.test(id)) return false;
+  let hwnd = 0n;
+  try {
+    const line = await enqueue(() => send(`focus ${id}`));
+    const parts = line.split('\t');
+    if (parts[1] === 'miss') return 'miss';
+    if (parts[1] !== 'hwnd') return false;
+    hwnd = hwndValue(parts[2]);
+    if (hwnd <= 0n) return false;
+  } catch {
+    return false;
+  }
+  // The click that chose this app has to finish first, or its mouse-up can
+  // land on the app and close it.
+  await sleep(160);
+  try {
+    if (typeof beforeActivate === 'function') beforeActivate();
+  } catch {
+    // Focusing the bubble is only a way in. The activate below still runs.
+  }
+  await sleep(40);
+  let brought = false;
+  try {
+    const api = win32();
+    brought = activateWindow(api, hwnd);
+    if (!brought) {
+      await sleep(80);
+      brought = activateWindow(api, hwnd);
+    }
+  } catch {
+    brought = false;
+  }
+  try {
+    await setTaskbarVisible(false);
+  } catch {
+    // Hiding the bar must not report the switch as a failure.
+  }
+  return brought;
+}
+
 async function foregroundApp() {
   try {
     const line = await enqueue(() => send('front'));
@@ -164,7 +250,10 @@ async function runningApps(ownPid) {
         if (next === 'APPS-END' || next.startsWith('ERR')) break;
         if (!next.startsWith('ITEM\t')) continue;
         const parts = next.split('\t');
-        apps.push({ id: parts[1], name: parts.slice(2).join('\t') });
+        const app = { id: parts[1], name: parts[2] || parts[1] };
+        const exe = parts.slice(3).join('\t').trim();
+        if (exe) app.path = exe;
+        apps.push(app);
       }
       return presentWindowsApps(apps);
     });
@@ -177,34 +266,20 @@ async function runningApps(ownPid) {
 // the session turns it back off. Left alone when it was already on.
 let quietOwned = false;
 
-async function readLevel() {
-  const line = await send('level');
-  const parts = line.split('\t');
-  if (parts[0] !== 'LEVEL') return null;
-  const status = Number(parts[1]);
-  const level = Number(parts[2]);
-  if (status !== 0 || !Number.isFinite(level)) return null;
-  return level;
-}
-
 // Turns Do Not Disturb on (alarms only) or, if this session turned it on,
-// back off. Resolves with whether notifications are silenced afterwards.
+// back off. One helper command does the read and the write. Resolves with
+// whether notifications are silenced afterwards.
 async function setDoNotDisturb(on) {
   try {
     return await enqueue(async () => {
       if (on) {
-        const level = await readLevel();
-        if (level === null) return false;
-        if (level > 0) {
-          quietOwned = false;
-          return true;
-        }
         const line = await send('dnd-on');
         const parts = line.split('\t');
         const status = Number(parts[1]);
-        const now = Number(parts[2]);
-        quietOwned = parts[0] === 'SET' && status === 0 && now > 0;
-        return quietOwned;
+        const level = Number(parts[2]);
+        if (parts[0] !== 'SET' || status !== 0 || !Number.isFinite(level)) return false;
+        quietOwned = parts[3] === '1';
+        return level > 0;
       }
       if (!quietOwned) return true;
       quietOwned = false;
@@ -216,18 +291,44 @@ async function setDoNotDisturb(on) {
   }
 }
 
+// True while the helper is holding the shortcut hook. A second request for
+// the same state does not take another trip.
+let keysHeld = false;
+
 // Swallows the Windows keys, Alt+Tab and the other shortcuts that leave Focus.
 // Resolves with whether that block is in place afterwards. Ctrl+Alt+Del still
 // works, because Windows handles it before any app can see it.
 async function setKeyLock(on) {
+  const want = Boolean(on);
   try {
     return await enqueue(async () => {
-      const line = await send(on ? 'keys-on' : 'keys-off');
-      return line === 'KEYS\t1';
+      if (want === keysHeld) return true;
+      const line = await send(want ? 'keys-on' : 'keys-off');
+      const ok = line === 'KEYS\t1';
+      if (want) keysHeld = ok;
+      else if (ok) keysHeld = false;
+      return want ? keysHeld : ok;
     });
   } catch {
     return false;
   }
+}
+
+// Holds the taskbar down, or puts it back. Hiding is repeated on purpose:
+// Windows shows the bar again when a study app becomes the foreground window.
+async function setTaskbarVisible(visible) {
+  try {
+    const line = await enqueue(() => send(visible ? 'taskbar-on' : 'taskbar-off'));
+    return line === 'TASKBAR\t1';
+  } catch {
+    return false;
+  }
+}
+
+// Compiles the helper before a session needs it. The first PowerShell start
+// is the slow part of entering Focus; doing it at launch takes it off that path.
+function prepare() {
+  void startHelper().catch(() => {});
 }
 
 // Pulls the Electron window in front of whatever just stole it. Always-on-top
@@ -272,6 +373,7 @@ function shutdownWindowsSession() {
   clearInterval(strictTimer);
   strictTimer = null;
   quietOwned = false;
+  keysHeld = false;
   if (child && child.exitCode === null && !child.killed) {
     try { child.stdin.write('exit\n'); } catch { /* already gone */ }
     child.kill();
@@ -284,9 +386,12 @@ module.exports = {
   SKIP_PICKER,
   presentWindowsApps,
   foregroundApp,
+  focusApp,
+  setTaskbarVisible,
   runningApps,
   setDoNotDisturb,
   setKeyLock,
+  prepare,
   stealFocus,
   watchStrict,
   shutdownWindowsSession,

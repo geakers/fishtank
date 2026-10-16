@@ -32,10 +32,12 @@ declare global {
     adopted_at: string;
   }
 
-  // An app the user can allow in study mode. id is its bundle ID.
+  // An app the user can allow in study mode. id is its bundle ID, or on
+  // Windows the process name. path is the executable, when it is known.
   interface FishtankStudyApp {
     id: string;
     name: string;
+    path?: string;
   }
 
   // What endSession reports. completed is true when the session lasted the
@@ -50,15 +52,6 @@ declare global {
     pointsEarned: number;
     saved: boolean;
     error: string | null;
-  }
-
-  // What verifyPoints reports. valid is false when the user has more points
-  // than their minutes studied can account for.
-  interface FishtankPointsCheck {
-    valid: boolean;
-    points: number;
-    minutesStudied: number;
-    maxPoints: number;
   }
 
   // A group study session (a row of the study_groups table), as returned by
@@ -123,7 +116,7 @@ declare global {
     // Starts a Focus session the user commits commitMinutes to. The window
     // fills the screen and notifications are silenced. When enforceWhitelist
     // is false, no other software may stay in front. When it is true, only
-    // the whitelist may. notificationsSilenced is false when macOS is missing
+    // the study apps may. notificationsSilenced is false when macOS is missing
     // the Focus shortcuts, or Windows couldn't turn on Do Not Disturb.
     startStudy(commitMinutes: number, enforceWhitelist?: boolean): Promise<{ notificationsSilenced: boolean }>;
     // Resolves with the apps that are open right now, other than Fishtank.
@@ -132,6 +125,13 @@ declare global {
     // what was saved, and rejects during a study session.
     getAllowedApps(): Promise<FishtankStudyApp[]>;
     setAllowedApps(apps: FishtankStudyApp[]): Promise<FishtankStudyApp[]>;
+    // Brings that study app to the front at its own window size. Resolves
+    // false when it isn't one of the saved study apps or it can't be opened.
+    focusStudyApp(appId: string): Promise<boolean>;
+    // Brings the tank back to the front during Focus.
+    showTank(): Promise<boolean>;
+    // Grows the screen-edge bubble while its study-app list is open.
+    setBubbleOpen(open: boolean, height?: number): void;
     // Calls back with the name of each app study mode sends to the back.
     // Returns a function that stops the calls.
     onStudyAppBlocked(callback: (appName: string) => void): () => void;
@@ -146,8 +146,6 @@ declare global {
     getProfile(uid: string): Promise<FishtankProfile | null>;
     // Resolves with the user's points, or null if there is no such profile.
     getPoints(uid: string): Promise<number | null>;
-    // Resolves with null if there is no such profile.
-    verifyPoints(uid: string): Promise<FishtankPointsCheck | null>;
     // TEMPORARY: adds points to the logged-in user's saved points if code is
     // right. Resolves with the new balance.
     redeemCode(code: string): Promise<number>;

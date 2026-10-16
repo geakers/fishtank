@@ -263,8 +263,6 @@ final class SyncRepository: ObservableObject {
             defaults.set(profile.minutes * 60_000, forKey: accountMsKey)
             defaults.set(profile.points, forKey: accountPointsKey)
             if let username = profile.username { defaults.set(username, forKey: usernameKey) }
-            // Same check as verifyPoints on the desktop: points can't outrun study time.
-            defaults.set(profile.points <= Double(profile.minutes) * Config.pointsPerMinute + 0.01, forKey: pointsValidKey)
             defaults.set(Date().timeIntervalSince1970, forKey: lastSyncKey)
             status = buildStatus()
         } catch {

@@ -1,7 +1,9 @@
 # Long-running helper for Windows study mode. Reads one command per line on
 # stdin and writes one response (or a short block) per command on stdout.
 # Kept alive so study mode can poll the foreground window without starting
-# PowerShell every second.
+# PowerShell every second. WatchPid is the app process; if it dies, this exits
+# so a crashed Fishtank cannot leave the keyboard hook installed.
+param([int]$WatchPid = 0)
 $ErrorActionPreference = 'Continue'
 $utf8 = New-Object System.Text.UTF8Encoding $false
 [Console]::OutputEncoding = $utf8
@@ -49,6 +51,170 @@ public static class FishWin {
     IntPtr ExplicitScope,
     uint MatchingChangeStamp,
     uint CheckStamp);
+
+  [DllImport("kernel32.dll", SetLastError = true)]
+  public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+
+  [DllImport("kernel32.dll", SetLastError = true)]
+  public static extern bool CloseHandle(IntPtr hObject);
+
+  static System.Threading.Timer parentTimer;
+
+  // A PowerShell timer callback runs off the main runspace and was tearing
+  // this process down. The check stays in C# so the helper can stay warm.
+  public static void WatchParent(uint pid) {
+    if (pid == 0 || parentTimer != null) return;
+    parentTimer = new System.Threading.Timer(delegate(object state) {
+      IntPtr handle = OpenProcess(0x1000, false, pid);
+      if (handle != IntPtr.Zero) {
+        CloseHandle(handle);
+        return;
+      }
+      RestoreTaskbar();
+      Environment.Exit(0);
+    }, null, 1500, 1500);
+  }
+
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  public static extern IntPtr FindWindow(string className, string windowName);
+
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string className, string windowName);
+
+  [DllImport("user32.dll")]
+  public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+  static string TaskbarMark() {
+    return System.IO.Path.Combine(System.IO.Path.GetTempPath(), "fishtank-taskbar-hidden");
+  }
+
+  // Hides or shows the taskbar on every monitor. A mark file is left while it
+  // is hidden, so a crashed Fishtank can put it back the next time it starts.
+  public static void SetTaskbarVisible(bool shown) {
+    int command = shown ? 5 : 0;
+    IntPtr primary = FindWindow("Shell_TrayWnd", null);
+    if (primary != IntPtr.Zero) ShowWindow(primary, command);
+    IntPtr child = IntPtr.Zero;
+    while (true) {
+      child = FindWindowEx(IntPtr.Zero, child, "Shell_SecondaryTrayWnd", null);
+      if (child == IntPtr.Zero) break;
+      ShowWindow(child, command);
+    }
+    string mark = TaskbarMark();
+    if (shown) {
+      if (System.IO.File.Exists(mark)) System.IO.File.Delete(mark);
+    } else {
+      System.IO.File.WriteAllText(mark, "1");
+    }
+  }
+
+  public static void RestoreTaskbar() {
+    if (!System.IO.File.Exists(TaskbarMark())) return;
+    SetTaskbarVisible(true);
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
+  public struct RECT {
+    public int Left;
+    public int Top;
+    public int Right;
+    public int Bottom;
+  }
+
+  [DllImport("user32.dll")]
+  public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+  [DllImport("user32.dll")]
+  public static extern bool IsWindowVisible(IntPtr hWnd);
+
+  [DllImport("user32.dll")]
+  public static extern bool IsIconic(IntPtr hWnd);
+
+  [DllImport("user32.dll")]
+  public static extern bool EnumWindows(EnumProc lpEnumFunc, IntPtr lParam);
+
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  public static extern int GetWindowTextLength(IntPtr hWnd);
+
+  [StructLayout(LayoutKind.Sequential)]
+  public struct POINT {
+    public int X;
+    public int Y;
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
+  public struct WINDOWPLACEMENT {
+    public int length;
+    public int flags;
+    public int showCmd;
+    public POINT ptMinPosition;
+    public POINT ptMaxPosition;
+    public RECT rcNormalPosition;
+  }
+
+  [DllImport("user32.dll")]
+  public static extern bool GetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT lpwndpl);
+
+  public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
+
+  static EnumProc enumProc;
+  static uint enumPid;
+  static IntPtr enumBest;
+  static long enumBestArea;
+  static bool enumTitled;
+
+  // 0 when the window is missing or too small to be the app's own window.
+  // A minimized window keeps the size it will restore to, not the tiny icon rect.
+  public static long WindowArea(IntPtr hwnd) {
+    if (hwnd == IntPtr.Zero) return 0;
+    if (IsIconic(hwnd)) {
+      WINDOWPLACEMENT place = new WINDOWPLACEMENT();
+      place.length = System.Runtime.InteropServices.Marshal.SizeOf(typeof(WINDOWPLACEMENT));
+      if (GetWindowPlacement(hwnd, ref place)) {
+        long restoredWidth = place.rcNormalPosition.Right - place.rcNormalPosition.Left;
+        long restoredHeight = place.rcNormalPosition.Bottom - place.rcNormalPosition.Top;
+        if (restoredWidth >= 80 && restoredHeight >= 80) return restoredWidth * restoredHeight;
+      }
+      return 80L * 80L;
+    }
+    RECT rect;
+    if (!IsWindowVisible(hwnd) || !GetWindowRect(hwnd, out rect)) return 0;
+    long width = rect.Right - rect.Left;
+    long height = rect.Bottom - rect.Top;
+    if (width < 80 || height < 80) return 0;
+    return width * height;
+  }
+
+  static bool EnumBest(IntPtr hwnd, IntPtr lParam) {
+    uint pid;
+    GetWindowThreadProcessId(hwnd, out pid);
+    if (pid != enumPid) return true;
+    long area = WindowArea(hwnd);
+    if (area <= 0) return true;
+    bool titled = GetWindowTextLength(hwnd) > 0;
+    if (titled) {
+      if (!enumTitled || area > enumBestArea) {
+        enumTitled = true;
+        enumBestArea = area;
+        enumBest = hwnd;
+      }
+    } else if (!enumTitled && area > enumBestArea) {
+      enumBestArea = area;
+      enumBest = hwnd;
+    }
+    return true;
+  }
+
+  // The app's largest real window, including one that is minimized.
+  public static IntPtr FindLargestWindow(uint pid) {
+    enumPid = pid;
+    enumBest = IntPtr.Zero;
+    enumBestArea = 0;
+    enumTitled = false;
+    if (enumProc == null) enumProc = EnumBest;
+    EnumWindows(enumProc, IntPtr.Zero);
+    return enumBest;
+  }
 }
 "@
 } catch {
@@ -286,20 +452,10 @@ public static class TouchpadCache {
   $script:touchpadNotifyReady = $false
 }
 
-# If Fishtank is killed, drop the hook so the Windows key is not left dead.
-$script:parentId = 0
-try {
-  $script:parentId = [int](Get-CimInstance Win32_Process -Filter "ProcessId=$PID").ParentProcessId
-} catch {}
-if ($script:parentId -gt 0) {
-  $script:parentWatch = [System.Threading.Timer]::new({
-    if ($script:parentId -le 0) { return }
-    $alive = Get-Process -Id $script:parentId -ErrorAction SilentlyContinue
-    if ($alive) { return }
-    try { if ($script:keyLockReady) { [KeyLock]::Stop() } } catch {}
-    try { Restore-SwitchGestures | Out-Null } catch {}
-    [Environment]::Exit(0)
-  }, $null, 1500, 1500)
+# If Fishtank is killed, exit so the keyboard hook dies with this process.
+# Swipes are put back the next time the helper starts.
+if ($WatchPid -gt 0) {
+  [FishWin]::WatchParent([uint32]$WatchPid)
 }
 
 # Hex literals above 0x7FFFFFFF are negative Int32s in Windows PowerShell, and
@@ -412,11 +568,18 @@ function ConvertTo-AppName($proc) {
     } catch {}
   }
   $name = ($name -replace "[`t`r`n]", ' ')
-  return @{ id = $id; name = $name }
+  $exe = ''
+  try {
+    if ($proc.MainModule -and $proc.MainModule.FileName) { $exe = $proc.MainModule.FileName }
+  } catch {}
+  $exe = ($exe -replace "[`t`r`n]", ' ')
+  return @{ id = $id; name = $name; path = $exe }
 }
 
-# A previous Fishtank process may have died while swipes were off.
+# A previous Fishtank process may have died while swipes were off, or while
+# the taskbar was held down for a study app.
 Restore-SwitchGestures | Out-Null
+[FishWin]::RestoreTaskbar()
 
 Write-Line 'READY'
 
@@ -453,7 +616,7 @@ while ($true) {
         $app = ConvertTo-AppName $_
         if (-not $seen.ContainsKey($app.id)) {
           $seen[$app.id] = $true
-          Write-Line ("ITEM`t" + $app.id + "`t" + $app.name)
+          Write-Line ("ITEM`t" + $app.id + "`t" + $app.name + "`t" + $app.path)
         }
       }
       Write-Line 'APPS-END'
@@ -465,9 +628,46 @@ while ($true) {
       continue
     }
 
+    # The largest real window of this app, including a minimized one. Activation
+    # happens in Fishtank after the click is finished, so this must not touch it.
+    if ($line.StartsWith('focus ')) {
+      $id = $line.Substring(6).Trim().ToLowerInvariant()
+      $found = $false
+      $best = [IntPtr]::Zero
+      $bestArea = [int64]0
+      if ($id -ne '') {
+        $seenPid = @{}
+        foreach ($proc in Get-Process -ErrorAction SilentlyContinue) {
+          try {
+            if ($proc.ProcessName.ToLowerInvariant() -ne $id) { continue }
+            $found = $true
+            if ($seenPid.ContainsKey($proc.Id)) { continue }
+            $seenPid[$proc.Id] = $true
+            $handle = [FishWin]::FindLargestWindow([uint32]$proc.Id)
+            if ($handle -eq [IntPtr]::Zero) { continue }
+            $area = [FishWin]::WindowArea($handle)
+            if ($area -gt $bestArea) {
+              $bestArea = $area
+              $best = $handle
+            }
+          } catch {}
+        }
+      }
+      if ($best -ne [IntPtr]::Zero) { Write-Line ("FOCUS`thwnd`t" + $best.ToInt64()) }
+      elseif ($found) { Write-Line "FOCUS`tbusy" }
+      else { Write-Line "FOCUS`tmiss" }
+      continue
+    }
+
     if ($line -eq 'level') {
       $quiet = Get-QuietLevel
       Write-Line ("LEVEL`t" + $quiet.status + "`t" + $quiet.level)
+      continue
+    }
+
+    if ($line -eq 'taskbar-off' -or $line -eq 'taskbar-on') {
+      [FishWin]::SetTaskbarVisible($line -eq 'taskbar-on')
+      Write-Line "TASKBAR`t1"
       continue
     }
 
@@ -486,12 +686,23 @@ while ($true) {
     }
 
     if ($line -eq 'dnd-on' -or $line -eq 'dnd-off') {
-      $target = 0
-      if ($line -eq 'dnd-on') { $target = 2 }
-      $status = Set-QuietLevel $target
-      Start-Sleep -Milliseconds 200
-      $quiet = Get-QuietLevel
-      Write-Line ("SET`t" + $status + "`t" + $quiet.level)
+      $before = Get-QuietLevel
+      $status = $before.status
+      $level = $before.level
+      $owned = 0
+      # Already on: leave the user's own setting alone. The state write is
+      # synchronous, so there is nothing to wait for before reading it back.
+      if ($line -eq 'dnd-on' -and $before.status -eq 0 -and $before.level -eq 0) {
+        $status = Set-QuietLevel 2
+        $after = Get-QuietLevel
+        $level = $after.level
+        if ($status -eq 0 -and $level -gt 0) { $owned = 1 }
+      } elseif ($line -eq 'dnd-off') {
+        $status = Set-QuietLevel 0
+        $after = Get-QuietLevel
+        $level = $after.level
+      }
+      Write-Line ("SET`t" + $status + "`t" + $level + "`t" + $owned)
       continue
     }
 
@@ -503,3 +714,4 @@ while ($true) {
 
 if ($script:keyLockReady) { [KeyLock]::Stop() }
 Restore-SwitchGestures | Out-Null
+[FishWin]::RestoreTaskbar()

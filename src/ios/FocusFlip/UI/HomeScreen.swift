@@ -624,10 +624,6 @@ private struct ProfileSheet: View {
                         StatTile(value: "\(status.todaySessions)", label: "Sessions today")
                     }
 
-                    if !status.pointsValid {
-                        Text("Your points don't match your study time.").font(.selawik(13, .semibold)).foregroundStyle(Wii.danger)
-                    }
-
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Sync").font(.selawik(13, .semibold)).foregroundStyle(Wii.inkMuted)
                         Text(syncLabel).font(.selawik(14)).foregroundStyle(Wii.ink)

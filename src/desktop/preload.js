@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('fishtank', {
   listRunningApps: () => ipcRenderer.invoke('list-running-apps'),
   getAllowedApps: () => ipcRenderer.invoke('get-allowed-apps'),
   setAllowedApps: (apps) => ipcRenderer.invoke('set-allowed-apps', apps),
+  focusStudyApp: (appId) => ipcRenderer.invoke('focus-study-app', appId),
+  showTank: () => ipcRenderer.invoke('show-tank'),
+  setBubbleOpen: (open, height) => ipcRenderer.send('bubble-open', open, height),
   onStudyAppBlocked: (callback) => {
     const listener = (event, appName) => callback(appName);
     ipcRenderer.on('study-app-blocked', listener);
@@ -16,7 +19,6 @@ contextBridge.exposeInMainWorld('fishtank', {
   createAccount: (account) => ipcRenderer.invoke('create-account', account),
   getProfile: (uid) => ipcRenderer.invoke('get-profile', uid),
   getPoints: (uid) => ipcRenderer.invoke('get-points', uid),
-  verifyPoints: (uid) => ipcRenderer.invoke('verify-points', uid),
   redeemCode: (code) => ipcRenderer.invoke('redeem-code', code),
   logIn: (credentials) => ipcRenderer.invoke('log-in', credentials),
   logOut: () => ipcRenderer.invoke('log-out'),

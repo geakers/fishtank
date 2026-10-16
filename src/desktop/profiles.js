@@ -7,9 +7,6 @@ const TEST_POINT_PER_SECOND = true;
 
 const POINTS_PER_MINUTE = TEST_POINT_PER_SECOND ? 60 : 1 / 60;
 
-// Slack allowed in verifyPoints for the rounding applied when points are saved.
-const POINTS_TOLERANCE = 0.01;
-
 // How long a user can commit to focusing for, in whole minutes.
 const MIN_COMMIT_MINUTES = 1;
 const MAX_COMMIT_MINUTES = 240;
@@ -33,8 +30,7 @@ function sessionEarnings(seconds, commitMinutes) {
   const completed = committed > 0 && seconds >= committed - COMMIT_GRACE_SECONDS;
   const counted = completed ? committed : Math.max(0, Math.floor(seconds));
 
-  // In test mode every second earns a point, and a part minute counts as a
-  // whole one so the points never outrun what verifyPoints allows.
+  // In test mode every second earns a point, and a part minute still counts.
   const minutes = TEST_POINT_PER_SECOND ? Math.ceil(counted / 60) : Math.floor(counted / 60);
   if (!completed) return { completed, minutes, pointsEarned: 0 };
   const pointsEarned = TEST_POINT_PER_SECOND ? counted : minutes * POINTS_PER_MINUTE;
@@ -104,22 +100,17 @@ function setMinutesStudied(uid, minutes) {
   return setProfileNumber(uid, 'minutes_studied', minutes);
 }
 
-// Checks the user's points against the time they have studied. Points are only
-// earned at POINTS_PER_MINUTE and can only go down from there by being spent,
-// so a valid balance is never more than minutes_studied * POINTS_PER_MINUTE.
-// Returns { valid, points, minutesStudied, maxPoints }, or null if no profile
-// exists for that uid.
-async function verifyPoints(uid) {
-  const profile = await requestProfile(uid, 'points,minutes_studied');
-  if (!profile) return null;
-
-  const maxPoints = profile.minutes_studied * POINTS_PER_MINUTE;
-  return {
-    valid: profile.points <= maxPoints + POINTS_TOLERANCE,
-    points: profile.points,
-    minutesStudied: profile.minutes_studied,
-    maxPoints,
-  };
+// Saves minutes studied and points in one request.
+async function setStudyTotals(uid, minutesStudied, points) {
+  if (!Number.isFinite(minutesStudied)) throw new Error('minutes_studied must be a number');
+  if (!Number.isFinite(points)) throw new Error('points must be a number');
+  const profile = await requestProfile(uid, 'minutes_studied,points', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({ minutes_studied: minutesStudied, points }),
+  });
+  if (!profile) throw new Error('No profile was updated');
+  return profile;
 }
 
 module.exports = {
@@ -133,5 +124,5 @@ module.exports = {
   getPoints,
   setPoints,
   setMinutesStudied,
-  verifyPoints,
+  setStudyTotals,
 };

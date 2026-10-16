@@ -7,8 +7,7 @@ const {
   getProfile,
   getPoints,
   setPoints,
-  setMinutesStudied,
-  verifyPoints,
+  setStudyTotals,
 } = require('./profiles');
 const {
   createGroup, listGroups, deleteGroup, leaveGroup, addMember, groupRoster, searchUsernames,
@@ -18,7 +17,10 @@ const { listNotes, submitNote, deleteNote, noteFileUrl } = require('./notes');
 const { runStudySkill } = require('./study-skills');
 const { listFish, buyFish, setFishInTank, setAvatarFish } = require('./fish');
 const { restoreSession, logIn, logOut, currentUser, getAccessToken } = require('./session');
-const { listRunningApps, getAllowedApps, setAllowedApps, startStudy, stopStudy } = require('./study-mode');
+const {
+  listRunningApps, getAllowedApps, setAllowedApps, startStudy, stopStudy,
+  focusStudyApp, showTank, setStudyBubbleOpen,
+} = require('./study-mode');
 const windows = process.platform === 'win32' ? require('./win-session') : null;
 
 // When the running session (strict lockdown or study mode) started (ms since
@@ -38,16 +40,21 @@ function lockDown(win, enabled) {
     // below still keep the session on top.
   }
   if (windows) {
-    win.setFullScreen(on);
-    win.setAlwaysOnTop(on, 'screen-saver');
+    // Turning study mode off restores the window in stopStudy, which runs
+    // first. A second setFullScreen(false) here would play the exit again.
+    if (on) {
+      win.setFullScreen(true);
+      win.setAlwaysOnTop(true, 'screen-saver');
+      win.show();
+      win.focus();
+      void windows.setKeyLock(true);
+    } else if (win.isFullScreen() || win.isKiosk()) {
+      win.setFullScreen(false);
+      win.setAlwaysOnTop(false);
+    }
     win.setClosable(!on);
     win.setMinimizable(!on);
     windows.watchStrict(win, on);
-    if (on) void windows.setKeyLock(true);
-    if (on) {
-      win.show();
-      win.focus();
-    }
     // The watcher is what actually holds the session on Windows, where kiosk
     // still lets Alt+Tab and the Windows key through.
     return on || win.isKiosk();
@@ -70,10 +77,13 @@ function beginSession(commitMinutes) {
 // session lasted as long as the user committed to (see sessionEarnings).
 // Kiosk and study mode are turned off even if nothing can be saved.
 async function endSession(win) {
-  const locked = lockDown(win, false);
+  // Study mode leaves fullscreen itself. Doing that before lockDown avoids a
+  // second fullscreen exit while the first one is still animating.
   await stopStudy();
+  const locked = lockDown(win, false);
   // Study mode releases its own hook. This also releases one taken by strict
-  // lock-in, which does not go through study mode.
+  // lock-in, which does not go through study mode. A hook that is already
+  // released does not take another trip.
   if (windows) await windows.setKeyLock(false);
   const seconds = sessionStartedAt === null ? 0 : Math.floor((Date.now() - sessionStartedAt) / 1000);
   const commitMinutes = sessionCommitMinutes;
@@ -89,13 +99,13 @@ async function endSession(win) {
     const profile = await getProfile(user.uid);
     if (!profile) throw new Error('No profile found');
 
-    // Minutes go first: if the points write then fails, the user is short of
-    // points rather than holding points that verifyPoints can't account for.
-    await setMinutesStudied(user.uid, (profile.minutes_studied ?? 0) + minutes);
-    if (pointsEarned > 0) {
-      // Rounded so repeated additions don't pick up floating point noise.
-      await setPoints(user.uid, Math.round((profile.points + pointsEarned) * 10000) / 10000);
-    }
+    // One write for both totals. Separate updates made ending wait on two
+    // round trips, and a failed points write after a successful minutes write
+    // left the two totals out of step.
+    const nextPoints = pointsEarned > 0
+      ? Math.round((profile.points + pointsEarned) * 10000) / 10000
+      : profile.points;
+    await setStudyTotals(user.uid, (profile.minutes_studied ?? 0) + minutes, nextPoints);
     result.saved = true;
   } catch (err) {
     result.error = err.message;
@@ -179,12 +189,14 @@ app.whenReady().then(() => {
   ipcMain.handle('list-running-apps', () => listRunningApps());
   ipcMain.handle('get-allowed-apps', () => getAllowedApps());
   ipcMain.handle('set-allowed-apps', (event, apps) => setAllowedApps(apps));
+  ipcMain.handle('focus-study-app', (event, appId) => focusStudyApp(appId));
+  ipcMain.handle('show-tank', () => showTank());
+  ipcMain.on('bubble-open', (event, open, height) => setStudyBubbleOpen(Boolean(open), height));
   ipcMain.handle('end-session', (event) => endSession(BrowserWindow.fromWebContents(event.sender)));
 
   ipcMain.handle('create-account', (event, account) => createAccount(account));
   ipcMain.handle('get-profile', (event, uid) => getProfile(uid));
   ipcMain.handle('get-points', (event, uid) => getPoints(uid));
-  ipcMain.handle('verify-points', (event, uid) => verifyPoints(uid));
   ipcMain.handle('redeem-code', (event, code) => redeemCode(code));
   ipcMain.handle('log-in', (event, credentials) => logIn(credentials));
   ipcMain.handle('log-out', () => logOut());
@@ -224,6 +236,7 @@ app.whenReady().then(() => {
   restoreSession();
 
   createWindow();
+  if (windows) windows.prepare();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

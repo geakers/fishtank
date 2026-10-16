@@ -310,12 +310,7 @@ export function useFishtank() {
       setStats((s) => ({ ...s, totalFocusMs: (profile.minutes_studied ?? 0) * 60_000 }));
     } catch {
       notify('error', "Couldn't load your saved progress.");
-      return;
     }
-
-    // A check that can't run is not a failed check, so errors here stay quiet.
-    const check = await bridge.verifyPoints(user.uid).catch(() => null);
-    if (check && !check.valid) notify('error', "Your points don't match your study time.");
   };
 
   // Pick up a login kept from a previous run.

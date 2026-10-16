@@ -73,24 +73,24 @@ export function CommitPicker({ mode, initialMinutes, whitelistOn, onWhitelistCha
             onChange={(event) => setText(event.target.value)}
           />
 
-          <div className="commit__whitelist">
+          <div className="commit__study-apps">
             <button
               type="button"
               className={`home__switch${whitelistOn ? ' is-on' : ''}`}
               aria-pressed={whitelistOn}
               onClick={() => onWhitelistChange(!whitelistOn)}
             >
-              <span>Whitelist</span>
+              <span>Study apps</span>
               <span className="home__switch-state">{whitelistOn ? 'On' : 'Off'}</span>
             </button>
             <AeroButton variant="glass" onClick={onEditWhitelist}>
-              Edit list
+              Edit apps
             </AeroButton>
           </div>
           <p className="commit__note">
             {whitelistOn
-              ? 'On: only the apps on your whitelist can stay open.'
-              : 'Off: you can’t open any other software during Focus.'}{' '}
+              ? 'On: only your study apps can stay in front. A bubble on the screen edge brings one forward.'
+              : 'Off: no other software can stay in front during Focus.'}{' '}
             The Windows key, Alt+Tab, trackpad swipes that switch apps or desktops, and the other switching shortcuts stay blocked until Focus ends.
           </p>
 

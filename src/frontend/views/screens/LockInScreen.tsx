@@ -32,7 +32,11 @@ export function LockInScreen({ app }: LockInScreenProps) {
     return () => clearInterval(timer);
   }, [running]);
 
-  const elapsed = session ? (session.endedAt ?? now) - session.startedAt : 0;
+  // `now` is taken when this screen opens, and the session starts only after
+  // the desktop finishes loading focus mode. Until the clock catches up,
+  // startedAt is ahead of `now`. Counting that gap would show more time than
+  // the user committed to, so the elapsed time never goes below zero.
+  const elapsed = session ? Math.max(0, (session.endedAt ?? now) - session.startedAt) : 0;
   const commitMs = session ? session.commitMinutes * 60_000 : 0;
   const remaining = Math.max(0, commitMs - elapsed);
   const committed = session !== null && remaining === 0;
